@@ -1,0 +1,37 @@
+services:
+  pocketbase:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8090:8090"
+    volumes:
+      - .:/app
+      - pb_data:/root/pb_data
+      - go_cache:/go
+    env_file:
+      - .env
+    depends_on:
+      - mailhog
+    networks:
+      - app-network
+    environment:
+      - GOOS=linux
+      - GOARCH=amd64
+      - CGO_ENABLED=0
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
+    networks:
+      - app-network
+
+volumes:
+  pb_data:
+  go_cache:
+
+networks:
+  app-network:
+    driver: bridge

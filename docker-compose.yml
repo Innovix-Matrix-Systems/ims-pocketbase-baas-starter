@@ -1,0 +1,30 @@
+services:
+  pocketbase:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8090:8090"
+    volumes:
+      - pb_data:/root/pb_data
+    env_file:
+      - .env
+    depends_on:
+      - mailhog
+    networks:
+      - app-network
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025" # SMTP server
+      - "8025:8025" # Web UI
+    networks:
+      - app-network
+
+volumes:
+  pb_data:
+
+networks:
+  app-network:
+    driver: bridge
