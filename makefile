@@ -84,6 +84,16 @@ test:
 	@echo "Running tests..."
 	go test ./...
 
+test-coverage:
+	@echo "Running tests with coverage report..."
+	go test -v -race -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated at coverage.html"
+
+test-short:
+	@echo "Running short tests..."
+	go test -v -short ./...
+
 lint:
 	@echo "Running linter..."
 	golangci-lint run

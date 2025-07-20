@@ -26,7 +26,8 @@ A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, en
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Innovix-Matrix-Systems/ims-pocketbase-baas-starter.git
+
    cd ims-pocketbase-baas-starter
    ```
 
@@ -59,32 +60,16 @@ A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, en
 
 ## Makefile Commands
 
-### Development Commands
-
-- `make dev` - Start development environment with hot reload
-- `make dev-build` - Build development Docker image
-- `make dev-logs` - Show development container logs
-- `make dev-clean` - Clean development environment
-
-### Production Commands
-
-- `make build` - Build production Docker image
-- `make start` - Start production containers
-- `make stop` - Stop containers
-- `make restart` - Restart containers
-- `make down` - Stop and remove containers
-- `make logs` - Show container logs
-- `make clean` - Remove containers, networks, and images
-- `make delete-data` - Remove containers, networks, images, and volumes
-
-### Utility Commands
-
-- `make help` - Show all available commands
-- `make generate-key` - Generate encryption key
-- `make setup-env` - Setup environment file
-- `make test` - Run tests
-- `make lint` - Run linter
-- `make format` - Format Go code
+| Development | Production | Utility |
+|-------------|------------|---------|
+| `dev` - Start dev environment | `build` - Build production image | `help` - Show all commands |
+| `dev-build` - Build dev image | `start` - Start containers | `generate-key` - Generate encryption key |
+| `dev-logs` - Show dev logs | `stop` - Stop containers | `setup-env` - Setup environment file |
+| `dev-clean` - Clean dev env | `restart` - Restart containers | `test` - Run tests |
+| `dev-data-clean` - Clean dev data | `down` - Stop and remove containers | `lint` - Run linter |
+| `dev-start` - Alias for dev | `logs` - Show container logs | `format` - Format Go code |
+| `dev-status` - Show dev container status | `clean` - Remove containers, networks, images | `status` - Show container status |
+|  | `clean-data` - Remove only volumes | `prod-start` - Alias for start |
 
 ## Environment Configuration
 
@@ -150,8 +135,8 @@ For detailed information about database migrations and schema management, see th
 
 ### Default Super Admin
 
-- Email: `admin@example.com`
-- Password: `admin123456`
+- Email: `superadmin@ims.com`
+- Password: `superadmin123456`
 
 ## Project Structure
 
@@ -181,13 +166,8 @@ For detailed information about database migrations and schema management, see th
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `make test`
-5. Format code: `make format`
-6. Submit a pull request
+Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to contribute to this project.
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE.md).
