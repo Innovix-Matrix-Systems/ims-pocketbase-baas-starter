@@ -10,7 +10,7 @@ A Backend-as-a-Service (BaaS) starter kit built with PocketBase and Go, featurin
 - 🐳 **Docker Support** - Production and development environments
 - 🔄 **Hot Reload** - Development environment with automatic code reloading
 - ⚙️ **Environment Configuration** - Flexible configuration via environment variables
-- 📊 **Database Migrations** - Automated database setup and seeding
+- 📊 **Future-Proof Migrations** - Automated database setup, seeding, and schema evolution
 
 ## Quick Start
 
@@ -144,6 +144,8 @@ The application includes:
 - **Seeders** - Initial data seeding (RBAC, super admin)
 - **Collections** - User management, roles, permissions
 
+For detailed information about database migrations and schema management, see the [Database Migrations Guide](docs/migrations.md).
+
 ### Default Super Admin
 
 - Email: `admin@example.com`
@@ -154,6 +156,9 @@ The application includes:
 ```
 ├── cmd/
 │   └── server/          # Application entry point
+├── docs/                # Project documentation
+│   ├── README.md       # Documentation index
+│   └── migrations.md   # Database migration guide
 ├── internal/
 │   ├── app/            # Application setup
 │   ├── database/
