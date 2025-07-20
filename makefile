@@ -18,6 +18,7 @@ help:
 	@echo "  dev-build    - Build development image"
 	@echo "  dev-logs     - Show development container logs"
 	@echo "  dev-clean    - Clean development environment"
+	@echo "  dev-data-clean - Clean development data"
 	@echo ""
 	@echo "Code quality:"
 	@echo "  test         - Run tests"
@@ -73,6 +74,10 @@ dev-logs:
 dev-clean:
 	@echo "Cleaning development environment..."
 	docker-compose -f docker-compose.dev.yml down --volumes --rmi all
+
+dev-data-clean:
+	@echo "Cleaning development environment..."
+	docker-compose -f docker-compose.dev.yml down --volumes
 
 # Code quality commands
 test:

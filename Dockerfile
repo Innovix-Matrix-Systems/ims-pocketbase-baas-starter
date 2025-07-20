@@ -13,6 +13,9 @@ RUN go mod download
 # Copy source code
 COPY . .
 
+# Ensure pb_public directory exists
+RUN mkdir -p pb_public
+
 # Build the application
 RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
 
@@ -27,8 +30,11 @@ WORKDIR /root/
 # Copy the binary from builder stage
 COPY --from=builder /app/main .
 
-# Copy public files
-COPY --from=builder /app/pb_public ./pb_public
+# Copy public files (create directory if it doesn't exist)
+RUN mkdir -p pb_public
+RUN if [ -d /app/pb_public ] && [ "$(ls -A /app/pb_public 2>/dev/null)" ]; then \
+    cp -r /app/pb_public/. ./pb_public/ || echo "No files to copy"; \
+    else echo "pb_public directory is empty or doesn't exist"; fi
 
 # Copy schema files for migrations
 COPY --from=builder /app/internal ./internal

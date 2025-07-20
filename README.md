@@ -1,16 +1,18 @@
 # IMS PocketBase BaaS Starter
 
-A Backend-as-a-Service (BaaS) starter kit built with PocketBase and Go, featuring Role-Based Access Control (RBAC), environment-based configuration, and development tools.
+A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, enabling custom API routes, business logic, and middleware alongside PocketBase's built-in features. Includes Role-Based Access Control (RBAC), environment-based configuration, and development tools.
 
 ## Features
 
-- 🚀 **PocketBase Backend** - Self-hosted backend with real-time subscriptions
+- 🚀 **PocketBase Go Framework** - Full PocketBase functionality with Go extensibility
 - 🔐 **RBAC System** - Role-based access control with permissions and roles
+- 🛠️ **Custom API Routes** - Add your own REST endpoints and business logic
+- 🔧 **Custom Middleware** - Implement Custom Middleware according to your needs
 - 📧 **Email Integration** - SMTP configuration with MailHog for development
 - 🐳 **Docker Support** - Production and development environments
 - 🔄 **Hot Reload** - Development environment with automatic code reloading
 - ⚙️ **Environment Configuration** - Flexible configuration via environment variables
-- 📊 **Database Migrations** - Automated database setup and seeding
+- 📊 **Future-Proof Migrations** - Automated database setup, seeding, and schema evolution
 
 ## Quick Start
 
@@ -144,6 +146,8 @@ The application includes:
 - **Seeders** - Initial data seeding (RBAC, super admin)
 - **Collections** - User management, roles, permissions
 
+For detailed information about database migrations and schema management, see the [Database Migrations Guide](docs/migrations.md).
+
 ### Default Super Admin
 
 - Email: `admin@example.com`
@@ -154,6 +158,9 @@ The application includes:
 ```
 ├── cmd/
 │   └── server/          # Application entry point
+├── docs/                # Project documentation
+│   ├── README.md       # Documentation index
+│   └── migrations.md   # Database migration guide
 ├── internal/
 │   ├── app/            # Application setup
 │   ├── database/

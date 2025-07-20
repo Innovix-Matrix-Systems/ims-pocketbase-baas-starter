@@ -3,11 +3,11 @@ testdata_dir = "testdata"
 tmp_dir = "tmp"
 
 [build]
-  args_bin = []
+  args_bin = ["serve", "--dev", "--http=0.0.0.0:8090"]
   bin = "./tmp/main"
   cmd = "go build -o ./tmp/main ./cmd/server"
   delay = 1000
-  exclude_dir = ["assets", "tmp", "vendor", "testdata", "pb_public"]
+  exclude_dir = ["assets", "tmp", "vendor", "testdata", "pb_public", "pb_data"]
   exclude_file = []
   exclude_regex = ["_test.go"]
   exclude_unchanged = false
@@ -18,8 +18,8 @@ tmp_dir = "tmp"
   include_file = []
   kill_delay = "0s"
   log = "build-errors.log"
-  poll = false
-  poll_interval = 0
+  poll = true
+  poll_interval = 1000
   rerun = false
   rerun_delay = 500
   send_interrupt = false

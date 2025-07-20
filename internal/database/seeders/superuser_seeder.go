@@ -2,7 +2,6 @@ package seeders
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -30,56 +29,31 @@ func CreateSuperUserIfNotExists(app core.App) error {
 	// Create new superuser record
 	record := core.NewRecord(collection)
 
-	// Configuration from environment variables with defaults
-	config := getSuperUserConfig()
+	// Set the fields with hardcoded defaults
+	email := "superadmin@ims.com"
+	password := "superadmin123456"
 
-	// Set the fields
-	record.Set("email", config.Email)
-	record.Set("password", config.Password)
+	record.Set("email", email)
+	record.Set("password", password)
 
 	// Save the superuser
 	if err := app.Save(record); err != nil {
 		return fmt.Errorf("failed to create superuser: %w", err)
 	}
 
-	fmt.Printf("✅ Superuser created successfully with email: %s\n", config.Email)
-
-	if config.IsDefaultPassword {
-		fmt.Println("⚠️  WARNING: Using default password! Please change it after first login!")
-		fmt.Println("   Default credentials:")
-		fmt.Printf("   Email: %s\n", config.Email)
-		fmt.Printf("   Password: %s\n", config.Password)
-	}
+	fmt.Printf("✅ Superuser created successfully with email: %s\n", email)
+	fmt.Println("⚠️  WARNING: Using default password! Please change it after first login!")
+	fmt.Println("   Default credentials:")
+	fmt.Printf("   Email: %s\n", email)
+	fmt.Printf("   Password: %s\n", password)
 
 	return nil
 }
 
 // SuperUserConfig holds the configuration for creating a superuser
 type SuperUserConfig struct {
-	Email             string
-	Password          string
-	IsDefaultPassword bool
-}
-
-// getSuperUserConfig returns the superuser configuration from environment variables or defaults
-func getSuperUserConfig() SuperUserConfig {
-	config := SuperUserConfig{
-		Email:             "superadmin@ims.com",
-		Password:          "superadmin123456",
-		IsDefaultPassword: true,
-	}
-
-	// Override with environment variables if provided
-	if email := os.Getenv("SUPERUSER_EMAIL"); email != "" {
-		config.Email = email
-	}
-
-	if password := os.Getenv("SUPERUSER_PASSWORD"); password != "" {
-		config.Password = password
-		config.IsDefaultPassword = false
-	}
-
-	return config
+	Email    string
+	Password string
 }
 
 // CreateMultipleSuperUsers creates multiple superusers from a predefined list

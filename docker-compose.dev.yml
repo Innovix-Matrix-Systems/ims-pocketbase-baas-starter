@@ -7,8 +7,8 @@ services:
       - "8090:8090"
     volumes:
       - .:/app
-      - pb_data:/root/pb_data
-      - go_cache:/go
+      - pb_data:/app/pb_data
+      - go_cache:/go/pkg/mod
     env_file:
       - .env
     depends_on:
