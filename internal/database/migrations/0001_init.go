@@ -44,7 +44,7 @@ func getEnvIntWithDefault(key string, defaultValue int) int {
 func init() {
 	m.Register(func(app core.App) error {
 		// 1. Read and parse the schema JSON
-		schemaPath := filepath.Join("internal", "database", "schema", "pb_schema.json")
+		schemaPath := filepath.Join("internal", "database", "schema", "0001_pb_schema.json")
 		schemaData, err := os.ReadFile(schemaPath)
 		if err != nil {
 			return fmt.Errorf("failed to read schema file: %w", err)
