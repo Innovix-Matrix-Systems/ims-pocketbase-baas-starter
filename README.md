@@ -1,11 +1,13 @@
 # IMS PocketBase BaaS Starter
 
-A Backend-as-a-Service (BaaS) starter kit built with PocketBase and Go, featuring Role-Based Access Control (RBAC), environment-based configuration, and development tools.
+A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, enabling custom API routes, business logic, and middleware alongside PocketBase's built-in features. Includes Role-Based Access Control (RBAC), environment-based configuration, and development tools.
 
 ## Features
 
-- 🚀 **PocketBase Backend** - Self-hosted backend with real-time subscriptions
+- 🚀 **PocketBase Go Framework** - Full PocketBase functionality with Go extensibility
 - 🔐 **RBAC System** - Role-based access control with permissions and roles
+- 🛠️ **Custom API Routes** - Add your own REST endpoints and business logic
+- 🔧 **Custom Middleware** - Implement Custom Middleware according to your needs
 - 📧 **Email Integration** - SMTP configuration with MailHog for development
 - 🐳 **Docker Support** - Production and development environments
 - 🔄 **Hot Reload** - Development environment with automatic code reloading

@@ -74,6 +74,10 @@ dev-clean:
 	@echo "Cleaning development environment..."
 	docker-compose -f docker-compose.dev.yml down --volumes --rmi all
 
+dev-data-clean:
+	@echo "Cleaning development environment..."
+	docker-compose -f docker-compose.dev.yml down --volumes
+
 # Code quality commands
 test:
 	@echo "Running tests..."
