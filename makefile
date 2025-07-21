@@ -84,7 +84,7 @@ test:
 	@echo "Running tests..."
 	go test ./...
 
-test-coverage:
+test-cov:
 	@echo "Running tests with coverage report..."
 	go test -v -race -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html

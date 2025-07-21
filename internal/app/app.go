@@ -11,12 +11,15 @@ import (
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/pocketbase/pocketbase/tools/hook"
 
+	"ims-pocketbase-baas-starter/internal"
 	_ "ims-pocketbase-baas-starter/internal/database/migrations" //side effect migration load(from pocketbase)
 	"ims-pocketbase-baas-starter/internal/middlewares"
 	"ims-pocketbase-baas-starter/internal/routes"
 )
 
-func Run() {
+// NewApp creates and configures a new PocketBase app instance
+// This is useful for testing and for the main application
+func NewApp() *pocketbase.PocketBase {
 	app := pocketbase.New()
 
 	// v0.29: register the official migratecmd plugin
@@ -27,7 +30,6 @@ func Run() {
 	})
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-
 		middleware := middlewares.NewAuthMiddleware()
 
 		// Apply auth to specific PocketBase API endpoints
@@ -36,30 +38,15 @@ func Run() {
 			Func: func(e *core.RequestEvent) error {
 				path := e.Request.URL.Path
 
-				// Define collections that require authentication
-				protectedCollections := []string{"users", "roles", "permissions"} // Add your collections here
-
-				// Define endpoints to exclude from authentication
-				excludedPaths := []string{
-					"/api/collections/users/auth-with-password",
-					"/api/collections/users/auth-refresh",
-					"/api/collections/users/request-password-reset",
-					"/api/collections/users/confirm-password-reset",
-					"/api/collections/users/request-verification",
-					"/api/collections/users/confirm-verification",
-					"/api/collections/users/request-email-change",
-					"/api/collections/users/confirm-email-change",
-				}
-
 				// Check if path should be excluded
-				for _, excludedPath := range excludedPaths {
+				for _, excludedPath := range internal.ExcludedPaths {
 					if strings.HasPrefix(path, excludedPath) {
 						return e.Next() // Skip auth for excluded paths
 					}
 				}
 
 				// Check if it's a protected collection endpoint
-				for _, collection := range protectedCollections {
+				for _, collection := range internal.ProtectedCollections {
 					collectionPath := "/api/collections/" + collection
 					if strings.HasPrefix(path, collectionPath) {
 						authFunc := middleware.RequireAuthFunc()
@@ -82,6 +69,12 @@ func Run() {
 
 		return se.Next()
 	})
+
+	return app
+}
+
+func Run() {
+	app := NewApp()
 
 	if err := app.Start(); err != nil {
 		log.Fatal(err)
