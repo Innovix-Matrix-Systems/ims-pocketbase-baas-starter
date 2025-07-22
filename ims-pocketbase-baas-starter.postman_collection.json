@@ -1,0 +1,1016 @@
+{
+	"info": {
+		"_postman_id": "06a345c5-da5a-4aff-bf09-18c63a1cdbcd",
+		"name": "ims-pocketbase-baas-starter",
+		"description": "## Introduction\n\nWelcome to the api documentation.  \n`ims-pocketbase-baas-starter` A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, enabling custom API routes, business logic, and middleware alongside PocketBase's built-in features. Includes Role-Based Access Control (RBAC), environment-based configuration, and development tools.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "29444436",
+		"_collection_link": "https://innovix-matrix-system.postman.co/workspace/c0ff4f3a-4d52-490d-81f4-c33d60e51246/collection/29444436-06a345c5-da5a-4aff-bf09-18c63a1cdbcd?action=share&source=collection_link&creator=29444436"
+	},
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "healthz",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Auth Methods",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/auth-methods",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"auth-methods"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"identity\": \"superadminuser@example.com\",\r\n    \"password\": \"superadmin123\"\r\n}\r\n\r\n// {\r\n//     \"identity\": \"test@example.com\",\r\n//     \"password\": \"12345678\"\r\n// }",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/auth-with-password?expand=roles.permissions, permissions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"auth-with-password"
+							],
+							"query": [
+								{
+									"key": "expand",
+									"value": "roles.permissions, permissions"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "token-refresh",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/auth-refresh",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"auth-refresh"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Request verification",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"superadminuser@example.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/request-verification",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"request-verification"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Confirm Verification",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"token\": \"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/confirm-verification",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"confirm-verification"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Request Password change",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"test@example2.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/request-password-reset",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"request-password-reset"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Confirm Pass Reset",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"password\": \"12345678\",\r\n    \"passwordConfirm\": \"12345678\",\r\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2xsZWN0aW9uSWQiOiJfcGJfdXNlcnNfYXV0aF8iLCJlbWFpbCI6InRlc3RAZXhhbXBsZTIuY29tIiwiZXhwIjoxNzUyOTIxMzA0LCJpZCI6InJjbmd2ZjYzb2VlejVyciIsInR5cGUiOiJwYXNzd29yZFJlc2V0In0.FpfF7IJnz6Tt9aREA8DstBiVPBe_8s2clWgb5kBdJ7w\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/confirm-password-reset",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"confirm-password-reset"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Roles and Permissions",
+			"item": [
+				{
+					"name": "Roles",
+					"item": [
+						{
+							"name": "role list",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records?page=1&perPage=10&sort=+created&expand=permissions",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "perPage",
+											"value": "10"
+										},
+										{
+											"key": "sort",
+											"value": "+created"
+										},
+										{
+											"key": "filter",
+											"value": null,
+											"disabled": true
+										},
+										{
+											"key": "expand",
+											"value": "permissions"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Role details",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records/:id?expand=permissions",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records",
+										":id"
+									],
+									"query": [
+										{
+											"key": "expand",
+											"value": "permissions"
+										}
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "b250r3hb1g22ine"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create role",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"test\",\r\n    \"description\": \"test\",\r\n    \"permissions\": [\r\n        \"irj9swh7sl516ap\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update role",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"test\",\r\n    \"description\": \"test\",\r\n    \"permissions\": [\r\n        \"n5gvkfcqicd5ssr\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "fu43xgarwn4kcd2"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "New Request",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "fu43xgarwn4kcd2"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Permissions",
+					"item": [
+						{
+							"name": "permission list",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/permissions/records?page=1&perPage=10&sort&filter",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"",
+										"api",
+										"collections",
+										"permissions",
+										"records"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "perPage",
+											"value": "10"
+										},
+										{
+											"key": "sort",
+											"value": null
+										},
+										{
+											"key": "filter",
+											"value": null
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "permission details",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/permissions/records/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"permissions",
+										"records",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": ""
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "users",
+			"item": [
+				{
+					"name": "user list",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8090/api/collections/users/records?expand=user_settings_via_user.settings&page=1&perPage=10&sort=id",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"records"
+							],
+							"query": [
+								{
+									"key": "expand",
+									"value": "user_settings_via_user.settings"
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "perPage",
+									"value": "10"
+								},
+								{
+									"key": "sort",
+									"value": "id"
+								},
+								{
+									"key": "filter",
+									"value": "(created>'2022-01-01' %26%26 created<'2027-01-01')",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create user",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"email\": \"test@example.com\",\r\n    \"emailVisibility\": true,\r\n    \"name\": \"test 2\",\r\n    \"roles\": [\r\n        \"hpdx32dxyjsrw9i\"\r\n    ],\r\n    \"permissions\": [],\r\n    \"is_active\": true,\r\n    \"password\": \"12345678\",\r\n    \"passwordConfirm\": \"12345678\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8090/api/collections/users/records",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8090",
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"records"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "view user",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/records/:id?expand=roles.permissions",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"records",
+								":id"
+							],
+							"query": [
+								{
+									"key": "expand",
+									"value": "roles.permissions"
+								}
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "rcngvf63oeez5rr"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Picture",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": "/C:/Users/AHS12/Downloads/ACg8ocJryv_Q1lRzoKcCUvPtc_uWQXAqJCAdD_ee5UZRwwJw9obNUxrY=s384-c.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/records/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"records",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "rcngvf63oeez5rr"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"name\": \"Azizul Hakim\",\r\n    \"is_active\": true\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/records/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"records",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "rcngvf63oeez5rr"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Role Permission",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"roles\": [\r\n        \"xfm2jwk8nbh4vr0\"\r\n    ],\r\n    \"permissions\": [\r\n        \"f9c7rssdkn1ck8o\"\r\n    ]\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/records/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"records",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "rcngvf63oeez5rr"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete user",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/collections/users/records/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"collections",
+								"users",
+								"records",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "cy8dciaf66zqfrj"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Custom",
+			"item": [
+				{
+					"name": "Hello",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/hello",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"hello"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Protected",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/protected",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"protected"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Permission test",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/permission-test",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"permission-test"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8090",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2xsZWN0aW9uSWQiOiJfcGJfdXNlcnNfYXV0aF8iLCJleHAiOjE3NTM1MTYyMDAsImlkIjoieXJ3aWJzZzNuNmM3ZnN6IiwicmVmcmVzaGFibGUiOnRydWUsInR5cGUiOiJhdXRoIn0.0KvD3rEykNI5pMwCivqr8Wonba5GEqfu8fUPzg-PHLQ",
+			"type": "string"
+		},
+		{
+			"key": "user_auth_token",
+			"value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2xsZWN0aW9uSWQiOiJfcGJfdXNlcnNfYXV0aF8iLCJleHAiOjE3NTM2MDg4MDgsImlkIjoiaXF6czI3OTZmd2p6dGZqIiwicmVmcmVzaGFibGUiOnRydWUsInR5cGUiOiJhdXRoIn0.87giu-KPdZiU5TFC4yLXQv1zOsmw6LmNfMuRkYTJOro",
+			"type": "string"
+		}
+	]
+}
