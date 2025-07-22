@@ -7,7 +7,8 @@ import (
 )
 
 func RegisterCustom(e *core.ServeEvent) {
-	middleware := middlewares.NewAuthMiddleware()
+	authMiddleware := middlewares.NewAuthMiddleware()
+	permissionMiddleware := middlewares.NewPermissionMiddleware()
 
 	g := e.Router.Group("/api/v1")
 
@@ -19,12 +20,27 @@ func RegisterCustom(e *core.ServeEvent) {
 	//auth protected route
 	g.GET("/protected", func(e *core.RequestEvent) error {
 		// Apply authentication middleware
-		authFunc := middleware.RequireAuthFunc()
+		authFunc := authMiddleware.RequireAuthFunc()
 		if err := authFunc(e); err != nil {
 			return err
 		}
-
 		// Your protected handler logic
 		return e.JSON(200, map[string]string{"msg": "You are authenticated!"})
+	})
+
+	//Permission protected route
+	g.GET("/permission-test", func(e *core.RequestEvent) error {
+		//apply auth middleware
+		authFunc := authMiddleware.RequireAuthFunc()
+		if err := authFunc(e); err != nil {
+			return err
+		}
+		// Apply permission middleware
+		permissionFunc := permissionMiddleware.RequirePermission("user.create")
+		if err := permissionFunc(e); err != nil {
+			return err
+		}
+		// Your protected handler logic
+		return e.JSON(200, map[string]string{"msg": "You have the User create permission!"})
 	})
 }

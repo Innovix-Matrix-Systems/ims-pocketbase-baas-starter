@@ -10,7 +10,7 @@ Our migration system uses PocketBase's built-in migration framework with an incr
 
 ### Initial Migration (0001_init.go)
 
-The initial migration imports the complete database schema from `pb_schema.json` and sets up:
+The initial migration imports the complete database schema from `0001_pb_schema.json` and sets up:
 
 - All base collections (users, roles, permissions)
 - System collections (\_superusers, \_authOrigins, etc.)
@@ -32,13 +32,13 @@ For new collections or schema changes, we use targeted migrations that only affe
 internal/database/
 ├── migrations/
 │   ├── 0001_init.go              # Initial schema and setup
-│   ├── 0002_add_user_profiles.go # Example: User profile collections
+│   ├── 0002_add_user_settings.go # User settings collections
 │   ├── 0003_add_audit_logs.go    # Example: Audit logging
 │   └── utils.go                  # Migration helper functions
 ├── schema/
-│   ├── pb_schema.json            # Complete initial schema
-│   ├── 0002_user_profiles.json   # New collections for migration 0002
-│   ├── 0003_audit_logs.json      # New collections for migration 0003
+│   ├── 0001_pb_schema.json       # Complete initial schema
+│   ├── 0002_pb_schema.json       # User settings collections for migration 0002
+│   ├── 0003_pb_schema.json       # Example: Future schema additions
 │   └── README.md                 # Schema documentation
 └── seeders/
     ├── rbac_seeder.go            # Role-based access control seeding
@@ -56,7 +56,7 @@ internal/database/
 ### Step 2: Export Schema
 
 1. Export only the new collections from PocketBase Admin UI
-2. Save as `internal/database/schema/XXXX_description.json`
+2. Save as `internal/database/schema/XXXX_pb_schema.json`
 3. Use sequential numbering (0002, 0003, etc.)
 
 ### Step 3: Create Migration File
@@ -80,7 +80,7 @@ import (
 func init() {
     m.Register(func(app core.App) error {
         // Forward migration
-        schemaPath := filepath.Join("internal", "database", "schema", "0002_user_profiles.json")
+        schemaPath := filepath.Join("internal", "database", "schema", "0002_pb_schema.json")
         schemaData, err := os.ReadFile(schemaPath)
         if err != nil {
             return fmt.Errorf("failed to read schema file: %w", err)
@@ -105,7 +105,7 @@ func init() {
         return nil
     }, func(app core.App) error {
         // Rollback migration
-        collectionsToDelete := []string{"user_profiles", "user_preferences"}
+        collectionsToDelete := []string{"settings", "user_settings"}
 
         for _, collectionName := range collectionsToDelete {
             collection, err := app.FindCollectionByNameOrId(collectionName)
@@ -139,9 +139,9 @@ make dev-logs
 
 ### Naming Conventions
 
-- **Migration files**: `XXXX_descriptive_name.go` (e.g., `0002_add_user_profiles.go`)
-- **Schema files**: `XXXX_descriptive_name.json` (e.g., `0002_user_profiles.json`)
-- **Collection names**: Use snake_case (e.g., `user_profiles`, `audit_logs`)
+- **Migration files**: `XXXX_descriptive_name.go` (e.g., `0002_add_user_settings.go`)
+- **Schema files**: `XXXX_pb_schema.json` (e.g., `0002_pb_schema.json`)
+- **Collection names**: Use snake_case (e.g., `settings`, `user_settings`)
 
 ### Safety Guidelines
 

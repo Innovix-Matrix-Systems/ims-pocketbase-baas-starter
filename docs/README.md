@@ -34,13 +34,7 @@ Comprehensive guide for implementing and using authentication middleware:
 
 ## Contributing to Documentation
 
-When adding new features or making significant changes:
-
-1. Update relevant documentation files
-2. Add new documentation files as needed
-3. Update this README with links to new docs
-4. Ensure examples are tested and working
-5. Keep documentation in sync with code changes
+Please see our [Contributing Guide](../CONTRIBUTING.md) for details on how to contribute to this project's documentation.
 
 ## Documentation Standards
 
