@@ -932,7 +932,7 @@
         "pattern": "",
         "presentable": false,
         "primaryKey": false,
-        "required": false,
+        "required": true,
         "system": false,
         "type": "text"
       },
@@ -959,7 +959,7 @@
         "minSelect": 0,
         "name": "permissions",
         "presentable": false,
-        "required": false,
+        "required": true,
         "system": false,
         "type": "relation"
       },

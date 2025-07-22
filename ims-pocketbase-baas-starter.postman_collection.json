@@ -2,9 +2,10 @@
 	"info": {
 		"_postman_id": "06a345c5-da5a-4aff-bf09-18c63a1cdbcd",
 		"name": "ims-pocketbase-baas-starter",
+		"description": "## Introduction\n\nWelcome to the api documentation.  \n`ims-pocketbase-baas-starter` A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, enabling custom API routes, business logic, and middleware alongside PocketBase's built-in features. Includes Role-Based Access Control (RBAC), environment-based configuration, and development tools.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "29444436",
-		"_collection_link": "https://innovix-matrix-system.postman.co/workspace/Innovix-Matrix-System-Workspace~c0ff4f3a-4d52-490d-81f4-c33d60e51246/collection/29444436-06a345c5-da5a-4aff-bf09-18c63a1cdbcd?action=share&source=collection_link&creator=29444436"
+		"_collection_link": "https://innovix-matrix-system.postman.co/workspace/c0ff4f3a-4d52-490d-81f4-c33d60e51246/collection/29444436-06a345c5-da5a-4aff-bf09-18c63a1cdbcd?action=share&source=collection_link&creator=29444436"
 	},
 	"item": [
 		{
@@ -248,6 +249,325 @@
 						}
 					},
 					"response": []
+				}
+			]
+		},
+		{
+			"name": "Roles and Permissions",
+			"item": [
+				{
+					"name": "Roles",
+					"item": [
+						{
+							"name": "role list",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records?page=1&perPage=10&sort=+created&expand=permissions",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "perPage",
+											"value": "10"
+										},
+										{
+											"key": "sort",
+											"value": "+created"
+										},
+										{
+											"key": "filter",
+											"value": null,
+											"disabled": true
+										},
+										{
+											"key": "expand",
+											"value": "permissions"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Role details",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records/:id?expand=permissions",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records",
+										":id"
+									],
+									"query": [
+										{
+											"key": "expand",
+											"value": "permissions"
+										}
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "b250r3hb1g22ine"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create role",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"test\",\r\n    \"description\": \"test\",\r\n    \"permissions\": [\r\n        \"irj9swh7sl516ap\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update role",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"test\",\r\n    \"description\": \"test\",\r\n    \"permissions\": [\r\n        \"n5gvkfcqicd5ssr\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "fu43xgarwn4kcd2"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "New Request",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/roles/records/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"roles",
+										"records",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": "fu43xgarwn4kcd2"
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Permissions",
+					"item": [
+						{
+							"name": "permission list",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/permissions/records?page=1&perPage=10&sort&filter",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"",
+										"api",
+										"collections",
+										"permissions",
+										"records"
+									],
+									"query": [
+										{
+											"key": "page",
+											"value": "1"
+										},
+										{
+											"key": "perPage",
+											"value": "10"
+										},
+										{
+											"key": "sort",
+											"value": null
+										},
+										{
+											"key": "filter",
+											"value": null
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "permission details",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{auth_token}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/api/collections/permissions/records/:id",
+									"host": [
+										"{{base_url}}"
+									],
+									"path": [
+										"api",
+										"collections",
+										"permissions",
+										"records",
+										":id"
+									],
+									"variable": [
+										{
+											"key": "id",
+											"value": ""
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
 				}
 			]
 		},
@@ -625,6 +945,16 @@
 				{
 					"name": "Permission test",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
