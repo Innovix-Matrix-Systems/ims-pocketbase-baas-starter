@@ -45,23 +45,120 @@ internal/database/
     └── superuser_seeder.go       # Superuser creation
 ```
 
+## Migration CLI Generator
+
+The project includes a CLI tool to automatically generate migration files with proper structure and naming conventions.
+
+### Quick Start
+
+Generate a new migration using the makefile:
+
+```bash
+make migrate-gen name=add_user_profiles
+```
+
+This will:
+- Scan existing migrations to determine the next sequential number
+- Create a properly structured migration file (e.g., `0003_add_user_profiles.go`)
+- Display the expected schema file location
+- Provide next steps for completing the migration
+
+### Usage Examples
+
+```bash
+# Generate migration with underscore naming
+make migrate-gen name=add_user_settings
+
+# Generate migration with hyphen naming  
+make migrate-gen name=add-audit-logs
+
+# Generate migration with mixed case (will be converted to kebab-case)
+make migrate-gen name=AddNotificationSystem
+```
+
+### Generated File Structure
+
+The CLI generates migration files with this structure:
+
+```go
+package migrations
+
+import (
+    "encoding/json"
+    "fmt"
+    "os"
+    "path/filepath"
+
+    "github.com/pocketbase/pocketbase/core"
+    m "github.com/pocketbase/pocketbase/migrations"
+)
+
+func init() {
+    m.Register(func(app core.App) error {
+        // Forward migration
+        schemaPath := filepath.Join("internal", "database", "schema", "0003_pb_schema.json")
+        // ... schema import logic
+        
+        // TODO: Add any data seeding specific to these collections
+        return nil
+    }, func(app core.App) error {
+        // Rollback migration
+        collectionsToDelete := []string{
+            // TODO: Add collection names to delete during rollback
+        }
+        // ... rollback logic
+        return nil
+    })
+}
+```
+
+### CLI Features
+
+- **Automatic Numbering**: Scans existing migrations and assigns the next sequential number
+- **Name Sanitization**: Converts migration names to kebab-case format
+- **Input Validation**: Ensures migration names contain only valid characters
+- **Duplicate Prevention**: Prevents overwriting existing migration files
+- **Helpful Output**: Shows file paths and next steps after generation
+
+### Building the CLI
+
+To build a standalone binary:
+
+```bash
+make migrate-gen-build
+```
+
+This creates `bin/migrate-gen` which can be used directly:
+
+```bash
+./bin/migrate-gen add_user_profiles
+```
+
 ## Creating New Migrations
 
-### Step 1: Design Collections
+### Step 1: Generate Migration File
+
+Use the CLI generator to create the migration file:
+
+```bash
+make migrate-gen name=your_migration_name
+```
+
+### Step 2: Design Collections
 
 1. Use PocketBase Admin UI to design your new collections
 2. Test the collections thoroughly in development
 3. Document the purpose and relationships
 
-### Step 2: Export Schema
+### Step 3: Export Schema
 
 1. Export only the new collections from PocketBase Admin UI
-2. Save as `internal/database/schema/XXXX_pb_schema.json`
-3. Use sequential numbering (0002, 0003, etc.)
+2. Save as `internal/database/schema/XXXX_pb_schema.json` (the CLI will tell you the exact filename)
+3. The schema file number should match your migration number
 
-### Step 3: Create Migration File
+### Step 4: Update Migration File
 
-Create a new migration file following this template:
+The generated migration file includes TODO comments for customization:
 
 ```go
 // internal/database/migrations/0002_add_user_profiles.go
@@ -123,7 +220,7 @@ func init() {
 }
 ```
 
-### Step 4: Test Migration
+### Step 5: Test Migration
 
 ```bash
 # Test the migration
@@ -217,14 +314,92 @@ Before creating a migration:
 - [ ] Documentation updated
 - [ ] Backup procedures planned for production
 
-## Examples
+## Common Migration Examples
 
-See the `examples/` directory for complete migration examples:
+### Adding User Profile Collections
 
-- Adding user profile collections
-- Implementing audit logging
-- Setting up notification system
-- Creating content management collections
+```bash
+# Generate the migration
+make migrate-gen name=add_user_profiles
+
+# Design collections in PocketBase Admin UI:
+# - user_profiles (relation to users)
+# - profile_settings
+# - user_preferences
+
+# Export to internal/database/schema/0003_pb_schema.json
+
+# Update rollback function:
+collectionsToDelete := []string{"user_profiles", "profile_settings", "user_preferences"}
+```
+
+### Implementing Audit Logging
+
+```bash
+# Generate the migration
+make migrate-gen name=add_audit_logs
+
+# Design collections:
+# - audit_logs (user actions, timestamps, metadata)
+# - audit_settings (retention policies)
+
+# Export to internal/database/schema/0004_pb_schema.json
+
+# Update rollback function:
+collectionsToDelete := []string{"audit_logs", "audit_settings"}
+```
+
+### Setting Up Notification System
+
+```bash
+# Generate the migration
+make migrate-gen name=add_notification_system
+
+# Design collections:
+# - notifications (user notifications)
+# - notification_templates (email/push templates)
+# - notification_preferences (user preferences)
+
+# Export to internal/database/schema/0005_pb_schema.json
+
+# Update rollback function:
+collectionsToDelete := []string{"notifications", "notification_templates", "notification_preferences"}
+```
+
+### Content Management Collections
+
+```bash
+# Generate the migration
+make migrate-gen name=add_cms_collections
+
+# Design collections:
+# - articles (blog posts, content)
+# - categories (content categorization)
+# - tags (content tagging)
+# - media (file attachments)
+
+# Export to internal/database/schema/0006_pb_schema.json
+
+# Update rollback function:
+collectionsToDelete := []string{"articles", "categories", "tags", "media"}
+```
+
+### CLI Usage Patterns
+
+```bash
+# Different naming styles (all converted to kebab-case)
+make migrate-gen name=add_user_settings     # → 0003_add-user-settings.go
+make migrate-gen name=AddUserSettings       # → 0003_adduserasettings.go  
+make migrate-gen name=add-user-settings     # → 0003_add-user-settings.go
+
+# Complex migration names
+make migrate-gen name=refactor_user_authentication_system
+# → 0004_refactor-user-authentication-system.go
+
+# Simple migrations
+make migrate-gen name=fix_permissions       # → 0005_fix-permissions.go
+make migrate-gen name=update_schema         # → 0006_update-schema.go
+```
 
 ## Support
 

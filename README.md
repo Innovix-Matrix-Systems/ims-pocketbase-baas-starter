@@ -60,16 +60,16 @@ A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, en
 
 ## Makefile Commands
 
-| Development | Production | Utility |
-|-------------|------------|---------|
-| `dev` - Start dev environment | `build` - Build production image | `help` - Show all commands |
-| `dev-build` - Build dev image | `start` - Start containers | `generate-key` - Generate encryption key |
-| `dev-logs` - Show dev logs | `stop` - Stop containers | `setup-env` - Setup environment file |
-| `dev-clean` - Clean dev env | `restart` - Restart containers | `test` - Run tests |
-| `dev-data-clean` - Clean dev data | `down` - Stop and remove containers | `lint` - Run linter |
-| `dev-start` - Alias for dev | `logs` - Show container logs | `format` - Format Go code |
-| `dev-status` - Show dev container status | `clean` - Remove containers, networks, images | `status` - Show container status |
-|  | `clean-data` - Remove only volumes | `prod-start` - Alias for start |
+| Development                              | Production                                    | Utility                                  |
+| ---------------------------------------- | --------------------------------------------- | ---------------------------------------- |
+| `dev` - Start dev environment            | `build` - Build production image              | `help` - Show all commands               |
+| `dev-build` - Build dev image            | `start` - Start containers                    | `generate-key` - Generate encryption key |
+| `dev-logs` - Show dev logs               | `stop` - Stop containers                      | `setup-env` - Setup environment file     |
+| `dev-clean` - Clean dev env              | `restart` - Restart containers                | `test` - Run tests                       |
+| `dev-data-clean` - Clean dev data        | `down` - Stop and remove containers           | `lint` - Run linter                      |
+| `dev-start` - Alias for dev              | `logs` - Show container logs                  | `format` - Format Go code                |
+| `dev-status` - Show dev container status | `clean` - Remove containers, networks, images | `status` - Show container status         |
+|                                          | `clean-data` - Remove only volumes            | `prod-start` - Alias for start           |
 
 ## Environment Configuration
 
@@ -132,6 +132,39 @@ The application includes:
 - **Collections** - User management, roles, permissions
 
 For detailed information about database migrations and schema management, see the [Database Migrations Guide](docs/migrations.md).
+
+### Migration CLI Generator
+
+The project includes a CLI tool to generate migration files automatically:
+
+```bash
+# Generate a new migration
+make migrate-gen name=add_user_profiles
+
+# Build the CLI tool
+make migrate-gen-build
+```
+
+**Features:**
+
+- Automatic sequential numbering
+- Name sanitization to kebab-case
+- Input validation and error handling
+- Prevents duplicate migrations
+- Provides helpful next-step guidance
+
+**Example output:**
+
+```
+✓ Generated migration file: internal/database/migrations/0003_add-user-profiles.go
+✓ Schema file expected at: internal/database/schema/0003_pb_schema.json
+
+Next steps:
+1. Design your collections in PocketBase Admin UI
+2. Export collections to internal/database/schema/0003_pb_schema.json
+3. Update the rollback function with collection names to delete
+4. Test the migration in development environment
+```
 
 ### Default Super Admin
 

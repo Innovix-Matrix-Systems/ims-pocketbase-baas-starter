@@ -1,5 +1,5 @@
 # Makefile for IMS PocketBase BaaS Starter
-.PHONY: help build start stop restart down logs clean clean-data dev dev-build dev-logs dev-clean test lint format
+.PHONY: help build start stop restart down logs clean clean-data dev dev-build dev-logs dev-clean test lint format migrate-gen migrate-gen-build
 
 # Default target
 help:
@@ -19,6 +19,10 @@ help:
 	@echo "  dev-logs     - Show development container logs"
 	@echo "  dev-clean    - Clean development environment"
 	@echo "  dev-data-clean - Clean development data"
+	@echo ""
+	@echo "Migration commands:"
+	@echo "  migrate-gen name=<name> - Generate a new migration file"
+	@echo "  migrate-gen-build       - Build migration generator binary"
 	@echo ""
 	@echo "Code quality:"
 	@echo "  test         - Run tests"
@@ -101,6 +105,19 @@ lint:
 format:
 	@echo "Formatting Go code..."
 	go fmt ./...
+
+# Migration commands
+migrate-gen:
+	@if [ -z "$(name)" ]; then \
+		echo "Usage: make migrate-gen name=migration_name"; \
+		echo "Example: make migrate-gen name=add_user_profiles"; \
+		exit 1; \
+	fi
+	@go run ./cmd/migrate-gen $(name)
+
+migrate-gen-build:
+	@echo "Building migration generator..."
+	@go build -o bin/migrate-gen ./cmd/migrate-gen
 
 # Utility commands
 generate-key:
