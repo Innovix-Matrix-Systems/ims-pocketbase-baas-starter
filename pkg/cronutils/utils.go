@@ -1,4 +1,4 @@
-package jobutils
+package cronutils
 
 import (
 	"fmt"
@@ -10,50 +10,50 @@ import (
 	"github.com/pocketbase/pocketbase"
 )
 
-// JobExecutionContext provides common utilities for job execution
-type JobExecutionContext struct {
+// CronExecutionContext provides common utilities for cron execution
+type CronExecutionContext struct {
 	App       *pocketbase.PocketBase
-	JobID     string
+	CronID     string
 	StartTime time.Time
 }
 
-// NewJobExecutionContext creates a new job execution context
-func NewJobExecutionContext(app *pocketbase.PocketBase, jobID string) *JobExecutionContext {
-	return &JobExecutionContext{
+// NewCronExecutionContext creates a new job execution context
+func NewCronExecutionContext(app *pocketbase.PocketBase, CronID string) *CronExecutionContext {
+	return &CronExecutionContext{
 		App:       app,
-		JobID:     jobID,
+		CronID:     CronID,
 		StartTime: time.Now(),
 	}
 }
 
 // LogStart logs the start of a job execution
-func (ctx *JobExecutionContext) LogStart(message string) {
-	ctx.App.Logger().Info(fmt.Sprintf("Job %s started", ctx.JobID), "message", message, "start_time", ctx.StartTime)
+func (ctx *CronExecutionContext) LogStart(message string) {
+	ctx.App.Logger().Info(fmt.Sprintf("Job %s started", ctx.CronID), "message", message, "start_time", ctx.StartTime)
 }
 
 // LogEnd logs the end of a job execution with duration
-func (ctx *JobExecutionContext) LogEnd(message string) {
+func (ctx *CronExecutionContext) LogEnd(message string) {
 	duration := time.Since(ctx.StartTime)
-	ctx.App.Logger().Info(fmt.Sprintf("Job %s completed", ctx.JobID), "message", message, "duration", duration)
+	ctx.App.Logger().Info(fmt.Sprintf("Job %s completed", ctx.CronID), "message", message, "duration", duration)
 }
 
 // LogError logs an error during job execution
-func (ctx *JobExecutionContext) LogError(err error, message string) {
+func (ctx *CronExecutionContext) LogError(err error, message string) {
 	duration := time.Since(ctx.StartTime)
-	ctx.App.Logger().Error(fmt.Sprintf("Job %s failed", ctx.JobID), "error", err, "message", message, "duration", duration)
+	ctx.App.Logger().Error(fmt.Sprintf("Job %s failed", ctx.CronID), "error", err, "message", message, "duration", duration)
 }
 
 // LogDebug logs for dev and debugging
-func (ctx *JobExecutionContext) LogDebug(data any, message string) {
+func (ctx *CronExecutionContext) LogDebug(data any, message string) {
 	ctx.App.Logger().Debug(fmt.Sprintf("message: %s, data: %v", message, data))
 }
 
 // WithRecovery wraps a job function with panic recovery
-func WithRecovery(app *pocketbase.PocketBase, jobID string, jobFunc func()) func() {
+func WithRecovery(app *pocketbase.PocketBase, CronID string, jobFunc func()) func() {
 	return func() {
 		defer func() {
 			if r := recover(); r != nil {
-				app.Logger().Error(fmt.Sprintf("Job %s panicked", jobID), "panic", r)
+				app.Logger().Error(fmt.Sprintf("Job %s panicked", CronID), "panic", r)
 			}
 		}()
 		jobFunc()

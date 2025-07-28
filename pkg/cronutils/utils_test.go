@@ -1,4 +1,4 @@
-package jobutils
+package cronutils
 
 import (
 	"testing"

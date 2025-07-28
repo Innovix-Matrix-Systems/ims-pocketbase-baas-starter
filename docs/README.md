@@ -25,6 +25,18 @@ Comprehensive guide for implementing and using authentication middleware:
 - Testing and troubleshooting middleware
 - Future extension possibilities
 
+### [Cron Jobs & Job Queue Guide](cron-jobs.md)
+
+Complete guide for background task processing and job queue management:
+
+- Cron job system architecture and configuration
+- Job queue processing with concurrent workers
+- Built-in job handlers (email, data processing)
+- Creating custom job handlers and cron jobs
+- Job lifecycle management and error handling
+- Performance optimization and monitoring
+- Environment configuration and troubleshooting
+
 ## Quick Links
 
 - **[Project README](../README.md)** - Main project documentation
