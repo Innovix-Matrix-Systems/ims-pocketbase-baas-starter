@@ -314,12 +314,6 @@ func (p *JobProcessor) isJobReserved(record *core.Record) bool {
 	return time.Since(reservedAt) < reservationTimeout
 }
 
-// shouldRetryJob determines if a job should be retried based on attempts and configuration
-func (p *JobProcessor) shouldRetryJob(record *core.Record, maxRetries int) bool {
-	currentAttempts := int(record.GetFloat("attempts"))
-	return currentAttempts < maxRetries
-}
-
 // ProcessJob processes a single job with complete lifecycle management
 func (p *JobProcessor) ProcessJob(record *core.Record) error {
 	// Step 1: Validate the job record

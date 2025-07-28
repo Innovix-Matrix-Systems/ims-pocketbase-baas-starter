@@ -28,6 +28,8 @@ help:
 	@echo "  test         - Run tests"
 	@echo "  lint         - Run linter"
 	@echo "  format       - Format Go code"
+	@echo "  setup-hooks  - Set up Git hooks (Linux/macOS)"
+	@echo "  setup-hooks-win - Set up Git hooks (Windows)"
 
 # Production commands
 build:
@@ -133,6 +135,15 @@ setup-env:
 	else \
 		echo ".env file already exists"; \
 	fi
+
+setup-hooks:
+	@echo "Setting up Git hooks..."
+	@chmod +x scripts/setup-hooks.sh
+	@./scripts/setup-hooks.sh
+
+setup-hooks-win:
+	@echo "Setting up Git hooks (Windows)..."
+	@scripts\setup-hooks.bat
 
 # Quick development start (alias for dev)
 dev-start: dev

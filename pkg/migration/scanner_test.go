@@ -68,7 +68,9 @@ func TestScanExistingMigrations(t *testing.T) {
 	t.Run("InvalidFiles", func(t *testing.T) {
 		// Clean the temp directory
 		os.RemoveAll(tempDir)
-		os.MkdirAll(tempDir, 0755)
+		if err := os.MkdirAll(tempDir, 0755); err != nil {
+			t.Fatalf("Failed to create temp directory: %v", err)
+		}
 
 		// Create invalid files that should be ignored
 		invalidFiles := []string{

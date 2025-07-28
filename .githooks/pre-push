@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Pre-push hook to run tests and linting before pushing
+# This hook is called by "git push" after it has checked the remote status,
+# but before anything has been pushed.
+
+echo "🔍 Running pre-push checks..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}✗${NC} $1"
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
+}
+
+# Check if we're in a Go project
+if [ ! -f "go.mod" ]; then
+    print_error "Not a Go project (go.mod not found)"
+    exit 1
+fi
+
+# Run tests
+echo "🧪 Running tests..."
+if ! make test; then
+    print_error "Tests failed. Push aborted."
+    exit 1
+fi
+print_status "All tests passed"
+
+# Run linting (if golangci-lint is available)
+echo "🔧 Running linter..."
+if command -v golangci-lint >/dev/null 2>&1; then
+    if ! make lint; then
+        print_error "Linting failed. Push aborted."
+        echo "💡 Fix the linting issues or run 'make format' to auto-fix some issues"
+        exit 1
+    fi
+    print_status "Linting passed"
+else
+    print_warning "golangci-lint not found. Skipping linting."
+    echo "💡 Install golangci-lint: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest"
+fi
+
+# Check for go fmt issues
+echo "📝 Checking code formatting..."
+if [ -n "$(gofmt -l .)" ]; then
+    print_error "Code is not properly formatted. Run 'make format' to fix."
+    echo "Files that need formatting:"
+    gofmt -l .
+    exit 1
+fi
+print_status "Code formatting is correct"
+
+# Check for go vet issues
+echo "🔍 Running go vet..."
+if ! go vet ./...; then
+    print_error "go vet found issues. Push aborted."
+    exit 1
+fi
+print_status "go vet passed"
+
+echo -e "${GREEN}🎉 All pre-push checks passed! Proceeding with push...${NC}"
+exit 0
