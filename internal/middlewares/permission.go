@@ -32,8 +32,7 @@ func (m *PermissionMiddleware) getUserPermissions(app core.App, user *core.Recor
 	roles, _ := user.Get("roles").([]string)
 
 	// fetch roles from collection
-	roleCollection, _ := app.FindCollectionByNameOrId("roles")
-	roleRecords, err := app.FindRecordsByIds(roleCollection, roles)
+	roleRecords, err := app.FindRecordsByIds("roles", roles)
 	if err != nil {
 		log.Printf("Error fetching roles: %v", err)
 	}
@@ -52,8 +51,7 @@ func (m *PermissionMiddleware) getUserPermissions(app core.App, user *core.Recor
 	}
 
 	//fetch permissions form collection
-	permissionsCollection, _ := app.FindCollectionByNameOrId("permissions")
-	permissionsRecords, err := app.FindRecordsByIds(permissionsCollection, userPermissions)
+	permissionsRecords, err := app.FindRecordsByIds("permissions", userPermissions)
 	if err != nil {
 		log.Printf("Error fetching permissions: %v", err)
 	}

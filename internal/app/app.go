@@ -13,6 +13,7 @@ import (
 
 	"ims-pocketbase-baas-starter/internal"
 	_ "ims-pocketbase-baas-starter/internal/database/migrations" //side effect migration load(from pocketbase)
+	"ims-pocketbase-baas-starter/internal/jobs"
 	"ims-pocketbase-baas-starter/internal/middlewares"
 	"ims-pocketbase-baas-starter/internal/routes"
 )
@@ -28,6 +29,10 @@ func NewApp() *pocketbase.PocketBase {
 		Automigrate:  isGoRun, // auto-create migration files only in dev
 		TemplateLang: migratecmd.TemplateLangGo,
 	})
+
+	// Register scheduled jobs during app initialization phase
+	// This must be called after app creation but before OnServe setup
+	jobs.RegisterJobs(app)
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		middleware := middlewares.NewAuthMiddleware()
