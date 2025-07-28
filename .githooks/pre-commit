@@ -42,15 +42,13 @@ echo "📝 Checking staged Go files..."
 
 # Check formatting of staged files
 echo "🔧 Checking code formatting..."
-for file in $STAGED_GO_FILES; do
-    if [ -f "$file" ]; then
-        if ! gofmt -l "$file" | grep -q "^$"; then
-            print_error "File $file is not properly formatted"
-            echo "💡 Run 'gofmt -w $file' or 'make format' to fix"
-            exit 1
-        fi
-    fi
-done
+UNFORMATTED_FILES=$(gofmt -l $STAGED_GO_FILES 2>/dev/null)
+if [ -n "$UNFORMATTED_FILES" ]; then
+    print_error "The following files are not properly formatted:"
+    echo "$UNFORMATTED_FILES"
+    echo "💡 Run 'make format' to fix formatting issues"
+    exit 1
+fi
 print_status "Code formatting is correct"
 
 # Run go vet on staged files (if possible)
