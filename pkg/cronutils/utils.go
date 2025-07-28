@@ -13,7 +13,7 @@ import (
 // CronExecutionContext provides common utilities for cron execution
 type CronExecutionContext struct {
 	App       *pocketbase.PocketBase
-	CronID     string
+	CronID    string
 	StartTime time.Time
 }
 
@@ -21,7 +21,7 @@ type CronExecutionContext struct {
 func NewCronExecutionContext(app *pocketbase.PocketBase, CronID string) *CronExecutionContext {
 	return &CronExecutionContext{
 		App:       app,
-		CronID:     CronID,
+		CronID:    CronID,
 		StartTime: time.Now(),
 	}
 }
@@ -77,7 +77,8 @@ func ValidateCronExpression(cronExpr string) error {
 
 	// Regular expression for validating each field
 	// Supports: numbers, ranges (1-5), lists (1,3,5), steps (*/5, 1-10/2), wildcards (*)
-	fieldPattern := `^(\*|(\d+(-\d+)?(,\d+(-\d+)?)*)(\/\d+)?|\?)$`
+	fieldPattern := `^(\*(/\d+)?|(\d+(-\d+)?(,\d+(-\d+)?)*)(\/\d+)?|\?)$`
+
 	fieldRegex := regexp.MustCompile(fieldPattern)
 
 	// Field ranges for validation (min-max values)
@@ -113,12 +114,17 @@ func ValidateCronExpression(cronExpr string) error {
 
 // validateFieldRange validates that numeric values in a cron field are within acceptable ranges
 func validateFieldRange(field string, min, max int) error {
-	// Remove step notation for validation
+	// Handle step notation (e.g., "*/5" or "1-10/2")
 	parts := strings.Split(field, "/")
-	field = parts[0]
+	baseField := parts[0]
+
+	// If it starts with *, it's a step pattern like */5
+	if baseField == "*" {
+		return nil // */N is always valid for step patterns
+	}
 
 	// Handle comma-separated values
-	values := strings.Split(field, ",")
+	values := strings.Split(baseField, ",")
 	for _, value := range values {
 		// Handle range notation (e.g., "1-5")
 		if strings.Contains(value, "-") {
