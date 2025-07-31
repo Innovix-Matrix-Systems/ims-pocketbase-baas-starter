@@ -37,6 +37,7 @@ func seedPermissions(app core.App) error {
 		{Slug: "user.delete", Name: "Delete User", Description: "Can delete users"},
 		{Slug: "user.role.assign", Name: "Assign Role To User", Description: "Can assign roles to users"},
 		{Slug: "user.permission.assign", Name: "Assign Permission To User", Description: "Can assign permissions to users"},
+		{Slug: "user.export", Name: "Export Users", Description: "Can export user data as CSV"},
 		{Slug: "role.create", Name: "Create Role", Description: "Can create new roles"},
 		{Slug: "role.view", Name: "View Role", Description: "Can view role details"},
 		{Slug: "role.view.all", Name: "View All Roles", Description: "Can view all roles"},
@@ -88,7 +89,7 @@ func seedRoles(app core.App) error {
 			Name:        "Super Admin",
 			Description: "Full system access with all permissions",
 			Permissions: []string{
-				"user.create", "user.view", "user.view.all", "user.update", "user.delete", "user.role.assign", "user.permission.assign",
+				"user.create", "user.view", "user.view.all", "user.update", "user.delete", "user.role.assign", "user.permission.assign", "user.export",
 				"role.create", "role.view", "role.view.all", "role.update", "role.delete",
 			},
 		},

@@ -22,7 +22,7 @@ func ParseArgs(args []string) (*CLIConfig, error) {
 		return nil, err
 	}
 
-	// Sanitize migration name to kebab-case
+	// Sanitize migration name to snake_case
 	sanitizedName := SanitizeMigrationName(migrationName)
 
 	return &CLIConfig{
@@ -55,20 +55,20 @@ func ValidateMigrationName(name string) error {
 	return nil
 }
 
-// SanitizeMigrationName converts migration name to kebab-case
+// SanitizeMigrationName converts migration name to snake_case
 func SanitizeMigrationName(name string) string {
 	// Convert to lowercase
 	name = strings.ToLower(name)
 
-	// Replace underscores with hyphens
-	name = strings.ReplaceAll(name, "_", "-")
+	// Replace hyphens with underscores (normalize to snake_case)
+	name = strings.ReplaceAll(name, "-", "_")
 
-	// Replace multiple consecutive hyphens with single hyphen
-	multiHyphen := regexp.MustCompile(`-+`)
-	name = multiHyphen.ReplaceAllString(name, "-")
+	// Replace multiple consecutive underscores with single underscore
+	multiUnderscore := regexp.MustCompile(`_+`)
+	name = multiUnderscore.ReplaceAllString(name, "_")
 
-	// Remove leading/trailing hyphens
-	name = strings.Trim(name, "-")
+	// Remove leading/trailing underscores
+	name = strings.Trim(name, "_")
 
 	return name
 }
@@ -80,10 +80,10 @@ func ShowUsage() {
 Generate a new migration file for the PocketBase project.
 
 Arguments:
-  migration_name    Name for the migration (will be sanitized to kebab-case)
+  migration_name    Name for the migration (will be sanitized to snake_case)
 
 Examples:
-  migrate-gen add-user-profiles
+  migrate-gen add_user_profiles
   migrate-gen create_audit_logs
   migrate-gen AddNotificationSystem
 

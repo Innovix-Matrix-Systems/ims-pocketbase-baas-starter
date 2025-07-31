@@ -11,42 +11,6 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-// JobHandler defines the interface that all job handlers must implement
-type JobHandler interface {
-	// Handle processes a job with the given payload and returns an error if processing fails
-	Handle(ctx *cronutils.CronExecutionContext, job *JobData) error
-
-	// GetJobType returns the job type this handler processes
-	GetJobType() string
-}
-
-// JobData represents standardized job data extracted from queue records
-type JobData struct {
-	ID          string                 // Job ID from queues table
-	Name        string                 // Job name
-	Description string                 // Job description
-	Type        string                 // Job type extracted from payload
-	Payload     map[string]interface{} // Parsed JSON payload
-	Attempts    int                    // Current attempt count
-	ReservedAt  *time.Time             // When job was reserved
-	CreatedAt   time.Time              // When job was created
-	UpdatedAt   time.Time              // When job was updated
-}
-
-// JobResult represents the result of job execution
-type JobResult struct {
-	Success   bool   // Whether the job completed successfully
-	Error     error  // Error if job failed
-	Retryable bool   // Whether the job should be retried on failure
-	Message   string // Additional message about the result
-}
-
-// JobRegistry manages registered job handlers with thread-safe operations
-type JobRegistry struct {
-	handlers map[string]JobHandler
-	mu       sync.RWMutex
-}
-
 // NewJobRegistry creates a new job registry
 func NewJobRegistry() *JobRegistry {
 	return &JobRegistry{
@@ -184,12 +148,6 @@ func ValidateJobPayload(payload map[string]interface{}) error {
 	}
 
 	return nil
-}
-
-// JobProcessor coordinates job execution and queue management
-type JobProcessor struct {
-	app      *pocketbase.PocketBase
-	registry *JobRegistry
 }
 
 // NewJobProcessor creates a new job processor with initialized registry

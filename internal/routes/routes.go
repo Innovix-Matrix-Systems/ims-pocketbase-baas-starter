@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"ims-pocketbase-baas-starter/internal/handlers/route"
 	"ims-pocketbase-baas-starter/internal/middlewares"
 
 	"github.com/pocketbase/pocketbase/core"
@@ -42,5 +43,21 @@ func RegisterCustom(e *core.ServeEvent) {
 		}
 		// Your protected handler logic
 		return e.JSON(200, map[string]string{"msg": "You have the User create permission!"})
+	})
+
+	//user export
+	g.POST("/users/export", func(e *core.RequestEvent) error {
+		//apply auth middleware
+		authFunc := authMiddleware.RequireAuthFunc()
+		if err := authFunc(e); err != nil {
+			return err
+		}
+		// Apply permission middleware
+		permissionFunc := permissionMiddleware.RequirePermission("user.export")
+		if err := permissionFunc(e); err != nil {
+			return err
+		}
+
+		return route.HandleUserExport(e)
 	})
 }
