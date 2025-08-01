@@ -15,8 +15,8 @@ func TestParseArgs(t *testing.T) {
 			t.Fatalf("Expected no error, got: %v", err)
 		}
 
-		if config.MigrationName != "add-user-profiles" {
-			t.Errorf("Expected migration name 'add-user-profiles', got: %s", config.MigrationName)
+		if config.MigrationName != "add_user_profiles" {
+			t.Errorf("Expected migration name 'add_user_profiles', got: %s", config.MigrationName)
 		}
 
 		if config.OutputDir != migration.MigrationsDir {
@@ -151,14 +151,14 @@ func TestSanitizeMigrationName(t *testing.T) {
 		expected string
 	}{
 		{"AddUsers", "addusers"},
-		{"add_users", "add-users"},
-		{"ADD_USERS", "add-users"},
-		{"add__users", "add-users"},
-		{"add___users", "add-users"},
-		{"_add_users_", "add-users"},
-		{"Add_User_Profiles", "add-user-profiles"},
-		{"create-audit-logs", "create-audit-logs"},
-		{"COMPLEX_Migration_Name", "complex-migration-name"},
+		{"add_users", "add_users"},
+		{"ADD_USERS", "add_users"},
+		{"add__users", "add_users"},
+		{"add___users", "add_users"},
+		{"_add_users_", "add_users"},
+		{"Add_User_Profiles", "add_user_profiles"},
+		{"create-audit-logs", "create_audit_logs"},
+		{"COMPLEX_Migration_Name", "complex_migration_name"},
 		{"simple", "simple"},
 		{"123", "123"},
 		{"add123users", "add123users"},
