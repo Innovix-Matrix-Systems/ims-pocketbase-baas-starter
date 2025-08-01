@@ -51,7 +51,7 @@ func init() {
 		}
 
 		// 2. Parse the collections array directly
-		var collections []interface{}
+		var collections []any
 		if err := json.Unmarshal(schemaData, &collections); err != nil {
 			return fmt.Errorf("failed to parse schema JSON: %w", err)
 		}

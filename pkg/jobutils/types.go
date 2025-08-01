@@ -31,15 +31,15 @@ type JobHandler interface {
 
 // JobData represents standardized job data extracted from queue records
 type JobData struct {
-	ID          string                 // Job ID from queues table
-	Name        string                 // Job name
-	Description string                 // Job description
-	Type        string                 // Job type extracted from payload
-	Payload     map[string]interface{} // Parsed JSON payload
-	Attempts    int                    // Current attempt count
-	ReservedAt  *time.Time             // When job was reserved
-	CreatedAt   time.Time              // When job was created
-	UpdatedAt   time.Time              // When job was updated
+	ID          string         // Job ID from queues table
+	Name        string         // Job name
+	Description string         // Job description
+	Type        string         // Job type extracted from payload
+	Payload     map[string]any // Parsed JSON payload
+	Attempts    int            // Current attempt count
+	ReservedAt  *time.Time     // When job was reserved
+	CreatedAt   time.Time      // When job was created
+	UpdatedAt   time.Time      // When job was updated
 }
 
 // JobResult represents the result of job execution
@@ -52,9 +52,9 @@ type JobResult struct {
 
 // BaseJobPayload represents the common structure for all job types
 type BaseJobPayload struct {
-	Type    string                 `json:"type"`
-	Data    interface{}            `json:"data"`
-	Options map[string]interface{} `json:"options"`
+	Type    string         `json:"type"`
+	Data    any            `json:"data"`
+	Options map[string]any `json:"options"`
 }
 
 // UserExportJobData represents the data section for user export jobs
@@ -80,10 +80,10 @@ type UserExportJobPayload struct {
 
 // EmailJobData represents the data section for email jobs
 type EmailJobData struct {
-	To        string                 `json:"to"`
-	Subject   string                 `json:"subject"`
-	Template  string                 `json:"template"`
-	Variables map[string]interface{} `json:"variables"`
+	To        string         `json:"to"`
+	Subject   string         `json:"subject"`
+	Template  string         `json:"template"`
+	Variables map[string]any `json:"variables"`
 }
 
 // EmailJobOptions represents the options section for email jobs

@@ -97,7 +97,7 @@ func (h *EmailJobHandler) validateEmailPayload(payload *jobutils.EmailJobPayload
 }
 
 // processTemplateVariables replaces template variables in text (placeholder implementation)
-func (h *EmailJobHandler) processTemplateVariables(text string, variables map[string]interface{}) string {
+func (h *EmailJobHandler) processTemplateVariables(text string, variables map[string]any) string {
 	if len(variables) == 0 {
 		return text
 	}

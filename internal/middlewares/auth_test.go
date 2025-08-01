@@ -24,7 +24,7 @@ func TestRequireAuth(t *testing.T) {
 	}
 
 	// Verify it returns a hook.Handler
-	if _, ok := interface{}(handler).(*hook.Handler[*core.RequestEvent]); !ok {
+	if _, ok := any(handler).(*hook.Handler[*core.RequestEvent]); !ok {
 		t.Fatal("RequireAuth() did not return correct handler type")
 	}
 }
@@ -39,7 +39,7 @@ func TestRequireAuthWithCollections(t *testing.T) {
 	}
 
 	// Verify it returns a hook.Handler
-	if _, ok := interface{}(handler).(*hook.Handler[*core.RequestEvent]); !ok {
+	if _, ok := any(handler).(*hook.Handler[*core.RequestEvent]); !ok {
 		t.Fatal("RequireAuth() with collections did not return correct handler type")
 	}
 }

@@ -41,7 +41,7 @@ func HandleUserExport(e *core.RequestEvent) error {
 		return common.Response.InternalServerError(e, "Failed to queue export job", nil)
 	}
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"job_id": job.Id,
 		"status": "queued",
 	}

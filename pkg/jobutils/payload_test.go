@@ -16,14 +16,14 @@ func TestParseUserExportJobPayload(t *testing.T) {
 			jobData: &JobData{
 				ID:   "job-123",
 				Type: "user_export",
-				Payload: map[string]interface{}{
+				Payload: map[string]any{
 					"type": "user_export",
-					"data": map[string]interface{}{
+					"data": map[string]any{
 						"format":  "csv",
-						"fields":  []interface{}{"name", "email", "verified"},
+						"fields":  []any{"name", "email", "verified"},
 						"user_id": "user-456",
 					},
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"filename_prefix": "users_export",
 						"store_result":    true,
 						"result_expiry":   "24h",
@@ -50,7 +50,7 @@ func TestParseUserExportJobPayload(t *testing.T) {
 			jobData: &JobData{
 				ID:   "job-123",
 				Type: "user_export",
-				Payload: map[string]interface{}{
+				Payload: map[string]any{
 					"invalid": "structure",
 				},
 			},
@@ -106,18 +106,18 @@ func TestParseEmailJobPayload(t *testing.T) {
 			jobData: &JobData{
 				ID:   "job-123",
 				Type: "email",
-				Payload: map[string]interface{}{
+				Payload: map[string]any{
 					"type": "email",
-					"data": map[string]interface{}{
+					"data": map[string]any{
 						"to":       "test@example.com",
 						"subject":  "Test Email",
 						"template": "welcome",
-						"variables": map[string]interface{}{
+						"variables": map[string]any{
 							"name": "John Doe",
 							"code": "123456",
 						},
 					},
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"retry_count": float64(3), // JSON numbers are float64
 						"timeout":     float64(30),
 					},
@@ -130,7 +130,7 @@ func TestParseEmailJobPayload(t *testing.T) {
 					To:       "test@example.com",
 					Subject:  "Test Email",
 					Template: "welcome",
-					Variables: map[string]interface{}{
+					Variables: map[string]any{
 						"name": "John Doe",
 						"code": "123456",
 					},
@@ -146,7 +146,7 @@ func TestParseEmailJobPayload(t *testing.T) {
 			jobData: &JobData{
 				ID:   "job-123",
 				Type: "email",
-				Payload: map[string]interface{}{
+				Payload: map[string]any{
 					"invalid": "structure",
 				},
 			},
@@ -198,14 +198,14 @@ func TestParseDataProcessingJobPayload(t *testing.T) {
 			jobData: &JobData{
 				ID:   "job-123",
 				Type: "data_processing",
-				Payload: map[string]interface{}{
+				Payload: map[string]any{
 					"type": "data_processing",
-					"data": map[string]interface{}{
+					"data": map[string]any{
 						"operation": "transform",
 						"source":    "users",
 						"target":    "processed_users",
 					},
-					"options": map[string]interface{}{
+					"options": map[string]any{
 						"timeout": float64(300),
 					},
 				},
@@ -228,7 +228,7 @@ func TestParseDataProcessingJobPayload(t *testing.T) {
 			jobData: &JobData{
 				ID:   "job-123",
 				Type: "data_processing",
-				Payload: map[string]interface{}{
+				Payload: map[string]any{
 					"invalid": "structure",
 				},
 			},
@@ -283,7 +283,7 @@ func TestParseJobPayloadWithEmptyPayload(t *testing.T) {
 	emptyJobData := &JobData{
 		ID:      "job-123",
 		Type:    "test",
-		Payload: map[string]interface{}{},
+		Payload: map[string]any{},
 	}
 
 	_, err1 := ParseUserExportJobPayload(emptyJobData)

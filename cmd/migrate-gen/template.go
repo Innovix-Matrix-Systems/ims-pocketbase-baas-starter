@@ -29,7 +29,7 @@ func init() {
 			return fmt.Errorf("failed to read schema file: %w", err)
 		}
 
-		var collections []interface{}
+		var collections []any
 		if err := json.Unmarshal(schemaData, &collections); err != nil {
 			return fmt.Errorf("failed to parse schema JSON: %w", err)
 		}

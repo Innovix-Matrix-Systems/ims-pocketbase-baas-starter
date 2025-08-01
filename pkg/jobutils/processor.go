@@ -73,7 +73,7 @@ func ParseJobDataFromRecord(record *core.Record) (*JobData, error) {
 	}
 
 	// Parse the JSON payload
-	var payload map[string]interface{}
+	var payload map[string]any
 	payloadStr := record.GetString("payload")
 	if payloadStr != "" {
 		if err := json.Unmarshal([]byte(payloadStr), &payload); err != nil {
@@ -117,7 +117,7 @@ func ParseJobDataFromRecord(record *core.Record) (*JobData, error) {
 }
 
 // ValidateJobPayload validates that a job payload has the required structure
-func ValidateJobPayload(payload map[string]interface{}) error {
+func ValidateJobPayload(payload map[string]any) error {
 	if payload == nil {
 		return fmt.Errorf("job payload cannot be nil")
 	}
@@ -135,14 +135,14 @@ func ValidateJobPayload(payload map[string]interface{}) error {
 
 	// Validate 'data' field if present
 	if dataVal, exists := payload["data"]; exists {
-		if _, ok := dataVal.(map[string]interface{}); !ok {
+		if _, ok := dataVal.(map[string]any); !ok {
 			return fmt.Errorf("job payload 'data' field must be an object")
 		}
 	}
 
 	// Validate 'options' field if present
 	if optionsVal, exists := payload["options"]; exists {
-		if _, ok := optionsVal.(map[string]interface{}); !ok {
+		if _, ok := optionsVal.(map[string]any); !ok {
 			return fmt.Errorf("job payload 'options' field must be an object")
 		}
 	}

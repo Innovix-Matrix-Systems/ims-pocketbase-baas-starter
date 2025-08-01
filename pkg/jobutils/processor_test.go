@@ -7,7 +7,7 @@ import (
 func TestValidateJobPayload(t *testing.T) {
 	tests := []struct {
 		name        string
-		payload     map[string]interface{}
+		payload     map[string]any
 		expectError bool
 	}{
 		{
@@ -17,34 +17,34 @@ func TestValidateJobPayload(t *testing.T) {
 		},
 		{
 			name:        "missing type field",
-			payload:     map[string]interface{}{},
+			payload:     map[string]any{},
 			expectError: true,
 		},
 		{
 			name: "valid payload with type",
-			payload: map[string]interface{}{
+			payload: map[string]any{
 				"type": "test_job",
 			},
 			expectError: false,
 		},
 		{
 			name: "valid payload with type and data",
-			payload: map[string]interface{}{
+			payload: map[string]any{
 				"type": "test_job",
-				"data": map[string]interface{}{"key": "value"},
+				"data": map[string]any{"key": "value"},
 			},
 			expectError: false,
 		},
 		{
 			name: "invalid type field - not string",
-			payload: map[string]interface{}{
+			payload: map[string]any{
 				"type": 123,
 			},
 			expectError: true,
 		},
 		{
 			name: "empty type field",
-			payload: map[string]interface{}{
+			payload: map[string]any{
 				"type": "",
 			},
 			expectError: true,
