@@ -36,6 +36,13 @@ func RegisterCrons(app *pocketbase.PocketBase) {
 			Enabled:     os.Getenv("ENABLE_SYSTEM_QUEUE_CRON") != "false", // Enabled by default
 			Description: "Process the system queue ",
 		},
+		{
+			ID:          "clean_exported_files",
+			CronExpr:    "0 2 * * *", // every day at 2:00 AM
+			Handler:     cronutils.WithRecovery(app, "clean_exported_files", func() { cron.HandleClearExportFiles(app) }),
+			Enabled:     os.Getenv("ENABLE_CLEAR_EXPORT_FILES_CRON") != "false", // Enabled by default
+			Description: "Delete the expired job generated export files",
+		},
 	}
 
 	app.Logger().Info("Registering cron jobs", "total_cron_jobs", len(crons))
