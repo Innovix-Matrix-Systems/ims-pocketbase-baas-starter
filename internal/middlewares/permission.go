@@ -28,7 +28,6 @@ func NewPermissionMiddleware() *PermissionMiddleware {
 func (m *PermissionMiddleware) getUserPermissions(app core.App, user *core.Record) []string {
 	// Extract and log permissions and roles arrays
 	userPermissions, _ := user.Get("permissions").([]string)
-	log.Printf("Direct permissions: %+v", userPermissions)
 	roles, _ := user.Get("roles").([]string)
 
 	// fetch roles from collection

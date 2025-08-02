@@ -38,23 +38,6 @@
         "type": "text"
       },
       {
-        "autogeneratePattern": "",
-        "hidden": false,
-        "id": "relation123456789",
-        "maxSelect": 1,
-        "minSelect": 0,
-        "name": "user_id",
-        "presentable": false,
-        "required": true,
-        "system": false,
-        "type": "relation",
-        "options": {
-          "collectionId": "pbc_3142635823",
-          "cascadeDelete": false,
-          "displayFields": ["name", "email"]
-        }
-      },
-      {
         "hidden": false,
         "id": "file2359244304",
         "maxSelect": 1,

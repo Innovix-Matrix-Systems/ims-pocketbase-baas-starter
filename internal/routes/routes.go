@@ -3,6 +3,7 @@ package routes
 import (
 	"ims-pocketbase-baas-starter/internal/handlers/route"
 	"ims-pocketbase-baas-starter/internal/middlewares"
+	"ims-pocketbase-baas-starter/pkg/permission"
 
 	"github.com/pocketbase/pocketbase/core"
 )
@@ -50,7 +51,7 @@ func RegisterCustom(e *core.ServeEvent) {
 
 	//Permission protected route
 	g.GET("/permission-test", func(request *core.RequestEvent) error {
-		if err := applyAuthAndPermissionCheck(request, authMiddleware, permissionMiddleware, "user.create"); err != nil {
+		if err := applyAuthAndPermissionCheck(request, authMiddleware, permissionMiddleware, permission.UserCreate); err != nil {
 			return err
 		}
 		// Your protected handler logic
@@ -59,7 +60,7 @@ func RegisterCustom(e *core.ServeEvent) {
 
 	//user export
 	g.POST("/users/export", func(request *core.RequestEvent) error {
-		if err := applyAuthAndPermissionCheck(request, authMiddleware, permissionMiddleware, "user.export"); err != nil {
+		if err := applyAuthAndPermissionCheck(request, authMiddleware, permissionMiddleware, permission.UserExport); err != nil {
 			return err
 		}
 
