@@ -5,7 +5,7 @@
 		"description": "## Introduction\n\nWelcome to the api documentation.  \n`ims-pocketbase-baas-starter` A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, enabling custom API routes, business logic, and middleware alongside PocketBase's built-in features. Includes Role-Based Access Control (RBAC), environment-based configuration, and development tools.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "29444436",
-		"_collection_link": "https://innovix-matrix-system.postman.co/workspace/c0ff4f3a-4d52-490d-81f4-c33d60e51246/collection/29444436-06a345c5-da5a-4aff-bf09-18c63a1cdbcd?action=share&source=collection_link&creator=29444436"
+		"_collection_link": "https://innovix-matrix-system.postman.co/workspace/Innovix-Matrix-System-Workspace~c0ff4f3a-4d52-490d-81f4-c33d60e51246/collection/29444436-06a345c5-da5a-4aff-bf09-18c63a1cdbcd?action=share&source=collection_link&creator=29444436"
 	},
 	"item": [
 		{
@@ -590,12 +590,10 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "http://localhost:8090/api/collections/users/records?expand=user_settings_via_user.settings&page=1&perPage=10&sort=id",
-							"protocol": "http",
+							"raw": "{{base_url}}/api/collections/users/records?expand=user_settings_via_user.settings&page=1&perPage=10&sort=id",
 							"host": [
-								"localhost"
+								"{{base_url}}"
 							],
-							"port": "8090",
 							"path": [
 								"api",
 								"collections",
@@ -654,12 +652,10 @@
 							}
 						},
 						"url": {
-							"raw": "http://localhost:8090/api/collections/users/records",
-							"protocol": "http",
+							"raw": "{{base_url}}/api/collections/users/records",
 							"host": [
-								"localhost"
+								"{{base_url}}"
 							],
-							"port": "8090",
 							"path": [
 								"api",
 								"collections",
@@ -706,7 +702,7 @@
 							"variable": [
 								{
 									"key": "id",
-									"value": "rcngvf63oeez5rr"
+									"value": "lcq4zkk819o5huo"
 								}
 							]
 						}
@@ -888,6 +884,36 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "User Export",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/export",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"export"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -966,6 +992,85 @@
 								"api",
 								"v1",
 								"permission-test"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Jobs",
+			"item": [
+				{
+					"name": "Get Job Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/jobs/:id/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"jobs",
+								":id",
+								"status"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "hfq634n80oj2i0k"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Download Job File",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/jobs/:id/download",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"jobs",
+								":id",
+								"download"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "hfq634n80oj2i0k"
+								}
 							]
 						}
 					},
