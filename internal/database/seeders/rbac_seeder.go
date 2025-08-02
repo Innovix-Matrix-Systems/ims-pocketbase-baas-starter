@@ -2,6 +2,7 @@ package seeders
 
 import (
 	"fmt"
+	"ims-pocketbase-baas-starter/pkg/permission"
 
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase/core"
@@ -29,19 +30,15 @@ func SeedRBAC(app core.App) error {
 
 // seedPermissions creates all required permissions
 func seedPermissions(app core.App) error {
-	requiredPerms := []Permission{
-		{Slug: "user.create", Name: "Create User", Description: "Can create new users"},
-		{Slug: "user.view", Name: "View User", Description: "Can view user details"},
-		{Slug: "user.view.all", Name: "View All Users", Description: "Can view all users"},
-		{Slug: "user.update", Name: "Update User", Description: "Can update user information"},
-		{Slug: "user.delete", Name: "Delete User", Description: "Can delete users"},
-		{Slug: "user.role.assign", Name: "Assign Role To User", Description: "Can assign roles to users"},
-		{Slug: "user.permission.assign", Name: "Assign Permission To User", Description: "Can assign permissions to users"},
-		{Slug: "role.create", Name: "Create Role", Description: "Can create new roles"},
-		{Slug: "role.view", Name: "View Role", Description: "Can view role details"},
-		{Slug: "role.view.all", Name: "View All Roles", Description: "Can view all roles"},
-		{Slug: "role.update", Name: "Update Role", Description: "Can update role information"},
-		{Slug: "role.delete", Name: "Delete Role", Description: "Can delete roles"},
+	permissionDefs := permission.GetAllPermissions()
+	requiredPerms := make([]Permission, len(permissionDefs))
+
+	for i, def := range permissionDefs {
+		requiredPerms[i] = Permission{
+			Slug:        def.Slug,
+			Name:        def.Name,
+			Description: def.Description,
+		}
 	}
 
 	permCollection, err := app.FindCollectionByNameOrId("permissions")
@@ -88,23 +85,24 @@ func seedRoles(app core.App) error {
 			Name:        "Super Admin",
 			Description: "Full system access with all permissions",
 			Permissions: []string{
-				"user.create", "user.view", "user.view.all", "user.update", "user.delete", "user.role.assign", "user.permission.assign",
-				"role.create", "role.view", "role.view.all", "role.update", "role.delete",
+				permission.UserCreate, permission.UserView, permission.UserViewAll, permission.UserUpdate, permission.UserDelete,
+				permission.UserRoleAssign, permission.UserPermissionAssign, permission.UserExport,
+				permission.RoleCreate, permission.RoleView, permission.RoleViewAll, permission.RoleUpdate, permission.RoleDelete,
 			},
 		},
 		{
 			Name:        "Admin",
 			Description: "User management and role viewing permissions",
 			Permissions: []string{
-				"user.create", "user.view", "user.view.all", "user.update", "user.delete",
-				"role.view", "role.view.all",
+				permission.UserCreate, permission.UserView, permission.UserViewAll, permission.UserUpdate, permission.UserDelete,
+				permission.RoleView, permission.RoleViewAll,
 			},
 		},
 		{
 			Name:        "User",
 			Description: "Basic user permissions",
 			Permissions: []string{
-				"user.view",
+				permission.UserView,
 			},
 		},
 	}

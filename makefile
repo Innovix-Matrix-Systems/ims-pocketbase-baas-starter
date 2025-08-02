@@ -1,5 +1,5 @@
 # Makefile for IMS PocketBase BaaS Starter
-.PHONY: help build start stop restart down logs clean clean-data dev dev-build dev-logs dev-clean test lint format
+.PHONY: help build start stop restart down logs clean clean-data dev dev-build dev-logs dev-clean test lint format migrate-gen migrate-gen-build
 
 # Default target
 help:
@@ -20,10 +20,16 @@ help:
 	@echo "  dev-clean    - Clean development environment"
 	@echo "  dev-data-clean - Clean development data"
 	@echo ""
+	@echo "Migration commands:"
+	@echo "  migrate-gen name=<name> - Generate a new migration file"
+	@echo "  migrate-gen-build       - Build migration generator binary"
+	@echo ""
 	@echo "Code quality:"
 	@echo "  test         - Run tests"
 	@echo "  lint         - Run linter"
 	@echo "  format       - Format Go code"
+	@echo "  setup-hooks  - Set up Git hooks (Linux/macOS)"
+	@echo "  setup-hooks-win - Set up Git hooks (Windows)"
 
 # Production commands
 build:
@@ -102,6 +108,19 @@ format:
 	@echo "Formatting Go code..."
 	go fmt ./...
 
+# Migration commands
+migrate-gen:
+	@if [ -z "$(name)" ]; then \
+		echo "Usage: make migrate-gen name=migration_name"; \
+		echo "Example: make migrate-gen name=add_user_profiles"; \
+		exit 1; \
+	fi
+	@go run ./cmd/migrate-gen $(name)
+
+migrate-gen-build:
+	@echo "Building migration generator..."
+	@go build -o bin/migrate-gen ./cmd/migrate-gen
+
 # Utility commands
 generate-key:
 	@echo "Generating encryption key..."
@@ -116,6 +135,15 @@ setup-env:
 	else \
 		echo ".env file already exists"; \
 	fi
+
+setup-hooks:
+	@echo "Setting up Git hooks..."
+	@chmod +x scripts/setup-hooks.sh
+	@./scripts/setup-hooks.sh
+
+setup-hooks-win:
+	@echo "Setting up Git hooks (Windows)..."
+	@scripts\setup-hooks.bat
 
 # Quick development start (alias for dev)
 dev-start: dev

@@ -5,41 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 
 	"github.com/pocketbase/pocketbase/core"
 	m "github.com/pocketbase/pocketbase/migrations"
 
 	"ims-pocketbase-baas-starter/internal/database/seeders"
+	"ims-pocketbase-baas-starter/pkg/common"
 )
-
-// getEnvWithDefault returns environment variable value or default if not set
-func getEnvWithDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-// getEnvBoolWithDefault returns boolean environment variable value or default if not set
-func getEnvBoolWithDefault(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
-		if boolValue, err := strconv.ParseBool(value); err == nil {
-			return boolValue
-		}
-	}
-	return defaultValue
-}
-
-// getEnvIntWithDefault returns integer environment variable value or default if not set
-func getEnvIntWithDefault(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
-}
 
 func init() {
 	m.Register(func(app core.App) error {
@@ -51,7 +23,7 @@ func init() {
 		}
 
 		// 2. Parse the collections array directly
-		var collections []interface{}
+		var collections []any
 		if err := json.Unmarshal(schemaData, &collections); err != nil {
 			return fmt.Errorf("failed to parse schema JSON: %w", err)
 		}
@@ -71,42 +43,42 @@ func init() {
 		settings := app.Settings()
 
 		// Set basic meta information from environment variables
-		settings.Meta.AppName = getEnvWithDefault("APP_NAME", "IMS_PocketBase_App")
-		settings.Meta.AppURL = getEnvWithDefault("APP_URL", "http://localhost:8090")
+		settings.Meta.AppName = common.GetEnv("APP_NAME", "IMS_PocketBase_App")
+		settings.Meta.AppURL = common.GetEnv("APP_URL", "http://localhost:8090")
 
 		// Configure logs retention
-		settings.Logs.MaxDays = getEnvIntWithDefault("LOGS_MAX_DAYS", 7)
+		settings.Logs.MaxDays = common.GetEnvInt("LOGS_MAX_DAYS", 7)
 
 		// Configure SMTP settings from environment variables
-		settings.SMTP.Enabled = getEnvBoolWithDefault("SMTP_ENABLED", false)
+		settings.SMTP.Enabled = common.GetEnvBool("SMTP_ENABLED", false)
 		if settings.SMTP.Enabled {
-			settings.SMTP.Host = getEnvWithDefault("SMTP_HOST", "")
-			settings.SMTP.Port = getEnvIntWithDefault("SMTP_PORT", 587)
-			settings.SMTP.Username = getEnvWithDefault("SMTP_USERNAME", "")
-			settings.SMTP.Password = getEnvWithDefault("SMTP_PASSWORD", "")
-			settings.SMTP.AuthMethod = getEnvWithDefault("SMTP_AUTH_METHOD", "PLAIN")
-			settings.SMTP.TLS = getEnvBoolWithDefault("SMTP_TLS", true)
+			settings.SMTP.Host = common.GetEnv("SMTP_HOST", "")
+			settings.SMTP.Port = common.GetEnvInt("SMTP_PORT", 587)
+			settings.SMTP.Username = common.GetEnv("SMTP_USERNAME", "")
+			settings.SMTP.Password = common.GetEnv("SMTP_PASSWORD", "")
+			settings.SMTP.AuthMethod = common.GetEnv("SMTP_AUTH_METHOD", "PLAIN")
+			settings.SMTP.TLS = common.GetEnvBool("SMTP_TLS", true)
 		}
 
 		// Configure S3 storage from environment variables
-		settings.S3.Enabled = getEnvBoolWithDefault("S3_ENABLED", false)
+		settings.S3.Enabled = common.GetEnvBool("S3_ENABLED", false)
 		if settings.S3.Enabled {
-			settings.S3.Bucket = getEnvWithDefault("S3_BUCKET", "")
-			settings.S3.Region = getEnvWithDefault("S3_REGION", "")
-			settings.S3.Endpoint = getEnvWithDefault("S3_ENDPOINT", "")
-			settings.S3.AccessKey = getEnvWithDefault("S3_ACCESS_KEY", "")
-			settings.S3.Secret = getEnvWithDefault("S3_SECRET", "")
+			settings.S3.Bucket = common.GetEnv("S3_BUCKET", "")
+			settings.S3.Region = common.GetEnv("S3_REGION", "")
+			settings.S3.Endpoint = common.GetEnv("S3_ENDPOINT", "")
+			settings.S3.AccessKey = common.GetEnv("S3_ACCESS_KEY", "")
+			settings.S3.Secret = common.GetEnv("S3_SECRET", "")
 		}
 
 		// Configure batch settings from environment variables
-		settings.Batch.Enabled = getEnvBoolWithDefault("BATCH_ENABLED", true)
-		settings.Batch.MaxRequests = getEnvIntWithDefault("BATCH_MAX_REQUESTS", 100)
+		settings.Batch.Enabled = common.GetEnvBool("BATCH_ENABLED", true)
+		settings.Batch.MaxRequests = common.GetEnvInt("BATCH_MAX_REQUESTS", 100)
 
 		// Configure rate limiting from environment variables
-		settings.RateLimits.Enabled = getEnvBoolWithDefault("RATE_LIMITS_ENABLED", true)
+		settings.RateLimits.Enabled = common.GetEnvBool("RATE_LIMITS_ENABLED", true)
 		if settings.RateLimits.Enabled {
-			maxHits := getEnvIntWithDefault("RATE_LIMITS_MAX_HITS", 120)
-			duration := int64(getEnvIntWithDefault("RATE_LIMITS_DURATION", 60))
+			maxHits := common.GetEnvInt("RATE_LIMITS_MAX_HITS", 120)
+			duration := int64(common.GetEnvInt("RATE_LIMITS_DURATION", 60))
 			settings.RateLimits.Rules = []core.RateLimitRule{
 				{Label: "default", MaxRequests: maxHits, Duration: duration}, // e.g., 120 requests per minute
 			}

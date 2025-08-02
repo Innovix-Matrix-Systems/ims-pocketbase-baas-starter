@@ -12,7 +12,9 @@ import (
 	"github.com/pocketbase/pocketbase/tools/hook"
 
 	"ims-pocketbase-baas-starter/internal"
+	"ims-pocketbase-baas-starter/internal/crons"
 	_ "ims-pocketbase-baas-starter/internal/database/migrations" //side effect migration load(from pocketbase)
+	"ims-pocketbase-baas-starter/internal/jobs"
 	"ims-pocketbase-baas-starter/internal/middlewares"
 	"ims-pocketbase-baas-starter/internal/routes"
 )
@@ -28,6 +30,17 @@ func NewApp() *pocketbase.PocketBase {
 		Automigrate:  isGoRun, // auto-create migration files only in dev
 		TemplateLang: migratecmd.TemplateLangGo,
 	})
+
+	// Initialize job manager and processors during app startup
+	// This must be called after app creation but before OnServe setup
+	jobManager := jobs.GetJobManager()
+	if err := jobManager.Initialize(app); err != nil {
+		log.Fatalf("Failed to initialize job manager: %v", err)
+	}
+
+	// Register scheduled cron jobs during app initialization phase
+	// This must be called after job manager initialization
+	crons.RegisterCrons(app)
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		middleware := middlewares.NewAuthMiddleware()
