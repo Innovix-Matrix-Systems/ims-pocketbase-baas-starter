@@ -14,8 +14,8 @@ func HandleUserExport(e *core.RequestEvent) error {
 		Type: jobutils.JobTypeDataProcessing,
 		Data: jobutils.DataProcessingJobData{
 			Operation: jobutils.DataProcessingOperationExport,
-			Source:    "users",
-			Target:    "csv",
+			Source:    jobutils.DataProcessingCollectionUsers,
+			Target:    jobutils.DataProcessingFileCSV,
 		},
 		Options: jobutils.DataProcessingJobOptions{
 			Timeout: 900, // 15 minutes

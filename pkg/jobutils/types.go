@@ -170,3 +170,14 @@ const (
 	DataProcessingOperationAggregate = "aggregate"
 	DataProcessingOperationTransform = "transform"
 )
+
+const (
+	DataProcessingFileCSV  = "csv"
+	DataProcessingFileXLSX = "xlsx"
+	DataProcessingFileJSON = "json"
+	DataProcessingFilePDF  = "pdf"
+)
+
+const (
+	DataProcessingCollectionUsers = "users"
+)

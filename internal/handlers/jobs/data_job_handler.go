@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"ims-pocketbase-baas-starter/internal/handlers/export"
 	"ims-pocketbase-baas-starter/pkg/cronutils"
 	"ims-pocketbase-baas-starter/pkg/jobutils"
 
@@ -53,7 +54,7 @@ func (h *DataProcessingJobHandler) Handle(ctx *cronutils.CronExecutionContext, j
 	case jobutils.DataProcessingOperationAggregate:
 		return h.handleAggregateOperation(ctx, dataPayload)
 	case jobutils.DataProcessingOperationExport:
-		return h.handleExportOperation(ctx, dataPayload)
+		return h.handleExportOperation(ctx, job, dataPayload)
 	case jobutils.DataProcessingOperationImport:
 		return h.handleImportOperation(ctx, dataPayload)
 	default:
@@ -156,33 +157,24 @@ func (h *DataProcessingJobHandler) handleAggregateOperation(ctx *cronutils.CronE
 }
 
 // handleExportOperation handles data export operations using typed payload
-func (h *DataProcessingJobHandler) handleExportOperation(ctx *cronutils.CronExecutionContext, payload *jobutils.DataProcessingJobPayload) error {
+func (h *DataProcessingJobHandler) handleExportOperation(ctx *cronutils.CronExecutionContext, job *jobutils.JobData, payload *jobutils.DataProcessingJobPayload) error {
 	ctx.LogDebug(payload.Data, "Handling export operation")
 
-	// Simulate processing time
-	time.Sleep(300 * time.Millisecond)
+	switch payload.Data.Source {
+	case jobutils.DataProcessingCollectionUsers:
+		//we will call the handler for users
+		err := export.HandleUserExport(h.app, job.ID, payload)
+		if err != nil {
+			return err
+		}
+	default:
+		//we will throw error for invalid source
+		return fmt.Errorf("unsupported data processing source: %s", payload.Data.Source)
 
-	// Create result with file export details
-	result := &jobutils.FileExportResult{
-		BaseJobResultData: jobutils.BaseJobResultData{
-			Message:   "Export operation completed successfully",
-			Timestamp: time.Now(),
-		},
-		ExportRecordId: fmt.Sprintf("export_%d", time.Now().Unix()),
-		FileName:       fmt.Sprintf("export_%s.csv", time.Now().Format("20060102_150405")),
-		FileSize:       1024000, // placeholder size
-		RecordCount:    1000,    // placeholder count
-		ContentType:    "text/csv",
 	}
 
-	ctx.LogDebug(result, "Export operation result")
-
-	// Placeholder: In a real implementation, this would:
-	// 1. Query data to export from payload.Data.Source
-	// 2. Format data (CSV, JSON, etc.)
-	// 3. Save to file at payload.Data.Target or send to external system
-
 	h.app.Logger().Info("Export operation completed", "source", payload.Data.Source, "target", payload.Data.Target)
+
 	return nil
 }
 

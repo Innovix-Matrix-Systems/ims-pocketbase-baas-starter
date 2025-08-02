@@ -24,6 +24,30 @@ func HandleGetJobStatus(e *core.RequestEvent) error {
 	return common.Response.OK(e, "Job status", data)
 }
 
+func HandleDownloadJobFile(e *core.RequestEvent) error {
+	jobId := e.Request.PathValue("id")
+	if jobId == "" {
+		return common.Response.ValidationError(e, "Job ID is required", nil)
+	}
+
+	// Check if file exists in export_files
+	exportRecord, err := getJobFileRecord(e.App, jobId)
+	if err != nil {
+		return common.Response.NotFound(e, "Export file not found")
+	}
+
+	fileName := exportRecord.GetString("file")
+	basePath := exportRecord.BaseFilesPath()
+
+	// Use the new File response helper to serve the file
+	return common.Response.File(e, fileName, basePath)
+}
+
+func getJobFileRecord(app core.App, jobId string) (*core.Record, error) {
+	// Check if file exists in export_files
+	return app.FindFirstRecordByFilter("export_files", "job_id = {:job_id}", dbx.Params{"job_id": jobId})
+}
+
 func getJobStatus(app core.App, jobId string) string {
 	// Check if job exists in queues
 	job, err := app.FindRecordById("queues", jobId)
@@ -36,30 +60,11 @@ func getJobStatus(app core.App, jobId string) string {
 	}
 
 	// Check if file exists in export_files (completed)
-	_, err = app.FindFirstRecordByFilter("export_files", "job_id = {:job_id}", dbx.Params{"job_id": jobId})
+	_, err = getJobFileRecord(app, jobId)
 	if err == nil {
 		return "completed"
 	}
 
 	// Otherwise failed or not found
 	return "failed"
-}
-
-func HandleDownloadJobFile(e *core.RequestEvent) error {
-	jobId := e.Request.PathValue("id")
-	if jobId == "" {
-		return common.Response.ValidationError(e, "Job ID is required", nil)
-	}
-
-	// Check if file exists in export_files
-	exportRecord, err := e.App.FindFirstRecordByFilter("export_files", "job_id = {:job_id}", dbx.Params{"job_id": jobId})
-	if err != nil {
-		return common.Response.NotFound(e, "Export file not found")
-	}
-
-	fileName := exportRecord.GetString("file")
-	basePath := exportRecord.BaseFilesPath()
-
-	// Use the new File response helper to serve the file
-	return common.Response.File(e, fileName, basePath)
 }

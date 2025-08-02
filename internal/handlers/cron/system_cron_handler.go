@@ -2,13 +2,13 @@ package cron
 
 import (
 	"fmt"
-	"os"
-	"strconv"
 	"time"
 
 	"ims-pocketbase-baas-starter/internal/jobs"
+	"ims-pocketbase-baas-starter/pkg/common"
 	"ims-pocketbase-baas-starter/pkg/cronutils"
 
+	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
 )
 
@@ -27,11 +27,12 @@ func HandleSystemQueue(app *pocketbase.PocketBase) {
 	}
 
 	// Get configuration for concurrent processing
-	maxWorkers := getEnvInt("JOB_MAX_WORKERS", 5) // Default 5 concurrent workers
-	batchSize := getEnvInt("JOB_BATCH_SIZE", 50)  // Process up to 50 jobs per run
+	maxWorkers := common.GetEnvInt("JOB_MAX_WORKERS", 5)                 // Default 5 concurrent workers
+	batchSize := common.GetEnvInt("JOB_BATCH_SIZE", 50)                  // Process up to 50 jobs per run
+	reservationTimeout := common.GetEnvInt("JOB_RESERVATION_TIMEOUT", 5) // Default 5 minutes reservation timeout
 
 	// Fetch pending jobs (not reserved or reservation expired)
-	expiredTime := time.Now().Add(-5 * time.Minute) // 5 minute reservation timeout
+	expiredTime := time.Now().Add(-time.Duration(reservationTimeout) * time.Minute)
 
 	queues, err := app.FindRecordsByFilter(
 		"queues",
@@ -39,7 +40,7 @@ func HandleSystemQueue(app *pocketbase.PocketBase) {
 		"-created", // Order by created descending (FIFO)
 		batchSize,
 		0,
-		map[string]any{"expired": expiredTime.Format(time.RFC3339)},
+		dbx.Params{"expired": expiredTime.Format(time.RFC3339)},
 	)
 
 	if err != nil {
@@ -75,14 +76,4 @@ func HandleSystemQueue(app *pocketbase.PocketBase) {
 	}
 
 	ctx.LogEnd("System queue process operations completed successfully")
-}
-
-// getEnvInt gets an integer value from environment variable with a default fallback
-func getEnvInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-	}
-	return defaultValue
 }
