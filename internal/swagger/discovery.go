@@ -476,7 +476,7 @@ func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Coll
 						fieldInfo := FieldInfo{
 							Options: make(map[string]interface{}),
 						}
-						
+
 						if name, ok := fieldMap["name"].(string); ok {
 							fieldInfo.Name = name
 						}
@@ -492,7 +492,7 @@ func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Coll
 						if options, ok := fieldMap["options"].(map[string]interface{}); ok {
 							fieldInfo.Options = options
 						}
-						
+
 						collectionInfo.Fields = append(collectionInfo.Fields, fieldInfo)
 					}
 				}

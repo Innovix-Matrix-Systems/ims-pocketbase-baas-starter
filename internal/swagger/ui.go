@@ -2,7 +2,7 @@ package swagger
 
 // GetSwaggerUIHTML returns the HTML for Swagger UI
 func GetSwaggerUIHTML() string {
-    return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <title>IMS PocketBase API Documentation</title>
@@ -40,7 +40,7 @@ func GetSwaggerUIHTML() string {
 
 // GetRedocHTML returns the HTML for ReDoc
 func GetRedocHTML() string {
-    return `<!DOCTYPE html>
+	return `<!DOCTYPE html>
 <html>
 <head>
     <title>IMS PocketBase API Documentation</title>

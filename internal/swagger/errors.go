@@ -29,7 +29,7 @@ type SwaggerError struct {
 // Error implements the error interface
 func (e SwaggerError) Error() string {
 	var sb strings.Builder
-	
+
 	levelStr := "ERROR"
 	switch e.Level {
 	case ErrorLevelWarning:
@@ -37,17 +37,17 @@ func (e SwaggerError) Error() string {
 	case ErrorLevelCritical:
 		levelStr = "CRITICAL"
 	}
-	
+
 	sb.WriteString(fmt.Sprintf("[%s] %s", levelStr, e.Component))
 	if e.Operation != "" {
 		sb.WriteString(fmt.Sprintf(" - %s", e.Operation))
 	}
 	sb.WriteString(fmt.Sprintf(": %s", e.Message))
-	
+
 	if e.Cause != nil {
 		sb.WriteString(fmt.Sprintf(" (caused by: %v)", e.Cause))
 	}
-	
+
 	if len(e.Context) > 0 {
 		sb.WriteString(" [context:")
 		for k, v := range e.Context {
@@ -55,7 +55,7 @@ func (e SwaggerError) Error() string {
 		}
 		sb.WriteString("]")
 	}
-	
+
 	return sb.String()
 }
 
@@ -93,7 +93,7 @@ func NewErrorHandlerWithConfig(maxErrors int, failOnWarnings bool, logErrors boo
 // AddError adds an error to the handler
 func (eh *ErrorHandler) AddError(err SwaggerError) {
 	eh.errors = append(eh.errors, err)
-	
+
 	switch err.Level {
 	case ErrorLevelWarning:
 		eh.warningCount++
@@ -111,7 +111,7 @@ func (eh *ErrorHandler) AddError(err SwaggerError) {
 			log.Printf("CRITICAL: %s", err.Error())
 		}
 	}
-	
+
 	// Check if we've exceeded max errors
 	if len(eh.errors) >= eh.maxErrors {
 		panic(fmt.Errorf("maximum error count (%d) exceeded", eh.maxErrors))

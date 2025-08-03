@@ -55,7 +55,7 @@ func NewApp() *pocketbase.PocketBase {
 			"_pb_users_auth_", "_mfas", "_otps", "_externalAuths", "_authOrigins", "collections", "export_files", "queues",
 		} // Exclude system collections
 		enhancedConfig.IncludeSystem = false
-		
+
 		enhancedGenerator := swagger.NewEnhancedGenerator(app, enhancedConfig)
 
 		// Apply auth to specific PocketBase API endpoints
