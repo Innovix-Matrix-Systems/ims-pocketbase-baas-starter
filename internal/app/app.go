@@ -11,12 +11,13 @@ import (
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 	"github.com/pocketbase/pocketbase/tools/hook"
 
-	"ims-pocketbase-baas-starter/internal"
 	"ims-pocketbase-baas-starter/internal/crons"
 	_ "ims-pocketbase-baas-starter/internal/database/migrations" //side effect migration load(from pocketbase)
 	"ims-pocketbase-baas-starter/internal/jobs"
 	"ims-pocketbase-baas-starter/internal/middlewares"
 	"ims-pocketbase-baas-starter/internal/routes"
+	"ims-pocketbase-baas-starter/internal/swagger"
+	"ims-pocketbase-baas-starter/pkg/common"
 )
 
 // NewApp creates and configures a new PocketBase app instance
@@ -45,6 +46,18 @@ func NewApp() *pocketbase.PocketBase {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		middleware := middlewares.NewAuthMiddleware()
 
+		// Initialize Enhanced Swagger generator with collection filtering
+		enhancedConfig := swagger.DefaultEnhancedConfig()
+		enhancedConfig.Title = "IMS PocketBase API"
+		enhancedConfig.Version = "1.0.0"
+		enhancedConfig.Description = "API documentation for IMS PocketBase collections"
+		enhancedConfig.ExcludedCollections = []string{
+			"_pb_users_auth_", "_mfas", "_otps", "_externalAuths", "_authOrigins", "collections", "export_files", "queues",
+		} // Exclude system collections
+		enhancedConfig.IncludeSystem = false
+		
+		enhancedGenerator := swagger.NewEnhancedGenerator(app, enhancedConfig)
+
 		// Apply auth to specific PocketBase API endpoints
 		se.Router.Bind(&hook.Handler[*core.RequestEvent]{
 			Id: "jwtAuth",
@@ -52,14 +65,14 @@ func NewApp() *pocketbase.PocketBase {
 				path := e.Request.URL.Path
 
 				// Check if path should be excluded
-				for _, excludedPath := range internal.ExcludedPaths {
+				for _, excludedPath := range common.ExcludedPaths {
 					if strings.HasPrefix(path, excludedPath) {
 						return e.Next() // Skip auth for excluded paths
 					}
 				}
 
 				// Check if it's a protected collection endpoint
-				for _, collection := range internal.ProtectedCollections {
+				for _, collection := range common.ProtectedCollections {
 					collectionPath := "/api/collections/" + collection
 					if strings.HasPrefix(path, collectionPath) {
 						authFunc := middleware.RequireAuthFunc()
@@ -79,6 +92,9 @@ func NewApp() *pocketbase.PocketBase {
 
 		// custom business routes
 		routes.RegisterCustom(se)
+
+		// Register Enhanced Swagger endpoints
+		swagger.RegisterEnhancedEndpoints(se, enhancedGenerator)
 
 		return se.Next()
 	})
