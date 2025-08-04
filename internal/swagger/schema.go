@@ -92,6 +92,10 @@ func (fsm *FieldSchemaMapper) MapFieldToSchema(field FieldInfo) (*FieldSchema, e
 		fsm.mapJsonField(field, schema)
 	case "editor":
 		fsm.mapEditorField(field, schema)
+	case "autodate":
+		fsm.mapAutodateField(field, schema)
+	case "password":
+		fsm.mapPasswordField(field, schema)
 	default:
 		log.Printf("Warning: Unknown field type '%s' for field '%s', using fallback", field.Type, field.Name)
 		fsm.mapUnknownField(field, schema)
@@ -325,6 +329,33 @@ func (fsm *FieldSchemaMapper) mapEditorField(field FieldInfo, schema *FieldSchem
 	}
 }
 
+// mapAutodateField maps autodate field types to OpenAPI schema
+func (fsm *FieldSchemaMapper) mapAutodateField(field FieldInfo, schema *FieldSchema) {
+	schema.Type = "string"
+	schema.Format = "date-time"
+	schema.Description = "Auto-generated timestamp"
+
+	// Check if it's a create or update timestamp
+	if strings.ToLower(field.Name) == "created" {
+		schema.Description = "Record creation timestamp (auto-generated)"
+	} else if strings.ToLower(field.Name) == "updated" {
+		schema.Description = "Record last update timestamp (auto-generated)"
+	}
+}
+
+// mapPasswordField maps password field types to OpenAPI schema
+func (fsm *FieldSchemaMapper) mapPasswordField(field FieldInfo, schema *FieldSchema) {
+	schema.Type = "string"
+	schema.Format = "password"
+	schema.Description = "Password field (write-only)"
+
+	// Password fields typically have minimum length requirements
+	if schema.MinLength == nil {
+		minLen := 8 // Default minimum length for passwords
+		schema.MinLength = &minLen
+	}
+}
+
 // mapUnknownField maps unknown field types to a fallback schema
 func (fsm *FieldSchemaMapper) mapUnknownField(field FieldInfo, schema *FieldSchema) {
 	schema.Type = "string"
@@ -356,6 +387,8 @@ func (fsm *FieldSchemaMapper) addFieldExample(field FieldInfo, schema *FieldSche
 			schema.Example = "https://example.com"
 		} else if schema.Format == "date-time" {
 			schema.Example = "2024-01-01T12:00:00Z"
+		} else if schema.Format == "password" {
+			schema.Example = "********" // Don't show actual password examples
 		} else if len(schema.Enum) > 0 {
 			schema.Example = schema.Enum[0]
 		} else {

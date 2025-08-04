@@ -2,6 +2,7 @@ package swagger
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"golang.org/x/text/cases"
@@ -10,8 +11,9 @@ import (
 
 // RouteGenerator handles automatic CRUD route generation for collections
 type RouteGenerator struct {
-	schemaGen    SchemaGen
-	customRoutes []CustomRoute
+	schemaGen                 SchemaGen
+	customRoutes              []CustomRoute
+	enableDynamicContentTypes bool
 }
 
 // GeneratedRoute represents a complete OpenAPI route definition
@@ -61,12 +63,13 @@ type SecurityRequirement map[string][]string
 
 // CustomRoute represents a manually defined route
 type CustomRoute struct {
-	Method      string   `json:"method"`
-	Path        string   `json:"path"`
-	Summary     string   `json:"summary"`
-	Description string   `json:"description"`
-	Tags        []string `json:"tags"`
-	Protected   bool     `json:"protected"`
+	Method      string      `json:"method"`
+	Path        string      `json:"path"`
+	Summary     string      `json:"summary"`
+	Description string      `json:"description"`
+	Tags        []string    `json:"tags"`
+	Protected   bool        `json:"protected"`
+	Parameters  []Parameter `json:"parameters,omitempty"`
 }
 
 // RouteGen interface for route generation
@@ -79,9 +82,21 @@ type RouteGen interface {
 
 // NewRouteGenerator creates a new route generator
 func NewRouteGenerator(schemaGen SchemaGen) *RouteGenerator {
+
 	return &RouteGenerator{
-		schemaGen:    schemaGen,
-		customRoutes: []CustomRoute{},
+		schemaGen:                 schemaGen,
+		customRoutes:              []CustomRoute{},
+		enableDynamicContentTypes: true, // Default to enabled for backward compatibility
+	}
+}
+
+// NewRouteGeneratorWithConfig creates a new route generator with configuration
+func NewRouteGeneratorWithConfig(schemaGen SchemaGen, enableDynamicContentTypes bool) *RouteGenerator {
+
+	return &RouteGenerator{
+		schemaGen:                 schemaGen,
+		customRoutes:              []CustomRoute{},
+		enableDynamicContentTypes: enableDynamicContentTypes,
 	}
 }
 
@@ -190,6 +205,8 @@ func (rg *RouteGenerator) generateCreateRoute(collection EnhancedCollectionInfo)
 	}
 
 	caser := cases.Title(language.English)
+	requestContent := rg.generateRequestContent(createSchema, collection, "create")
+
 	route := &GeneratedRoute{
 		Method:      "POST",
 		Path:        fmt.Sprintf("/api/collections/%s/records", collection.Name),
@@ -200,11 +217,7 @@ func (rg *RouteGenerator) generateCreateRoute(collection EnhancedCollectionInfo)
 		RequestBody: &RequestBody{
 			Description: fmt.Sprintf("The %s record to create", collection.Name),
 			Required:    true,
-			Content: map[string]MediaType{
-				"application/json": {
-					Schema: createSchema,
-				},
-			},
+			Content:     requestContent,
 		},
 		Responses: map[string]Response{
 			"201": {
@@ -323,11 +336,7 @@ func (rg *RouteGenerator) generateUpdateRoute(collection EnhancedCollectionInfo)
 		RequestBody: &RequestBody{
 			Description: fmt.Sprintf("The %s record fields to update", collection.Name),
 			Required:    true,
-			Content: map[string]MediaType{
-				"application/json": {
-					Schema: updateSchema,
-				},
-			},
+			Content:     rg.generateRequestContent(updateSchema, collection, "update"),
 		},
 		Responses: map[string]Response{
 			"200": {
@@ -516,7 +525,7 @@ func (rg *RouteGenerator) generateAuthWithPasswordRoute(collection EnhancedColle
 		Path:        fmt.Sprintf("/api/collections/%s/auth-with-password", collection.Name),
 		Summary:     fmt.Sprintf("Authenticate %s with password", collection.Name),
 		Description: fmt.Sprintf("Authenticate a %s using email/username and password", collection.Name),
-		Tags:        []string{"Authentication", caser.String(collection.Name)},
+		Tags:        []string{"Authentication"},
 		OperationID: fmt.Sprintf("auth%sWithPassword", caser.String(collection.Name)),
 		RequestBody: &RequestBody{
 			Description: "Authentication credentials",
@@ -590,7 +599,7 @@ func (rg *RouteGenerator) generateAuthRefreshRoute(collection EnhancedCollection
 		Path:        fmt.Sprintf("/api/collections/%s/auth-refresh", collection.Name),
 		Summary:     fmt.Sprintf("Refresh %s authentication", collection.Name),
 		Description: fmt.Sprintf("Refresh the authentication token for %s", collection.Name),
-		Tags:        []string{"Authentication", caser.String(collection.Name)},
+		Tags:        []string{"Authentication"},
 		OperationID: fmt.Sprintf("refresh%sAuth", caser.String(collection.Name)),
 		Security: []SecurityRequirement{
 			{"BearerAuth": []string{}},
@@ -621,7 +630,7 @@ func (rg *RouteGenerator) generateRequestPasswordResetRoute(collection EnhancedC
 		Path:        fmt.Sprintf("/api/collections/%s/request-password-reset", collection.Name),
 		Summary:     fmt.Sprintf("Request password reset for %s", collection.Name),
 		Description: fmt.Sprintf("Send a password reset email to %s", collection.Name),
-		Tags:        []string{"Authentication", caser.String(collection.Name)},
+		Tags:        []string{"Authentication"},
 		OperationID: fmt.Sprintf("request%sPasswordReset", caser.String(collection.Name)),
 		RequestBody: &RequestBody{
 			Description: "Email for password reset",
@@ -701,6 +710,7 @@ func (rg *RouteGenerator) convertCustomRoute(custom CustomRoute) GeneratedRoute 
 		Summary:     custom.Summary,
 		Description: custom.Description,
 		Tags:        custom.Tags,
+		Parameters:  custom.Parameters,
 		OperationID: rg.generateOperationID(custom.Method, custom.Path),
 		Responses: map[string]Response{
 			"200": {
@@ -738,4 +748,412 @@ func (rg *RouteGenerator) generateOperationID(method, path string) string {
 	}
 
 	return strings.Join(operationParts, "")
+}
+
+// FileFieldInfo holds information about a file field
+type FileFieldInfo struct {
+	Name         string
+	IsMultiple   bool
+	MaxSize      int64
+	AllowedTypes []string
+	Required     bool
+}
+
+// hasFileFields checks if a collection contains any file fields
+func (rg *RouteGenerator) hasFileFields(collection EnhancedCollectionInfo) bool {
+	for _, field := range collection.Fields {
+		if strings.ToLower(field.Type) == "file" {
+			return true
+		}
+	}
+	return false
+}
+
+// getFileFields returns a list of file fields with their options
+func (rg *RouteGenerator) getFileFields(collection EnhancedCollectionInfo) []FileFieldInfo {
+	var fileFields []FileFieldInfo
+
+	if len(collection.Fields) == 0 {
+		return fileFields
+	}
+
+	for _, field := range collection.Fields {
+		if strings.ToLower(field.Type) != "file" {
+			continue
+		}
+
+		fileField := FileFieldInfo{
+			Name:     field.Name,
+			Required: field.Required,
+		}
+
+		// Extract file-specific options with error handling
+		if field.Options != nil {
+			// Check for multiple file uploads
+			if maxSelect, ok := field.Options["maxSelect"]; ok {
+				if ms, err := rg.parseIntOption(maxSelect); err == nil && ms > 1 {
+					fileField.IsMultiple = true
+
+				} else if err != nil {
+					log.Printf("Warning: Failed to parse maxSelect for field %s in collection %s: %v", field.Name, collection.Name, err)
+				}
+			}
+
+			// Extract max file size
+			if maxSize, ok := field.Options["maxSize"]; ok {
+				if ms, err := rg.parseIntOption(maxSize); err == nil {
+					fileField.MaxSize = int64(ms)
+
+				} else {
+					log.Printf("Warning: Failed to parse maxSize for field %s in collection %s: %v", field.Name, collection.Name, err)
+				}
+			}
+
+			// Extract allowed MIME types
+			if mimeTypes, ok := field.Options["mimeTypes"]; ok {
+				if types, ok := mimeTypes.([]interface{}); ok {
+					for _, t := range types {
+						if typeStr, ok := t.(string); ok {
+							fileField.AllowedTypes = append(fileField.AllowedTypes, typeStr)
+						} else {
+							log.Printf("Warning: Invalid MIME type in field %s of collection %s: %v", field.Name, collection.Name, t)
+						}
+					}
+
+				} else {
+					log.Printf("Warning: Invalid mimeTypes format for field %s in collection %s", field.Name, collection.Name)
+				}
+			}
+		}
+
+		fileFields = append(fileFields, fileField)
+	}
+
+	return fileFields
+}
+
+// getStringOrDefault safely gets a string value or returns a default
+func getStringOrDefault(value interface{}, defaultValue string) string {
+	if str, ok := value.(string); ok && str != "" {
+		return str
+	}
+	return defaultValue
+}
+
+// parseIntOption safely parses an integer option value
+func (rg *RouteGenerator) parseIntOption(value interface{}) (int, error) {
+	switch v := value.(type) {
+	case int:
+		return v, nil
+	case float64:
+		return int(v), nil
+	case string:
+		var result int
+		if i, err := fmt.Sscanf(v, "%d", &result); err == nil && i == 1 {
+			return result, nil
+		}
+		return 0, fmt.Errorf("cannot parse string %s as int", v)
+	default:
+		return 0, fmt.Errorf("cannot parse %v as int", value)
+	}
+}
+
+// generateRequestContent generates request body content with appropriate media types
+// If collection has file fields, it adds multipart/form-data support for create and update operations
+func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection EnhancedCollectionInfo, operation string) map[string]MediaType {
+	content := make(map[string]MediaType)
+
+	// Always include application/json
+	content["application/json"] = MediaType{
+		Schema: schema,
+	}
+
+	// Check if dynamic content types are enabled
+	if !rg.enableDynamicContentTypes {
+		return content // Return JSON-only if feature is disabled
+	}
+
+	// Only support form-data for create and update operations
+	supportedOperations := []string{"create", "update"}
+	isSupported := false
+	for _, op := range supportedOperations {
+		if strings.ToLower(operation) == op {
+			isSupported = true
+			break
+		}
+	}
+
+	if !isSupported {
+		return content // Return JSON-only for non-create/update operations
+	}
+
+	// Check if collection has file fields using our helper function
+	if !rg.hasFileFields(collection) {
+		return content // Return JSON-only if no file fields
+	}
+
+	// Get file fields with their options
+	fileFields := rg.getFileFields(collection)
+	if len(fileFields) == 0 {
+		return content // Fallback to JSON-only if detection failed
+	}
+
+	// Generate form data schema based on the original schema
+	formDataProps := make(map[string]interface{})
+
+	// Handle the schema to extract properties - support both map and CollectionSchema types
+	var props map[string]interface{}
+	var required []string
+
+	switch s := schema.(type) {
+	case map[string]interface{}:
+		// Handle raw map schema
+		if p, ok := s["properties"].(map[string]interface{}); ok {
+			props = p
+		} else {
+			log.Printf("Warning: Cannot parse schema properties for collection %s (operation: %s), falling back to JSON-only", collection.Name, operation)
+			return content
+		}
+		if r, ok := s["required"].([]string); ok {
+			required = r
+		}
+	case *CollectionSchema:
+		// Handle CollectionSchema struct
+		props = make(map[string]interface{})
+		for propName, fieldSchema := range s.Properties {
+			// Convert FieldSchema to map[string]interface{}
+			propMap := map[string]interface{}{
+				"type": fieldSchema.Type,
+			}
+			if fieldSchema.Format != "" {
+				propMap["format"] = fieldSchema.Format
+			}
+			if fieldSchema.Description != "" {
+				propMap["description"] = fieldSchema.Description
+			}
+			if len(fieldSchema.Enum) > 0 {
+				propMap["enum"] = fieldSchema.Enum
+			}
+			if fieldSchema.Minimum != nil {
+				propMap["minimum"] = *fieldSchema.Minimum
+			}
+			if fieldSchema.Maximum != nil {
+				propMap["maximum"] = *fieldSchema.Maximum
+			}
+			if fieldSchema.MinLength != nil {
+				propMap["minLength"] = *fieldSchema.MinLength
+			}
+			if fieldSchema.MaxLength != nil {
+				propMap["maxLength"] = *fieldSchema.MaxLength
+			}
+			if fieldSchema.Pattern != "" {
+				propMap["pattern"] = fieldSchema.Pattern
+			}
+			if fieldSchema.Example != nil {
+				propMap["example"] = fieldSchema.Example
+			}
+			if fieldSchema.Items != nil {
+				// Handle array items
+				itemMap := map[string]interface{}{
+					"type": fieldSchema.Items.Type,
+				}
+				if fieldSchema.Items.Format != "" {
+					itemMap["format"] = fieldSchema.Items.Format
+				}
+				if fieldSchema.Items.Description != "" {
+					itemMap["description"] = fieldSchema.Items.Description
+				}
+				propMap["items"] = itemMap
+			}
+			props[propName] = propMap
+		}
+		required = s.Required
+	default:
+		log.Printf("Warning: Cannot parse schema for collection %s (operation: %s), schema type: %T, falling back to JSON-only", collection.Name, operation, schema)
+		return content
+	}
+
+	// Create a map of file field names for quick lookup
+	fileFieldMap := make(map[string]FileFieldInfo)
+	for _, fileField := range fileFields {
+		fileFieldMap[fileField.Name] = fileField
+	}
+
+	// Process each property
+	processedFields := 0
+	for propName, propValue := range props {
+		if fileField, isFileField := fileFieldMap[propName]; isFileField {
+			// Handle file fields with proper binary format
+			if fileField.IsMultiple {
+				// Multiple files - array of binary
+				itemSchema := map[string]interface{}{
+					"type":        "string",
+					"format":      "binary",
+					"description": "Individual file upload",
+				}
+
+				// Add file constraints to items if specified
+				if fileField.MaxSize > 0 {
+					itemSchema["description"] = fmt.Sprintf("Individual file upload (max size: %d bytes)", fileField.MaxSize)
+				}
+
+				if len(fileField.AllowedTypes) > 0 {
+					itemSchema["description"] = fmt.Sprintf("%s (allowed types: %s)",
+						itemSchema["description"], strings.Join(fileField.AllowedTypes, ", "))
+				}
+
+				multipleFileSchema := map[string]interface{}{
+					"type":        "array",
+					"items":       itemSchema,
+					"description": fmt.Sprintf("Multiple file uploads for %s", propName),
+				}
+
+				// Add array constraints if available
+				if fileField.IsMultiple {
+					// We can infer maxItems from the maxSelect option
+					for _, field := range collection.Fields {
+						if field.Name == propName && field.Options != nil {
+							if maxSelect, ok := field.Options["maxSelect"]; ok {
+								if ms, err := rg.parseIntOption(maxSelect); err == nil && ms > 1 {
+									multipleFileSchema["maxItems"] = ms
+									multipleFileSchema["description"] = fmt.Sprintf("%s (max %d files)",
+										multipleFileSchema["description"], ms)
+								}
+							}
+						}
+					}
+				}
+
+				formDataProps[propName] = multipleFileSchema
+			} else {
+				// Single file - binary format
+				fileSchema := map[string]interface{}{
+					"type":        "string",
+					"format":      "binary",
+					"description": fmt.Sprintf("File upload for %s", propName),
+				}
+
+				// Add file size constraint if specified
+				if fileField.MaxSize > 0 {
+					fileSchema["description"] = fmt.Sprintf("File upload for %s (max size: %d bytes)",
+						propName, fileField.MaxSize)
+				}
+
+				// Add allowed types if specified
+				if len(fileField.AllowedTypes) > 0 {
+					fileSchema["description"] = fmt.Sprintf("%s (allowed types: %s)",
+						fileSchema["description"], strings.Join(fileField.AllowedTypes, ", "))
+				}
+
+				// Add example for single file
+				fileSchema["example"] = fmt.Sprintf("@%s.jpg", propName)
+
+				formDataProps[propName] = fileSchema
+			}
+			processedFields++
+		} else {
+			// Non-file fields retain their original schema but may need adjustments for form-data
+			if propMap, ok := propValue.(map[string]interface{}); ok {
+				// Create a copy to avoid modifying the original schema
+				formFieldSchema := make(map[string]interface{})
+				for k, v := range propMap {
+					formFieldSchema[k] = v
+				}
+
+				// For form-data, complex types should be handled as strings
+				if fieldType, ok := formFieldSchema["type"].(string); ok {
+					switch fieldType {
+					case "object", "array":
+						// Complex types in form-data are typically sent as JSON strings
+						formFieldSchema["type"] = "string"
+						formFieldSchema["description"] = fmt.Sprintf("%s (JSON string)",
+							getStringOrDefault(formFieldSchema["description"], fmt.Sprintf("%s field", propName)))
+						formFieldSchema["example"] = `{"key": "value"}`
+					case "boolean":
+						// Booleans in form-data are typically sent as strings
+						formFieldSchema["type"] = "string"
+						formFieldSchema["enum"] = []interface{}{"true", "false"}
+						formFieldSchema["description"] = fmt.Sprintf("%s (boolean as string)",
+							getStringOrDefault(formFieldSchema["description"], fmt.Sprintf("%s field", propName)))
+						formFieldSchema["example"] = "true"
+					case "integer", "number":
+						// Numbers in form-data are sent as strings but we can keep the type
+						// and add a note in the description
+						if desc, ok := formFieldSchema["description"].(string); ok {
+							formFieldSchema["description"] = fmt.Sprintf("%s (sent as string in form-data)", desc)
+						} else {
+							formFieldSchema["description"] = fmt.Sprintf("%s field (sent as string in form-data)", propName)
+						}
+					}
+				}
+
+				formDataProps[propName] = formFieldSchema
+			} else {
+				// Fallback: use the original property as-is
+				log.Printf("Warning: Could not parse property %s for form-data, using original schema", propName)
+				formDataProps[propName] = propValue
+			}
+			processedFields++
+		}
+	}
+
+	// Create the form data schema
+	formDataSchema := map[string]interface{}{
+		"type":       "object",
+		"properties": formDataProps,
+	}
+
+	// Copy required fields if present
+	if len(required) > 0 {
+		formDataSchema["required"] = required
+	}
+
+	// Add example for form-data
+	formDataExample := make(map[string]interface{})
+	for propName, propSchema := range formDataProps {
+		if propMap, ok := propSchema.(map[string]interface{}); ok {
+			if example, hasExample := propMap["example"]; hasExample {
+				formDataExample[propName] = example
+			} else {
+				// Generate appropriate example based on type
+				if propType, ok := propMap["type"].(string); ok {
+					switch propType {
+					case "string":
+						if format, ok := propMap["format"].(string); ok && format == "binary" {
+							formDataExample[propName] = fmt.Sprintf("@%s_file", propName)
+						} else {
+							formDataExample[propName] = fmt.Sprintf("example_%s", propName)
+						}
+					case "array":
+						if items, ok := propMap["items"].(map[string]interface{}); ok {
+							if itemFormat, ok := items["format"].(string); ok && itemFormat == "binary" {
+								formDataExample[propName] = []interface{}{
+									fmt.Sprintf("@%s_file1", propName),
+									fmt.Sprintf("@%s_file2", propName),
+								}
+							}
+						}
+					default:
+						formDataExample[propName] = fmt.Sprintf("example_%s", propName)
+					}
+				}
+			}
+		}
+	}
+
+	if len(formDataExample) > 0 {
+		formDataSchema["example"] = formDataExample
+	}
+
+	// Validate that we have properties in the form-data schema
+	if len(formDataProps) == 0 {
+		log.Printf("Warning: No properties generated for form-data schema in collection %s, falling back to JSON-only", collection.Name)
+		return content
+	}
+
+	content["multipart/form-data"] = MediaType{
+		Schema: formDataSchema,
+	}
+
+	return content
 }

@@ -73,16 +73,17 @@ type SecurityScheme struct {
 
 // UnifiedConfig holds the unified generator configuration
 type UnifiedConfig struct {
-	Title               string
-	Version             string
-	Description         string
-	ServerURL           string
-	ExcludedCollections []string
-	IncludeSystem       bool
-	CustomRoutes        []CustomRoute
-	EnableAuth          bool
-	IncludeExamples     bool
-	EnableDiscovery     bool // Enable automatic route discovery
+	Title                     string
+	Version                   string
+	Description               string
+	ServerURL                 string
+	ExcludedCollections       []string
+	IncludeSystem             bool
+	CustomRoutes              []CustomRoute
+	EnableAuth                bool
+	IncludeExamples           bool
+	EnableDiscovery           bool // Enable automatic route discovery
+	EnableDynamicContentTypes bool // Enable dynamic content type detection for file fields
 }
 
 // RouteInfo contains metadata about a discovered route
@@ -214,7 +215,7 @@ func NewGenerator(app *pocketbase.PocketBase, config UnifiedConfig) *Generator {
 	)
 
 	// Initialize route generator
-	routeGen := NewRouteGenerator(schemaGen)
+	routeGen := NewRouteGeneratorWithConfig(schemaGen, config.EnableDynamicContentTypes)
 
 	// Register custom routes
 	for _, customRoute := range config.CustomRoutes {
@@ -296,19 +297,7 @@ var globalGenerator *Generator
 
 // InitializeGenerator creates and stores a global generator instance
 func InitializeGenerator(app *pocketbase.PocketBase) *Generator {
-	config := UnifiedConfig{
-		Title:               "IMS PocketBase BaaS API",
-		Version:             "1.0.0",
-		Description:         "Automatically generated API documentation",
-		ServerURL:           common.GetEnv("APP_URL", "http://localhost:8090"),
-		ExcludedCollections: []string{},
-		IncludeSystem:       false,
-		CustomRoutes:        []CustomRoute{},
-		EnableAuth:          true,
-		IncludeExamples:     true,
-		EnableDiscovery:     true,
-	}
-
+	config := DefaultUnifiedConfig()
 	globalGenerator = NewGenerator(app, config)
 	return globalGenerator
 }
@@ -565,7 +554,7 @@ func (g *Generator) UpdateConfiguration(config UnifiedConfig) error {
 		config.IncludeSystem,
 	)
 
-	g.routeGen = NewRouteGenerator(g.schemaGen)
+	g.routeGen = NewRouteGeneratorWithConfig(g.schemaGen, config.EnableDynamicContentTypes)
 
 	// Re-register custom routes
 	for _, customRoute := range config.CustomRoutes {
@@ -615,15 +604,16 @@ func (g *Generator) GetHealthStatus() map[string]interface{} {
 // DefaultUnifiedConfig returns a default configuration
 func DefaultUnifiedConfig() UnifiedConfig {
 	return UnifiedConfig{
-		Title:               "PocketBase API",
-		Version:             "1.0.0",
-		Description:         "Auto-generated API documentation for PocketBase collections",
-		ServerURL:           common.GetEnv("APP_URL", "http://localhost:8090"),
-		ExcludedCollections: []string{},
-		IncludeSystem:       false,
-		CustomRoutes:        []CustomRoute{},
-		EnableAuth:          true,
-		IncludeExamples:     true,
-		EnableDiscovery:     true,
+		Title:                     common.GetEnv("APP_NAME", "IMS Pocketbase") + " API",
+		Version:                   "1.0.0",
+		Description:               "Auto-generated API documentation for PocketBase collections",
+		ServerURL:                 common.GetEnv("APP_URL", "http://localhost:8090"),
+		ExcludedCollections:       []string{},
+		IncludeSystem:             false,
+		CustomRoutes:              []CustomRoute{},
+		EnableAuth:                true,
+		IncludeExamples:           true,
+		EnableDiscovery:           true,
+		EnableDynamicContentTypes: true, // Enable dynamic content types by default
 	}
 }

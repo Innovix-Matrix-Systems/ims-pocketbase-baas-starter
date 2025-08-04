@@ -48,7 +48,7 @@ func NewApp() *pocketbase.PocketBase {
 
 		// Initialize Swagger generator with collection filtering
 		config := swagger.DefaultUnifiedConfig()
-		config.Title = "IMS PocketBase API"
+		config.Title = common.GetEnv("APP_NAME", "IMS Pocketbase") + " API"
 		config.Version = "1.0.0"
 		config.Description = "API documentation for IMS PocketBase collections"
 		config.ExcludedCollections = []string{

@@ -81,6 +81,15 @@ func defineCustomRoutes() []CustomRoute {
 			Description: "Get the status of a specific job",
 			Tags:        []string{"Jobs"},
 			Protected:   true,
+			Parameters: []Parameter{
+				{
+					Name:        "id",
+					In:          "path",
+					Required:    true,
+					Schema:      map[string]interface{}{"type": "string"},
+					Description: "The unique identifier of the job",
+				},
+			},
 		},
 		{
 			Method:      "POST",
@@ -89,6 +98,15 @@ func defineCustomRoutes() []CustomRoute {
 			Description: "Download the file associated with a job",
 			Tags:        []string{"Jobs"},
 			Protected:   true,
+			Parameters: []Parameter{
+				{
+					Name:        "id",
+					In:          "path",
+					Required:    true,
+					Schema:      map[string]interface{}{"type": "string"},
+					Description: "The unique identifier of the job",
+				},
+			},
 		},
 	}
 }
