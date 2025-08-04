@@ -46,17 +46,16 @@ func NewApp() *pocketbase.PocketBase {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		middleware := middlewares.NewAuthMiddleware()
 
-		// Initialize Enhanced Swagger generator with collection filtering
-		enhancedConfig := swagger.DefaultEnhancedConfig()
-		enhancedConfig.Title = "IMS PocketBase API"
-		enhancedConfig.Version = "1.0.0"
-		enhancedConfig.Description = "API documentation for IMS PocketBase collections"
-		enhancedConfig.ExcludedCollections = []string{
+		// Initialize Swagger generator with collection filtering
+		config := swagger.DefaultUnifiedConfig()
+		config.Title = "IMS PocketBase API"
+		config.Version = "1.0.0"
+		config.Description = "API documentation for IMS PocketBase collections"
+		config.ExcludedCollections = []string{
 			"_pb_users_auth_", "_mfas", "_otps", "_externalAuths", "_authOrigins", "collections", "export_files", "queues",
 		} // Exclude system collections
-		enhancedConfig.IncludeSystem = false
-
-		enhancedGenerator := swagger.NewEnhancedGenerator(app, enhancedConfig)
+		config.IncludeSystem = false
+		generator := swagger.NewGenerator(app, config)
 
 		// Apply auth to specific PocketBase API endpoints
 		se.Router.Bind(&hook.Handler[*core.RequestEvent]{
@@ -90,11 +89,14 @@ func NewApp() *pocketbase.PocketBase {
 		// static files
 		se.Router.GET("/{path...}", apis.Static(os.DirFS("./pb_public"), false))
 
+		// Register custom routes with Swagger using the custom routes registry
+		swagger.RegisterCustomRoutes(generator)
+
 		// custom business routes
 		routes.RegisterCustom(se)
 
-		// Register Enhanced Swagger endpoints
-		swagger.RegisterEnhancedEndpoints(se, enhancedGenerator)
+		// Register Swagger endpoints
+		swagger.RegisterEndpoints(se, generator)
 
 		return se.Next()
 	})

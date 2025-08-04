@@ -13,7 +13,6 @@ import (
 // CollectionDiscovery handles PocketBase collection discovery and metadata extraction
 type CollectionDiscovery struct {
 	app                 *pocketbase.PocketBase
-	allowedCollections  []string
 	excludedCollections []string
 	includeSystem       bool
 }
@@ -52,20 +51,18 @@ type Discovery interface {
 }
 
 // NewCollectionDiscovery creates a new collection discovery service
-func NewCollectionDiscovery(app *pocketbase.PocketBase, allowedCollections []string, includeSystem bool) *CollectionDiscovery {
+func NewCollectionDiscovery(app *pocketbase.PocketBase, includeSystem bool) *CollectionDiscovery {
 	return &CollectionDiscovery{
 		app:                 app,
-		allowedCollections:  allowedCollections,
 		excludedCollections: []string{},
 		includeSystem:       includeSystem,
 	}
 }
 
 // NewCollectionDiscoveryWithConfig creates a new collection discovery service with full configuration
-func NewCollectionDiscoveryWithConfig(app *pocketbase.PocketBase, allowedCollections []string, excludedCollections []string, includeSystem bool) *CollectionDiscovery {
+func NewCollectionDiscoveryWithConfig(app *pocketbase.PocketBase, excludedCollections []string, includeSystem bool) *CollectionDiscovery {
 	return &CollectionDiscovery{
 		app:                 app,
-		allowedCollections:  allowedCollections,
 		excludedCollections: excludedCollections,
 		includeSystem:       includeSystem,
 	}

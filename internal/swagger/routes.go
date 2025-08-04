@@ -3,6 +3,9 @@ package swagger
 import (
 	"fmt"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // RouteGenerator handles automatic CRUD route generation for collections
@@ -40,6 +43,17 @@ type RequestBody struct {
 	Description string               `json:"description,omitempty"`
 	Required    bool                 `json:"required"`
 	Content     map[string]MediaType `json:"content"`
+}
+
+// Response represents a response in OpenAPI
+type Response struct {
+	Description string               `json:"description"`
+	Content     map[string]MediaType `json:"content,omitempty"`
+}
+
+// MediaType represents an OpenAPI media type
+type MediaType struct {
+	Schema interface{} `json:"schema"`
 }
 
 // SecurityRequirement represents an OpenAPI security requirement
@@ -124,14 +138,14 @@ func (rg *RouteGenerator) generateListRoute(collection EnhancedCollectionInfo) (
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate list response schema: %w", err)
 	}
-
+	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "GET",
 		Path:        fmt.Sprintf("/api/collections/%s/records", collection.Name),
 		Summary:     fmt.Sprintf("List %s records", collection.Name),
 		Description: fmt.Sprintf("Fetch a paginated list of %s records with optional filtering and sorting", collection.Name),
-		Tags:        []string{strings.Title(collection.Name)},
-		OperationID: fmt.Sprintf("list%s", strings.Title(collection.Name)),
+		Tags:        []string{caser.String(collection.Name)},
+		OperationID: fmt.Sprintf("list%s", caser.String(collection.Name)),
 		Parameters:  rg.generateListParameters(),
 		Responses: map[string]Response{
 			"200": {
@@ -175,13 +189,14 @@ func (rg *RouteGenerator) generateCreateRoute(collection EnhancedCollectionInfo)
 		return nil, fmt.Errorf("failed to generate response schema: %w", err)
 	}
 
+	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "POST",
 		Path:        fmt.Sprintf("/api/collections/%s/records", collection.Name),
 		Summary:     fmt.Sprintf("Create %s record", collection.Name),
 		Description: fmt.Sprintf("Create a new %s record", collection.Name),
-		Tags:        []string{strings.Title(collection.Name)},
-		OperationID: fmt.Sprintf("create%s", strings.Title(collection.Name)),
+		Tags:        []string{caser.String(collection.Name)},
+		OperationID: fmt.Sprintf("create%s", caser.String(collection.Name)),
 		RequestBody: &RequestBody{
 			Description: fmt.Sprintf("The %s record to create", collection.Name),
 			Required:    true,
@@ -227,13 +242,14 @@ func (rg *RouteGenerator) generateViewRoute(collection EnhancedCollectionInfo) (
 		return nil, fmt.Errorf("failed to generate response schema: %w", err)
 	}
 
+	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "GET",
 		Path:        fmt.Sprintf("/api/collections/%s/records/{id}", collection.Name),
 		Summary:     fmt.Sprintf("View %s record", collection.Name),
 		Description: fmt.Sprintf("Fetch a single %s record by ID", collection.Name),
-		Tags:        []string{strings.Title(collection.Name)},
-		OperationID: fmt.Sprintf("view%s", strings.Title(collection.Name)),
+		Tags:        []string{caser.String(collection.Name)},
+		OperationID: fmt.Sprintf("view%s", caser.String(collection.Name)),
 		Parameters: []Parameter{
 			{
 				Name:        "id",
@@ -286,13 +302,14 @@ func (rg *RouteGenerator) generateUpdateRoute(collection EnhancedCollectionInfo)
 		return nil, fmt.Errorf("failed to generate response schema: %w", err)
 	}
 
+	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "PATCH",
 		Path:        fmt.Sprintf("/api/collections/%s/records/{id}", collection.Name),
 		Summary:     fmt.Sprintf("Update %s record", collection.Name),
 		Description: fmt.Sprintf("Update an existing %s record", collection.Name),
-		Tags:        []string{strings.Title(collection.Name)},
-		OperationID: fmt.Sprintf("update%s", strings.Title(collection.Name)),
+		Tags:        []string{caser.String(collection.Name)},
+		OperationID: fmt.Sprintf("update%s", caser.String(collection.Name)),
 		Parameters: []Parameter{
 			{
 				Name:        "id",
@@ -345,13 +362,14 @@ func (rg *RouteGenerator) generateUpdateRoute(collection EnhancedCollectionInfo)
 
 // generateDeleteRoute generates a delete route for a record
 func (rg *RouteGenerator) generateDeleteRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "DELETE",
 		Path:        fmt.Sprintf("/api/collections/%s/records/{id}", collection.Name),
 		Summary:     fmt.Sprintf("Delete %s record", collection.Name),
 		Description: fmt.Sprintf("Delete an existing %s record", collection.Name),
-		Tags:        []string{strings.Title(collection.Name)},
-		OperationID: fmt.Sprintf("delete%s", strings.Title(collection.Name)),
+		Tags:        []string{caser.String(collection.Name)},
+		OperationID: fmt.Sprintf("delete%s", caser.String(collection.Name)),
 		Parameters: []Parameter{
 			{
 				Name:        "id",
@@ -492,13 +510,14 @@ func (rg *RouteGenerator) generateAuthWithPasswordRoute(collection EnhancedColle
 		"required": []string{"token", "record"},
 	}
 
+	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "POST",
 		Path:        fmt.Sprintf("/api/collections/%s/auth-with-password", collection.Name),
 		Summary:     fmt.Sprintf("Authenticate %s with password", collection.Name),
 		Description: fmt.Sprintf("Authenticate a %s using email/username and password", collection.Name),
-		Tags:        []string{"Authentication", strings.Title(collection.Name)},
-		OperationID: fmt.Sprintf("auth%sWithPassword", strings.Title(collection.Name)),
+		Tags:        []string{"Authentication", caser.String(collection.Name)},
+		OperationID: fmt.Sprintf("auth%sWithPassword", caser.String(collection.Name)),
 		RequestBody: &RequestBody{
 			Description: "Authentication credentials",
 			Required:    true,
@@ -565,13 +584,14 @@ func (rg *RouteGenerator) generateAuthRefreshRoute(collection EnhancedCollection
 		"required": []string{"token", "record"},
 	}
 
+	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "POST",
 		Path:        fmt.Sprintf("/api/collections/%s/auth-refresh", collection.Name),
 		Summary:     fmt.Sprintf("Refresh %s authentication", collection.Name),
 		Description: fmt.Sprintf("Refresh the authentication token for %s", collection.Name),
-		Tags:        []string{"Authentication", strings.Title(collection.Name)},
-		OperationID: fmt.Sprintf("refresh%sAuth", strings.Title(collection.Name)),
+		Tags:        []string{"Authentication", caser.String(collection.Name)},
+		OperationID: fmt.Sprintf("refresh%sAuth", caser.String(collection.Name)),
 		Security: []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		},
@@ -595,13 +615,14 @@ func (rg *RouteGenerator) generateAuthRefreshRoute(collection EnhancedCollection
 
 // generateRequestPasswordResetRoute generates the request-password-reset route
 func (rg *RouteGenerator) generateRequestPasswordResetRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "POST",
 		Path:        fmt.Sprintf("/api/collections/%s/request-password-reset", collection.Name),
 		Summary:     fmt.Sprintf("Request password reset for %s", collection.Name),
 		Description: fmt.Sprintf("Send a password reset email to %s", collection.Name),
-		Tags:        []string{"Authentication", strings.Title(collection.Name)},
-		OperationID: fmt.Sprintf("request%sPasswordReset", strings.Title(collection.Name)),
+		Tags:        []string{"Authentication", caser.String(collection.Name)},
+		OperationID: fmt.Sprintf("request%sPasswordReset", caser.String(collection.Name)),
 		RequestBody: &RequestBody{
 			Description: "Email for password reset",
 			Required:    true,
@@ -707,12 +728,13 @@ func (rg *RouteGenerator) generateOperationID(method, path string) string {
 
 	operationParts = append(operationParts, strings.ToLower(method))
 
+	caser := cases.Title(language.English)
 	for _, part := range parts {
 		// Skip path parameters
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
 			continue
 		}
-		operationParts = append(operationParts, strings.Title(part))
+		operationParts = append(operationParts, caser.String(part))
 	}
 
 	return strings.Join(operationParts, "")

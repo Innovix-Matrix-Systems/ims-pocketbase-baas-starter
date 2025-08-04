@@ -5,14 +5,10 @@ import (
 )
 
 func TestNewCollectionDiscovery(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{"users", "posts"}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	if discovery == nil {
 		t.Fatal("Expected discovery to be created, got nil")
-	}
-
-	if len(discovery.allowedCollections) != 2 {
-		t.Errorf("Expected 2 allowed collections, got %d", len(discovery.allowedCollections))
 	}
 
 	if !discovery.includeSystem {
@@ -21,16 +17,11 @@ func TestNewCollectionDiscovery(t *testing.T) {
 }
 
 func TestNewCollectionDiscoveryWithConfig(t *testing.T) {
-	allowed := []string{"users", "posts"}
 	excluded := []string{"internal", "temp"}
-	discovery := NewCollectionDiscoveryWithConfig(nil, allowed, excluded, false)
+	discovery := NewCollectionDiscoveryWithConfig(nil, excluded, false)
 
 	if discovery == nil {
 		t.Fatal("Expected discovery to be created, got nil")
-	}
-
-	if len(discovery.allowedCollections) != 2 {
-		t.Errorf("Expected 2 allowed collections, got %d", len(discovery.allowedCollections))
 	}
 
 	if len(discovery.excludedCollections) != 2 {
@@ -94,8 +85,8 @@ func TestShouldIncludeCollection(t *testing.T) {
 			expected:            false,
 		},
 		{
-			name:                "Include collection in allowed list",
-			allowedCollections:  []string{"users", "posts"},
+			name:                "Include regular collection when not excluded",
+			allowedCollections:  []string{},
 			excludedCollections: []string{},
 			includeSystem:       true,
 			collectionName:      "users",
@@ -104,14 +95,14 @@ func TestShouldIncludeCollection(t *testing.T) {
 			expected:            true,
 		},
 		{
-			name:                "Exclude collection not in allowed list",
-			allowedCollections:  []string{"users", "posts"},
-			excludedCollections: []string{},
+			name:                "Include collection not in excluded list",
+			allowedCollections:  []string{},
+			excludedCollections: []string{"temp", "internal"},
 			includeSystem:       true,
 			collectionName:      "comments",
 			collectionType:      "base",
 			system:              false,
-			expected:            false,
+			expected:            true,
 		},
 		{
 			name:                "Handle empty collection name",
@@ -127,7 +118,7 @@ func TestShouldIncludeCollection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			discovery := NewCollectionDiscoveryWithConfig(nil, tt.allowedCollections, tt.excludedCollections, tt.includeSystem)
+			discovery := NewCollectionDiscoveryWithConfig(nil, tt.excludedCollections, tt.includeSystem)
 			result := discovery.ShouldIncludeCollection(tt.collectionName, tt.collectionType, tt.system)
 			if result != tt.expected {
 				t.Errorf("Expected %v, got %v for collection %s", tt.expected, result, tt.collectionName)
@@ -137,7 +128,7 @@ func TestShouldIncludeCollection(t *testing.T) {
 }
 
 func TestExtractCollectionInfo(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	// Test with basic collection data
 	listRule := "id != ''"
@@ -192,7 +183,7 @@ func TestExtractCollectionInfo(t *testing.T) {
 }
 
 func TestExtractCollectionInfoWithEmptyData(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	// Test with empty collection data
 	dbCol := dbCollection{
@@ -218,7 +209,7 @@ func TestExtractCollectionInfoWithEmptyData(t *testing.T) {
 }
 
 func TestDiscoverCollectionsWithNilApp(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	collections, err := discovery.DiscoverCollections()
 	if err == nil {
@@ -231,7 +222,7 @@ func TestDiscoverCollectionsWithNilApp(t *testing.T) {
 }
 
 func TestGetCollectionWithNilApp(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	collection, err := discovery.GetCollection("users")
 	if err == nil {
@@ -244,7 +235,7 @@ func TestGetCollectionWithNilApp(t *testing.T) {
 }
 
 func TestValidateCollectionAccessWithNilApp(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	err := discovery.ValidateCollectionAccess()
 	if err == nil {
@@ -253,7 +244,7 @@ func TestValidateCollectionAccessWithNilApp(t *testing.T) {
 }
 
 func TestGetCollectionNames(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	// This will fail with nil app, but we're testing the method exists
 	names, err := discovery.GetCollectionNames()
@@ -267,7 +258,7 @@ func TestGetCollectionNames(t *testing.T) {
 }
 
 func TestGetCollectionsByType(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	// This will fail with nil app, but we're testing the method exists
 	collections, err := discovery.GetCollectionsByType("auth")
@@ -281,7 +272,7 @@ func TestGetCollectionsByType(t *testing.T) {
 }
 
 func TestGetAuthCollections(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	// This will fail with nil app, but we're testing the method exists
 	collections, err := discovery.GetAuthCollections()
@@ -295,7 +286,7 @@ func TestGetAuthCollections(t *testing.T) {
 }
 
 func TestGetBaseCollections(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	// This will fail with nil app, but we're testing the method exists
 	collections, err := discovery.GetBaseCollections()
@@ -309,7 +300,7 @@ func TestGetBaseCollections(t *testing.T) {
 }
 
 func TestGetViewCollections(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	// This will fail with nil app, but we're testing the method exists
 	collections, err := discovery.GetViewCollections()
@@ -323,7 +314,7 @@ func TestGetViewCollections(t *testing.T) {
 }
 
 func TestParseSchemaFields(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	tests := []struct {
 		name        string
@@ -400,7 +391,7 @@ func TestParseSchemaFields(t *testing.T) {
 }
 
 func TestParseFieldInfo(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	tests := []struct {
 		name             string
@@ -492,7 +483,7 @@ func TestParseFieldInfo(t *testing.T) {
 }
 
 func TestParseOptionsJSON(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	tests := []struct {
 		name        string
@@ -557,7 +548,7 @@ func TestParseOptionsJSON(t *testing.T) {
 }
 
 func TestExtractCollectionInfoWithSchema(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	// Test with collection that has schema
 	schemaJSON := `[{"name":"title","type":"text","required":true,"system":false,"options":{"max":100}},{"name":"count","type":"number","required":false,"system":false}]`
@@ -608,7 +599,7 @@ func TestExtractCollectionInfoWithSchema(t *testing.T) {
 	}
 }
 func TestGetSystemFields(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	systemFields := discovery.GetSystemFields()
 
@@ -643,7 +634,7 @@ func TestGetSystemFields(t *testing.T) {
 }
 
 func TestGetCollectionStatsWithNilApp(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	stats, err := discovery.GetCollectionStats()
 	if err == nil {
@@ -656,7 +647,7 @@ func TestGetCollectionStatsWithNilApp(t *testing.T) {
 }
 
 func TestIsCollectionAccessibleWithNilApp(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	accessible := discovery.IsCollectionAccessible("users")
 	if accessible {
@@ -665,7 +656,7 @@ func TestIsCollectionAccessibleWithNilApp(t *testing.T) {
 }
 
 func TestRefreshCollectionCache(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, []string{}, true)
+	discovery := NewCollectionDiscovery(nil, true)
 
 	// This should not panic or error
 	discovery.RefreshCollectionCache()

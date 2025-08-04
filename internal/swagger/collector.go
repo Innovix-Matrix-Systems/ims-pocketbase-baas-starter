@@ -9,31 +9,22 @@ import (
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // SimpleRouteCollector handles route discovery during OnServe hook execution
 type SimpleRouteCollector struct {
-	registry           *RouteRegistry
-	app                *pocketbase.PocketBase
-	allowedCollections []string
-	mutex              sync.Mutex
+	registry *RouteRegistry
+	app      *pocketbase.PocketBase
+	mutex    sync.Mutex
 }
 
 // NewSimpleRouteCollector creates a new route collector
 func NewSimpleRouteCollector(app *pocketbase.PocketBase, registry *RouteRegistry) *SimpleRouteCollector {
 	return &SimpleRouteCollector{
-		registry:           registry,
-		app:                app,
-		allowedCollections: nil,
-	}
-}
-
-// NewSimpleRouteCollectorWithConfig creates a new route collector with configuration
-func NewSimpleRouteCollectorWithConfig(app *pocketbase.PocketBase, registry *RouteRegistry, allowedCollections []string) *SimpleRouteCollector {
-	return &SimpleRouteCollector{
-		registry:           registry,
-		app:                app,
-		allowedCollections: allowedCollections,
+		registry: registry,
+		app:      app,
 	}
 }
 
@@ -50,7 +41,7 @@ func (c *SimpleRouteCollector) CollectRoutes(se *core.ServeEvent) error {
 	log.Printf("Starting route discovery...")
 
 	// Create RouteInspector for router access
-	inspector := NewRouteInspectorWithConfig(se.Router, c.app, c.allowedCollections)
+	inspector := NewRouteInspectorWithApp(se.Router, c.app)
 
 	// Log router information for debugging
 	routerInfo := inspector.GetRouterInfo()
@@ -195,7 +186,7 @@ func (c *SimpleRouteCollector) extractRouteMetadata(route DiscoveredRoute) Route
 }
 
 // getHandlerName extracts a readable handler name
-func (c *SimpleRouteCollector) getHandlerName(handler interface{}) string {
+func (c *SimpleRouteCollector) getHandlerName(handler any) string {
 	if handler == nil {
 		return "unknown"
 	}
@@ -321,15 +312,16 @@ func (c *SimpleRouteCollector) generateSummary(method, path string) string {
 		resource = strings.ReplaceAll(resource, "{", "")
 		resource = strings.ReplaceAll(resource, "}", "")
 
+		caser := cases.Title(language.English)
 		switch method {
 		case "GET":
-			return fmt.Sprintf("Get %s", strings.Title(resource))
+			return fmt.Sprintf("Get %s", caser.String(resource))
 		case "POST":
-			return fmt.Sprintf("Create %s", strings.Title(resource))
+			return fmt.Sprintf("Create %s", caser.String(resource))
 		case "PUT", "PATCH":
-			return fmt.Sprintf("Update %s", strings.Title(resource))
+			return fmt.Sprintf("Update %s", caser.String(resource))
 		case "DELETE":
-			return fmt.Sprintf("Delete %s", strings.Title(resource))
+			return fmt.Sprintf("Delete %s", caser.String(resource))
 		}
 	}
 

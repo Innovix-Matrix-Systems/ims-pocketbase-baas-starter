@@ -5,6 +5,9 @@ import (
 	"log"
 	"strconv"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // FieldSchema represents an OpenAPI field schema definition
@@ -396,7 +399,8 @@ func (fsm *FieldSchemaMapper) generateFieldDescription(field FieldInfo) string {
 
 	// Generate default description if none provided
 	if description == "" {
-		description = fmt.Sprintf("%s field", strings.Title(field.Type))
+		caser := cases.Title(language.English)
+		description = fmt.Sprintf("%s field", caser.String(field.Type))
 	}
 
 	// Add system field indicator

@@ -13,48 +13,33 @@ import (
 
 // RouteInspector handles PocketBase router interaction and route extraction
 type RouteInspector struct {
-	router             interface{}
-	app                interface{} // PocketBase app for accessing collections
-	allowedCollections []string    // Optional list of collections to include in docs
-	mutex              sync.RWMutex
-	extractedOnce      bool
-	cachedRoutes       []InspectedRoute
-	lastError          error
+	router        interface{}
+	app           interface{} // PocketBase app for accessing collections
+	mutex         sync.RWMutex
+	extractedOnce bool
+	cachedRoutes  []InspectedRoute
+	lastError     error
 }
 
 // NewRouteInspector creates a new route inspector
 func NewRouteInspector(router interface{}) *RouteInspector {
 	return &RouteInspector{
-		router:             router,
-		app:                nil,
-		allowedCollections: nil,
-		extractedOnce:      false,
-		cachedRoutes:       nil,
-		lastError:          nil,
+		router:        router,
+		app:           nil,
+		extractedOnce: false,
+		cachedRoutes:  nil,
+		lastError:     nil,
 	}
 }
 
 // NewRouteInspectorWithApp creates a new route inspector with app access
 func NewRouteInspectorWithApp(router interface{}, app interface{}) *RouteInspector {
 	return &RouteInspector{
-		router:             router,
-		app:                app,
-		allowedCollections: nil,
-		extractedOnce:      false,
-		cachedRoutes:       nil,
-		lastError:          nil,
-	}
-}
-
-// NewRouteInspectorWithConfig creates a new route inspector with full configuration
-func NewRouteInspectorWithConfig(router interface{}, app interface{}, allowedCollections []string) *RouteInspector {
-	return &RouteInspector{
-		router:             router,
-		app:                app,
-		allowedCollections: allowedCollections,
-		extractedOnce:      false,
-		cachedRoutes:       nil,
-		lastError:          nil,
+		router:        router,
+		app:           app,
+		extractedOnce: false,
+		cachedRoutes:  nil,
+		lastError:     nil,
 	}
 }
 
@@ -775,7 +760,7 @@ func (ri *RouteInspector) removeDuplicateRoutes(routes []InspectedRoute) []Inspe
 	return unique
 }
 
-// getFallbackRoutes returns dynamic routes and known custom routes when extraction fails
+// getFallbackRoutes returns dynamic routes when extraction fails
 func (ri *RouteInspector) getFallbackRoutes() []InspectedRoute {
 	var routes []InspectedRoute
 
@@ -785,15 +770,6 @@ func (ri *RouteInspector) getFallbackRoutes() []InspectedRoute {
 		log.Printf("Added %d dynamic collection routes", len(dynamicRoutes))
 	}
 
-	// Only add known custom routes if we have an app (indicating we're in a real application context)
-	if ri.app != nil {
-		customRoutes := ri.getKnownCustomRoutes()
-		if len(customRoutes) > 0 {
-			routes = append(routes, customRoutes...)
-			log.Printf("Added %d known custom routes", len(customRoutes))
-		}
-	}
-
 	if len(routes) == 0 {
 		log.Printf("No routes available for fallback")
 	} else {
@@ -801,50 +777,6 @@ func (ri *RouteInspector) getFallbackRoutes() []InspectedRoute {
 	}
 
 	return routes
-}
-
-// getKnownCustomRoutes returns the custom routes defined in the application
-func (ri *RouteInspector) getKnownCustomRoutes() []InspectedRoute {
-	// These are the custom routes defined in internal/routes/routes.go
-	// This is a temporary solution until we can extract routes directly from the router
-	return []InspectedRoute{
-		{
-			Method:      "GET",
-			Path:        "/api/v1/hello",
-			HandlerName: "custom.hello",
-			Middleware:  []string{},
-		},
-		{
-			Method:      "GET",
-			Path:        "/api/v1/protected",
-			HandlerName: "custom.protected",
-			Middleware:  []string{"auth"},
-		},
-		{
-			Method:      "GET",
-			Path:        "/api/v1/permission-test",
-			HandlerName: "custom.permissionTest",
-			Middleware:  []string{"auth", "permission"},
-		},
-		{
-			Method:      "POST",
-			Path:        "/api/v1/users/export",
-			HandlerName: "custom.userExport",
-			Middleware:  []string{"auth", "permission"},
-		},
-		{
-			Method:      "GET",
-			Path:        "/api/v1/jobs/{id}/status",
-			HandlerName: "custom.jobStatus",
-			Middleware:  []string{"auth"},
-		},
-		{
-			Method:      "POST",
-			Path:        "/api/v1/jobs/{id}/download",
-			HandlerName: "custom.jobDownload",
-			Middleware:  []string{"auth"},
-		},
-	}
 }
 
 // generateDynamicCollectionRoutes generates routes for all collections in the database
@@ -995,34 +927,12 @@ func (ri *RouteInspector) detectCommonCollections(app *pocketbase.PocketBase) []
 		return collections
 	}
 
-	// Convert database results to CollectionInfo, filtering by allowed collections if specified
+	// Convert database results to CollectionInfo
 	for _, dbCol := range dbCollections {
-		// If allowedCollections is specified, only include collections in that list
-		if ri.allowedCollections != nil && len(ri.allowedCollections) > 0 {
-			allowed := false
-			for _, allowedName := range ri.allowedCollections {
-				if dbCol.Name == allowedName {
-					allowed = true
-					break
-				}
-			}
-			if !allowed {
-				log.Printf("Skipping collection '%s' - not in allowed list", dbCol.Name)
-				continue
-			}
-		}
-
-		collections = append(collections, CollectionInfo{
-			Name: dbCol.Name,
-			Type: dbCol.Type,
-		})
+		collections = append(collections, CollectionInfo(dbCol))
 	}
 
-	if ri.allowedCollections != nil && len(ri.allowedCollections) > 0 {
-		log.Printf("Found %d collections (filtered by allowed list %v): %v", len(collections), ri.allowedCollections, collections)
-	} else {
-		log.Printf("Found %d actual collections in database: %v", len(collections), collections)
-	}
+	log.Printf("Found %d actual collections in database: %v", len(collections), collections)
 	return collections
 }
 
