@@ -133,6 +133,11 @@ func (sg *SchemaGenerator) GenerateCreateSchema(collection EnhancedCollectionInf
 			continue
 		}
 
+		// Also skip common system fields by name (created, updated, id)
+		if field.Name == "created" || field.Name == "updated" || field.Name == "id" {
+			continue
+		}
+
 		fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
 		if err != nil {
 			log.Printf("Warning: Failed to map field %s in collection %s: %v", field.Name, collection.Name, err)
@@ -169,6 +174,11 @@ func (sg *SchemaGenerator) GenerateUpdateSchema(collection EnhancedCollectionInf
 	for _, field := range collection.Fields {
 		// Skip system fields in update schema
 		if field.System {
+			continue
+		}
+
+		// Also skip common system fields by name (created, updated, id)
+		if field.Name == "created" || field.Name == "updated" || field.Name == "id" {
 			continue
 		}
 
