@@ -269,6 +269,17 @@ func (cd *CollectionDiscovery) parseFieldInfo(fieldData map[string]interface{}) 
 		field.Options = options
 	}
 
+	// For relation fields, copy field-level properties to options for consistency
+	if field.Type == "relation" {
+		// Copy relation-specific properties from field level to options
+		relationProps := []string{"maxSelect", "minSelect", "collectionId", "cascadeDelete", "presentable", "hidden"}
+		for _, prop := range relationProps {
+			if value, exists := fieldData[prop]; exists {
+				field.Options[prop] = value
+			}
+		}
+	}
+
 	return field, nil
 }
 
@@ -470,6 +481,7 @@ func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Coll
 			if schema, ok := collectionData["fields"].([]interface{}); ok {
 				for _, fieldData := range schema {
 					if fieldMap, ok := fieldData.(map[string]interface{}); ok {
+
 						fieldInfo := FieldInfo{
 							Options: make(map[string]interface{}),
 						}
@@ -488,6 +500,17 @@ func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Coll
 						}
 						if options, ok := fieldMap["options"].(map[string]interface{}); ok {
 							fieldInfo.Options = options
+						}
+
+						// For relation fields, copy field-level properties to options for consistency
+						if fieldInfo.Type == "relation" {
+							// Copy relation-specific properties from field level to options
+							relationProps := []string{"maxSelect", "minSelect", "collectionId", "cascadeDelete", "presentable", "hidden"}
+							for _, prop := range relationProps {
+								if value, exists := fieldMap[prop]; exists {
+									fieldInfo.Options[prop] = value
+								}
+							}
 						}
 
 						collectionInfo.Fields = append(collectionInfo.Fields, fieldInfo)

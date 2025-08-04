@@ -23,6 +23,7 @@ func GetSwaggerUIHTML() string {
                 url: "/api-docs/openapi.json",
                 dom_id: '#swagger-ui',
                 deepLinking: true,
+                persistAuthorization: true,
                 presets: [
                     SwaggerUIBundle.presets.apis,
                     SwaggerUIStandalonePreset

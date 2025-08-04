@@ -1,6 +1,7 @@
 package swagger
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -655,5 +656,242 @@ func TestParseFloatOption(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+func TestRelationFieldExampleSingleRelation(t *testing.T) {
+	mapper := NewFieldSchemaMapper()
+
+	field := FieldInfo{
+		Name: "user",
+		Type: "relation",
+		Options: map[string]interface{}{
+			"maxSelect":    1,
+			"collectionId": "users",
+		},
+	}
+
+	schema, err := mapper.MapFieldToSchema(field)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if schema.Type != "string" {
+		t.Errorf("Expected type 'string', got %s", schema.Type)
+	}
+
+	if schema.Example != "RELATION_RECORD_ID" {
+		t.Errorf("Expected 'RELATION_RECORD_ID', got %v", schema.Example)
+	}
+}
+
+func TestRelationFieldExampleMultiRelation(t *testing.T) {
+	mapper := NewFieldSchemaMapper()
+
+	field := FieldInfo{
+		Name: "categories",
+		Type: "relation",
+		Options: map[string]interface{}{
+			"maxSelect":    5,
+			"collectionId": "categories",
+		},
+	}
+
+	schema, err := mapper.MapFieldToSchema(field)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if schema.Type != "array" {
+		t.Errorf("Expected type 'array', got %s", schema.Type)
+	}
+
+	expected := []interface{}{"RELATION_RECORD_ID"}
+	if !reflect.DeepEqual(schema.Example, expected) {
+		t.Errorf("Expected %v, got %v", expected, schema.Example)
+	}
+}
+
+func TestRelationFieldExampleNoMaxSelect(t *testing.T) {
+	mapper := NewFieldSchemaMapper()
+
+	field := FieldInfo{
+		Name: "owner",
+		Type: "relation",
+		Options: map[string]interface{}{
+			"collectionId": "users",
+		},
+	}
+
+	schema, err := mapper.MapFieldToSchema(field)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if schema.Type != "string" {
+		t.Errorf("Expected type 'string', got %s", schema.Type)
+	}
+
+	if schema.Example != "RELATION_RECORD_ID" {
+		t.Errorf("Expected 'RELATION_RECORD_ID' for default single relation, got %v", schema.Example)
+	}
+}
+
+func TestRelationFieldExampleEdgeCases(t *testing.T) {
+	testCases := []struct {
+		name            string
+		field           FieldInfo
+		expectedType    string
+		expectedExample interface{}
+	}{
+		{
+			name: "zero maxSelect",
+			field: FieldInfo{
+				Name: "optional_relation",
+				Type: "relation",
+				Options: map[string]interface{}{
+					"maxSelect":    0,
+					"collectionId": "users",
+				},
+			},
+			expectedType:    "string",
+			expectedExample: "RELATION_RECORD_ID",
+		},
+		{
+			name: "negative maxSelect",
+			field: FieldInfo{
+				Name: "invalid_relation",
+				Type: "relation",
+				Options: map[string]interface{}{
+					"maxSelect":    -1,
+					"collectionId": "users",
+				},
+			},
+			expectedType:    "string",
+			expectedExample: "RELATION_RECORD_ID",
+		},
+		{
+			name: "string maxSelect",
+			field: FieldInfo{
+				Name: "string_max_select",
+				Type: "relation",
+				Options: map[string]interface{}{
+					"maxSelect":    "invalid",
+					"collectionId": "users",
+				},
+			},
+			expectedType:    "string",
+			expectedExample: "RELATION_RECORD_ID",
+		},
+		{
+			name: "nil options",
+			field: FieldInfo{
+				Name:    "no_options",
+				Type:    "relation",
+				Options: nil,
+			},
+			expectedType:    "string",
+			expectedExample: "RELATION_RECORD_ID",
+		},
+		{
+			name: "maxSelect exactly 1",
+			field: FieldInfo{
+				Name: "exactly_one",
+				Type: "relation",
+				Options: map[string]interface{}{
+					"maxSelect":    1,
+					"collectionId": "users",
+				},
+			},
+			expectedType:    "string",
+			expectedExample: "RELATION_RECORD_ID",
+		},
+		{
+			name: "maxSelect exactly 2",
+			field: FieldInfo{
+				Name: "exactly_two",
+				Type: "relation",
+				Options: map[string]interface{}{
+					"maxSelect":    2,
+					"collectionId": "tags",
+				},
+			},
+			expectedType:    "array",
+			expectedExample: []interface{}{"RELATION_RECORD_ID"},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			mapper := NewFieldSchemaMapper()
+			schema, err := mapper.MapFieldToSchema(tc.field)
+
+			if err != nil {
+				t.Errorf("Expected no error, got %v", err)
+			}
+
+			if schema.Type != tc.expectedType {
+				t.Errorf("Expected type '%s', got '%s'", tc.expectedType, schema.Type)
+			}
+
+			if !reflect.DeepEqual(schema.Example, tc.expectedExample) {
+				t.Errorf("Expected example %v, got %v", tc.expectedExample, schema.Example)
+			}
+		})
+	}
+}
+
+func TestRelationFieldExampleWithoutExamplesEnabled(t *testing.T) {
+	mapper := NewFieldSchemaMapperWithConfig(false, true)
+
+	field := FieldInfo{
+		Name: "user",
+		Type: "relation",
+		Options: map[string]interface{}{
+			"maxSelect":    1,
+			"collectionId": "users",
+		},
+	}
+
+	schema, err := mapper.MapFieldToSchema(field)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if schema.Example != nil {
+		t.Error("Expected no example when includeExamples is false")
+	}
+}
+
+func TestNonRelationFieldExamplesUnchanged(t *testing.T) {
+	mapper := NewFieldSchemaMapper()
+
+	// Test that non-relation fields still get their original examples
+	textField := FieldInfo{
+		Name: "title",
+		Type: "text",
+	}
+
+	schema, err := mapper.MapFieldToSchema(textField)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if schema.Example != "example_title" {
+		t.Errorf("Expected 'example_title', got %v", schema.Example)
+	}
+
+	// Test email field
+	emailField := FieldInfo{
+		Name: "email",
+		Type: "email",
+	}
+
+	emailSchema, err := mapper.MapFieldToSchema(emailField)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	if emailSchema.Example != "user@example.com" {
+		t.Errorf("Expected 'user@example.com', got %v", emailSchema.Example)
 	}
 }

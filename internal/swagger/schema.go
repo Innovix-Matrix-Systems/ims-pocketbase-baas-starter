@@ -378,7 +378,34 @@ func (fsm *FieldSchemaMapper) applyValidationConstraints(field FieldInfo, schema
 
 // addFieldExample adds example values to the schema
 func (fsm *FieldSchemaMapper) addFieldExample(field FieldInfo, schema *FieldSchema) {
-	// Generate appropriate examples based on field type
+	// Check if this is a relation field and generate relation-specific examples
+	if field.Type == "relation" {
+		fsm.addRelationFieldExample(field, schema)
+		return
+	}
+
+	// Generate appropriate examples based on field type for non-relation fields
+	fsm.addGenericFieldExample(field, schema)
+}
+
+// addRelationFieldExample generates examples specifically for relation fields
+func (fsm *FieldSchemaMapper) addRelationFieldExample(field FieldInfo, schema *FieldSchema) {
+	switch schema.Type {
+	case "string":
+		// Single relation field
+		schema.Example = "RELATION_RECORD_ID"
+	case "array":
+		// Multi-relation field
+		schema.Example = []interface{}{"RELATION_RECORD_ID"}
+	default:
+		// Fallback to generic example for unexpected schema types
+		log.Printf("Warning: Unexpected schema type %s for relation field %s, using fallback", schema.Type, field.Name)
+		fsm.addGenericFieldExample(field, schema)
+	}
+}
+
+// addGenericFieldExample generates examples for non-relation fields
+func (fsm *FieldSchemaMapper) addGenericFieldExample(field FieldInfo, schema *FieldSchema) {
 	switch schema.Type {
 	case "string":
 		if schema.Format == "email" {

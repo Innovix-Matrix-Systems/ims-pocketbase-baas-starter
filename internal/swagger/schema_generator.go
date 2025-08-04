@@ -128,8 +128,16 @@ func (sg *SchemaGenerator) GenerateCreateSchema(collection EnhancedCollectionInf
 
 	// Only add collection fields (no system fields for create operations)
 	for _, field := range collection.Fields {
-		// Skip system fields in create schema
-		if field.System {
+		// Debug logging for email field
+		if field.Type == "email" || field.Name == "email" {
+			log.Printf("DEBUG: Processing email field - Name: %s, Type: %s, System: %v, Required: %v", field.Name, field.Type, field.System, field.Required)
+		}
+
+		// Skip system fields in create schema, except for password and email fields in auth collections
+		if field.System && field.Type != "password" && !(collection.Type == "auth" && field.Type == "email") {
+			if field.Type == "email" || field.Name == "email" {
+				log.Printf("DEBUG: Skipping email field due to system field check")
+			}
 			continue
 		}
 
@@ -147,6 +155,47 @@ func (sg *SchemaGenerator) GenerateCreateSchema(collection EnhancedCollectionInf
 		schema.Properties[field.Name] = fieldSchema
 		if fieldSchema.Required {
 			schema.Required = append(schema.Required, field.Name)
+		}
+	}
+
+	// For auth collections, add passwordConfirm field if password field exists
+	if collection.Type == "auth" {
+		if _, hasPassword := schema.Properties["password"]; hasPassword {
+			passwordConfirmSchema := &FieldSchema{
+				Type:        "string",
+				Format:      "password",
+				Description: "Password confirmation (must match password)",
+				Required:    true,
+			}
+			schema.Properties["passwordConfirm"] = passwordConfirmSchema
+			schema.Required = append(schema.Required, "passwordConfirm")
+		}
+	}
+
+	// Special case: For auth collections, ensure email field is included if it exists
+	if collection.Type == "auth" {
+		for _, field := range collection.Fields {
+			if field.Type == "email" && field.Name == "email" {
+				log.Printf("DEBUG: Found email field for auth collection %s, adding to schema", collection.Name)
+				fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
+				if err != nil {
+					log.Printf("Warning: Failed to map email field: %v", err)
+					fieldSchema = &FieldSchema{
+						Type:        "string",
+						Format:      "email",
+						Description: "Email address",
+						Required:    field.Required,
+						Example:     "user@example.com",
+					}
+				}
+				schema.Properties["email"] = fieldSchema
+				if fieldSchema.Required {
+					if !contains(schema.Required, "email") {
+						schema.Required = append(schema.Required, "email")
+					}
+				}
+				break
+			}
 		}
 	}
 
@@ -172,8 +221,8 @@ func (sg *SchemaGenerator) GenerateUpdateSchema(collection EnhancedCollectionInf
 
 	// Add collection fields (no system fields for update operations)
 	for _, field := range collection.Fields {
-		// Skip system fields in update schema
-		if field.System {
+		// Skip system fields in update schema, except for password and email fields in auth collections
+		if field.System && field.Type != "password" && !(collection.Type == "auth" && field.Type == "email") {
 			continue
 		}
 
@@ -191,6 +240,29 @@ func (sg *SchemaGenerator) GenerateUpdateSchema(collection EnhancedCollectionInf
 		// Make field optional for updates
 		fieldSchema.Required = false
 		schema.Properties[field.Name] = fieldSchema
+	}
+
+	// Special case: For auth collections, ensure email field is included if it exists
+	if collection.Type == "auth" {
+		for _, field := range collection.Fields {
+			if field.Type == "email" && field.Name == "email" {
+				log.Printf("DEBUG: Found email field for auth collection %s update schema, adding to schema", collection.Name)
+				fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
+				if err != nil {
+					log.Printf("Warning: Failed to map email field: %v", err)
+					fieldSchema = &FieldSchema{
+						Type:        "string",
+						Format:      "email",
+						Description: "Email address",
+						Required:    false, // Always optional for updates
+						Example:     "user@example.com",
+					}
+				}
+				fieldSchema.Required = false // Ensure it's optional for updates
+				schema.Properties["email"] = fieldSchema
+				break
+			}
+		}
 	}
 
 	// Generate example if enabled
@@ -372,13 +444,37 @@ func (sg *SchemaGenerator) shouldIncludeInCreateExample(fieldName string, fieldS
 	}
 
 	// Include some common optional fields
-	commonFields := []string{"name", "title", "description", "email", "status"}
+	commonFields := []string{"name", "title", "description", "email", "status", "active", "enabled", "password"}
 	for _, common := range commonFields {
 		if strings.Contains(strings.ToLower(fieldName), common) {
 			return true
 		}
 	}
 
+	// Include password fields (they're important for auth collections)
+	if fieldSchema.Format == "password" {
+		return true
+	}
+
+	// Include relation fields (they're important for understanding the API)
+	if isRelationFieldSchema(fieldSchema) {
+		return true
+	}
+
+	// Include boolean fields (they're usually simple and helpful)
+	if fieldSchema.Type == "boolean" {
+		return true
+	}
+
+	return false
+}
+
+// isRelationFieldSchema checks if a field schema represents a relation field
+func isRelationFieldSchema(fieldSchema *FieldSchema) bool {
+	if fieldSchema.Description != "" {
+		return strings.Contains(fieldSchema.Description, "Related record ID") ||
+			strings.Contains(fieldSchema.Description, "Relation field")
+	}
 	return false
 }
 
@@ -481,4 +577,14 @@ func (sg *SchemaGenerator) ValidateSchema(schema *CollectionSchema) error {
 	}
 
 	return nil
+}
+
+// contains checks if a string slice contains a specific string
+func contains(slice []string, str string) bool {
+	for _, s := range slice {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }

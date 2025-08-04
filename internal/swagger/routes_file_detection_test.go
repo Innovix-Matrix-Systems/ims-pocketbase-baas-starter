@@ -1,6 +1,7 @@
 package swagger
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -885,5 +886,134 @@ func TestErrorHandlingInvalidSchema(t *testing.T) {
 
 	if _, hasJSON := content2["application/json"]; !hasJSON {
 		t.Error("Expected application/json content type")
+	}
+}
+func TestRelationFieldExamplesInFormData(t *testing.T) {
+	rg := NewRouteGenerator(nil)
+
+	// Collection with relation fields and file fields
+	collection := EnhancedCollectionInfo{
+		Name: "posts",
+		Fields: []FieldInfo{
+			{Name: "title", Type: "text", Required: true},
+			{Name: "author", Type: "relation", Required: true, Options: map[string]interface{}{
+				"maxSelect": 1, "collectionId": "users",
+			}},
+			{Name: "categories", Type: "relation", Required: false, Options: map[string]interface{}{
+				"maxSelect": 5, "collectionId": "categories",
+			}},
+			{Name: "featured_image", Type: "file", Required: false, Options: map[string]interface{}{
+				"maxSelect": 1,
+			}},
+			{Name: "is_published", Type: "bool", Required: false},
+		},
+	}
+
+	// Mock schema with relation examples
+	schema := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"title": map[string]interface{}{
+				"type":        "string",
+				"description": "Post title",
+				"example":     "example_title",
+			},
+			"author": map[string]interface{}{
+				"type":        "string",
+				"description": "Related record ID (references collection: users)",
+				"example":     "RELATION_RECORD_ID",
+			},
+			"categories": map[string]interface{}{
+				"type":        "array",
+				"description": "Relation field (references collection: categories)",
+				"items": map[string]interface{}{
+					"type":        "string",
+					"description": "Related record ID",
+				},
+				"example": []interface{}{"RELATION_RECORD_ID"},
+			},
+			"featured_image": map[string]interface{}{
+				"type":        "string",
+				"format":      "binary",
+				"description": "File upload",
+			},
+			"is_published": map[string]interface{}{
+				"type":        "boolean",
+				"description": "Boolean field",
+				"example":     true,
+			},
+		},
+		"required": []string{"title", "author"},
+		"example": map[string]interface{}{
+			"title":        "example_title",
+			"author":       "RELATION_RECORD_ID",
+			"categories":   []interface{}{"RELATION_RECORD_ID"},
+			"is_published": true,
+		},
+	}
+
+	content := rg.generateRequestContent(schema, collection, "create")
+
+	// Should have both JSON and form-data content types
+	if len(content) != 2 {
+		t.Errorf("Expected 2 content types, got %d", len(content))
+	}
+
+	// Test JSON content
+	jsonContent, hasJSON := content["application/json"]
+	if !hasJSON {
+		t.Fatal("Expected JSON content type")
+	}
+
+	jsonSchema := jsonContent.Schema.(map[string]interface{})
+	jsonProps := jsonSchema["properties"].(map[string]interface{})
+
+	// Verify author field in JSON
+	authorProp := jsonProps["author"].(map[string]interface{})
+	if authorProp["example"] != "RELATION_RECORD_ID" {
+		t.Errorf("Expected author example 'RELATION_RECORD_ID' in JSON, got %v", authorProp["example"])
+	}
+
+	// Verify categories field in JSON
+	categoriesProp := jsonProps["categories"].(map[string]interface{})
+	expectedCategoriesExample := []interface{}{"RELATION_RECORD_ID"}
+	if !reflect.DeepEqual(categoriesProp["example"], expectedCategoriesExample) {
+		t.Errorf("Expected categories example %v in JSON, got %v", expectedCategoriesExample, categoriesProp["example"])
+	}
+
+	// Test form-data content
+	formContent, hasForm := content["multipart/form-data"]
+	if !hasForm {
+		t.Fatal("Expected multipart/form-data content type")
+	}
+
+	formSchema := formContent.Schema.(map[string]interface{})
+	formProps := formSchema["properties"].(map[string]interface{})
+
+	// Verify author field in form-data
+	formAuthorProp := formProps["author"].(map[string]interface{})
+	if formAuthorProp["example"] != "RELATION_RECORD_ID" {
+		t.Errorf("Expected author example 'RELATION_RECORD_ID' in form-data, got %v", formAuthorProp["example"])
+	}
+
+	// Verify categories field in form-data
+	formCategoriesProp := formProps["categories"].(map[string]interface{})
+	if !reflect.DeepEqual(formCategoriesProp["example"], expectedCategoriesExample) {
+		t.Errorf("Expected categories example %v in form-data, got %v", expectedCategoriesExample, formCategoriesProp["example"])
+	}
+
+	// Verify form-data example includes relation fields
+	if formExample, hasExample := formSchema["example"]; hasExample {
+		exampleMap := formExample.(map[string]interface{})
+
+		if exampleMap["author"] != "RELATION_RECORD_ID" {
+			t.Errorf("Expected author 'RELATION_RECORD_ID' in form-data example, got %v", exampleMap["author"])
+		}
+
+		if !reflect.DeepEqual(exampleMap["categories"], expectedCategoriesExample) {
+			t.Errorf("Expected categories %v in form-data example, got %v", expectedCategoriesExample, exampleMap["categories"])
+		}
+	} else {
+		t.Error("Expected form-data schema to have example")
 	}
 }

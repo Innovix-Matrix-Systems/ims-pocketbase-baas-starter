@@ -858,6 +858,31 @@ func (rg *RouteGenerator) parseIntOption(value interface{}) (int, error) {
 	}
 }
 
+// isRelationExample checks if an example value looks like a relation field example
+func isRelationExample(example interface{}) bool {
+	// Check for single relation example
+	if str, ok := example.(string); ok && str == "RELATION_RECORD_ID" {
+		return true
+	}
+
+	// Check for multi-relation example
+	if arr, ok := example.([]interface{}); ok && len(arr) == 1 {
+		if str, ok := arr[0].(string); ok && str == "RELATION_RECORD_ID" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// isRelationField checks if a field schema represents a relation field
+func isRelationField(fieldSchema map[string]interface{}) bool {
+	if desc, ok := fieldSchema["description"].(string); ok {
+		return strings.Contains(desc, "Related record ID") || strings.Contains(desc, "Relation field")
+	}
+	return false
+}
+
 // generateRequestContent generates request body content with appropriate media types
 // If collection has file fields, it adds multipart/form-data support for create and update operations
 func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection EnhancedCollectionInfo, operation string) map[string]MediaType {
@@ -1064,11 +1089,31 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 				if fieldType, ok := formFieldSchema["type"].(string); ok {
 					switch fieldType {
 					case "object", "array":
-						// Complex types in form-data are typically sent as JSON strings
-						formFieldSchema["type"] = "string"
-						formFieldSchema["description"] = fmt.Sprintf("%s (JSON string)",
-							getStringOrDefault(formFieldSchema["description"], fmt.Sprintf("%s field", propName)))
-						formFieldSchema["example"] = `{"key": "value"}`
+						// Check if this is a relation field array
+						if fieldType == "array" && isRelationField(formFieldSchema) {
+							// For relation arrays, keep as array but add note about form-data format
+							formFieldSchema["description"] = fmt.Sprintf("%s (multiple values supported)",
+								getStringOrDefault(formFieldSchema["description"], fmt.Sprintf("%s field", propName)))
+							// Keep the array example as-is for relation fields
+						} else {
+							// Complex types in form-data are typically sent as JSON strings
+							formFieldSchema["type"] = "string"
+							formFieldSchema["description"] = fmt.Sprintf("%s (JSON string)",
+								getStringOrDefault(formFieldSchema["description"], fmt.Sprintf("%s field", propName)))
+
+							// Preserve relation field examples, otherwise use generic example
+							if existingExample, hasExample := formFieldSchema["example"]; hasExample {
+								// Check if this looks like a relation field example
+								if isRelationExample(existingExample) {
+									// Keep the relation example as-is for form-data
+									formFieldSchema["example"] = existingExample
+								} else {
+									formFieldSchema["example"] = `{"key": "value"}`
+								}
+							} else {
+								formFieldSchema["example"] = `{"key": "value"}`
+							}
+						}
 					case "boolean":
 						// Booleans in form-data are typically sent as strings
 						formFieldSchema["type"] = "string"
