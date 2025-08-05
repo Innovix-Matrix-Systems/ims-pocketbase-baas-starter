@@ -1,4 +1,4 @@
-package internal
+package common
 
 var ProtectedCollections = []string{"users", "roles", "permissions"}
 

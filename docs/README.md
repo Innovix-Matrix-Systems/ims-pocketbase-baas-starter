@@ -37,6 +37,18 @@ Complete guide for background task processing and job queue management:
 - Performance optimization and monitoring
 - Environment configuration and troubleshooting
 
+### [Swagger API Documentation Guide](swagger.md)
+
+Comprehensive guide for the automatic API documentation system:
+
+- Swagger UI, ReDoc, and OpenAPI JSON generation
+- Collection discovery and schema generation
+- Route generation for CRUD and authentication
+- Custom route integration and configuration
+- File upload documentation and multipart forms
+- Postman/Insomnia integration and client SDK generation
+- Architecture overview and troubleshooting
+
 ## Quick Links
 
 - **[Project README](../README.md)** - Main project documentation

@@ -1,9 +1,8 @@
 package app
 
 import (
+	"ims-pocketbase-baas-starter/pkg/common"
 	"testing"
-
-	"ims-pocketbase-baas-starter/internal"
 )
 
 // TestAppCreation verifies that the app can be created without errors
@@ -27,21 +26,21 @@ func TestAppCreation(t *testing.T) {
 func TestProtectedCollectionsConfiguration(t *testing.T) {
 	expectedCollections := []string{"users", "roles", "permissions"}
 
-	if len(internal.ProtectedCollections) != len(expectedCollections) {
+	if len(common.ProtectedCollections) != len(expectedCollections) {
 		t.Errorf("Expected %d protected collections, got %d",
-			len(expectedCollections), len(internal.ProtectedCollections))
+			len(expectedCollections), len(common.ProtectedCollections))
 	}
 
 	// Verify each expected collection is present
 	collectionMap := make(map[string]bool)
-	for _, collection := range internal.ProtectedCollections {
+	for _, collection := range common.ProtectedCollections {
 		collectionMap[collection] = true
 	}
 
 	for _, expected := range expectedCollections {
 		if !collectionMap[expected] {
 			t.Errorf("Expected protected collection '%s' not found in %v",
-				expected, internal.ProtectedCollections)
+				expected, common.ProtectedCollections)
 		}
 	}
 }
