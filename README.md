@@ -10,6 +10,7 @@ A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, en
 - 🔧 **Custom Middleware** - Implement Custom Middleware according to your needs
 - ⏰ **Cron Jobs & Job Queue** - Scheduled tasks and dynamic job processing with concurrent workers
 - 📧 **Email Integration** - SMTP configuration with MailHog for development
+- 📚 **Auto API Documentation** - Swagger UI, ReDoc, OpenAPI JSON with Postman compatibility
 - 🐳 **Docker Support** - Production and development environments
 - 🔄 **Hot Reload** - Development environment with automatic code reloading
 - ⚙️ **Environment Configuration** - Flexible configuration via environment variables
@@ -134,6 +135,9 @@ Copy `env.example` to `.env` and configure the following:
 
 4. **Access services**
    - PocketBase Admin: http://localhost:8090/\_/
+   - API Documentation (Swagger): http://localhost:8090/api-docs
+   - API Documentation (ReDoc): http://localhost:8090/api-docs/redoc
+   - OpenAPI JSON: http://localhost:8090/api-docs/openapi.json
    - MailHog Web UI: http://localhost:8025
 
 ## Database
@@ -145,6 +149,25 @@ The application includes:
 - **Collections** - User management, roles, permissions
 
 For detailed information about database migrations and schema management, see the [Database Migrations Guide](docs/migrations.md).
+
+## API Documentation
+
+The application automatically generates comprehensive API documentation for all collections and custom routes:
+
+- **Swagger UI** - Interactive API explorer at `http://localhost:8090/api-docs`
+- **ReDoc** - Clean documentation interface at `http://localhost:8090/api-docs/redoc`
+- **OpenAPI JSON** - Machine-readable spec at `http://localhost:8090/api-docs/openapi.json`
+- **Postman Compatible** - Import OpenAPI JSON directly into Postman/Insomnia
+
+**Features:**
+- Auto-discovery of all PocketBase collections
+- Complete CRUD operation documentation
+- Authentication flow documentation
+- File upload support with multipart forms
+- Custom route integration
+- Example data generation
+
+For detailed information about the Swagger system, configuration, and usage, see the [Swagger Documentation Guide](docs/swagger.md).
 
 ## Cron Jobs & Job Queue System
 

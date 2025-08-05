@@ -32,12 +32,12 @@ type GeneratedRoute struct {
 
 // Parameter represents an OpenAPI parameter
 type Parameter struct {
-	Name        string      `json:"name"`
-	In          string      `json:"in"` // "path", "query", "header"
-	Required    bool        `json:"required"`
-	Schema      interface{} `json:"schema"`
-	Description string      `json:"description,omitempty"`
-	Example     interface{} `json:"example,omitempty"`
+	Name        string `json:"name"`
+	In          string `json:"in"` // "path", "query", "header"
+	Required    bool   `json:"required"`
+	Schema      any    `json:"schema"`
+	Description string `json:"description,omitempty"`
+	Example     any    `json:"example,omitempty"`
 }
 
 // RequestBody represents an OpenAPI request body
@@ -55,7 +55,7 @@ type Response struct {
 
 // MediaType represents an OpenAPI media type
 type MediaType struct {
-	Schema interface{} `json:"schema"`
+	Schema any `json:"schema"`
 }
 
 // SecurityRequirement represents an OpenAPI security requirement
@@ -205,7 +205,7 @@ func (rg *RouteGenerator) generateCreateRoute(collection EnhancedCollectionInfo)
 	}
 
 	caser := cases.Title(language.English)
-	requestContent := rg.generateRequestContent(createSchema, collection, "create")
+	requestContent := rg.generateHybridCreateContent(createSchema, collection)
 
 	route := &GeneratedRoute{
 		Method:      "POST",
@@ -268,7 +268,7 @@ func (rg *RouteGenerator) generateViewRoute(collection EnhancedCollectionInfo) (
 				Name:        "id",
 				In:          "path",
 				Required:    true,
-				Schema:      map[string]interface{}{"type": "string"},
+				Schema:      map[string]any{"type": "string"},
 				Description: "The record ID",
 				Example:     "abc123def456",
 			},
@@ -328,7 +328,7 @@ func (rg *RouteGenerator) generateUpdateRoute(collection EnhancedCollectionInfo)
 				Name:        "id",
 				In:          "path",
 				Required:    true,
-				Schema:      map[string]interface{}{"type": "string"},
+				Schema:      map[string]any{"type": "string"},
 				Description: "The record ID",
 				Example:     "abc123def456",
 			},
@@ -336,7 +336,7 @@ func (rg *RouteGenerator) generateUpdateRoute(collection EnhancedCollectionInfo)
 		RequestBody: &RequestBody{
 			Description: fmt.Sprintf("The %s record fields to update", collection.Name),
 			Required:    true,
-			Content:     rg.generateRequestContent(updateSchema, collection, "update"),
+			Content:     rg.generateHybridUpdateContent(updateSchema, collection),
 		},
 		Responses: map[string]Response{
 			"200": {
@@ -384,7 +384,7 @@ func (rg *RouteGenerator) generateDeleteRoute(collection EnhancedCollectionInfo)
 				Name:        "id",
 				In:          "path",
 				Required:    true,
-				Schema:      map[string]interface{}{"type": "string"},
+				Schema:      map[string]any{"type": "string"},
 				Description: "The record ID",
 				Example:     "abc123def456",
 			},
@@ -419,7 +419,7 @@ func (rg *RouteGenerator) generateListParameters() []Parameter {
 			Name:        "page",
 			In:          "query",
 			Required:    false,
-			Schema:      map[string]interface{}{"type": "integer", "minimum": 1, "default": 1},
+			Schema:      map[string]any{"type": "integer", "minimum": 1, "default": 1},
 			Description: "Page number for pagination",
 			Example:     1,
 		},
@@ -427,7 +427,7 @@ func (rg *RouteGenerator) generateListParameters() []Parameter {
 			Name:        "perPage",
 			In:          "query",
 			Required:    false,
-			Schema:      map[string]interface{}{"type": "integer", "minimum": 1, "maximum": 500, "default": 30},
+			Schema:      map[string]any{"type": "integer", "minimum": 1, "maximum": 500, "default": 30},
 			Description: "Number of records per page",
 			Example:     30,
 		},
@@ -435,7 +435,7 @@ func (rg *RouteGenerator) generateListParameters() []Parameter {
 			Name:        "sort",
 			In:          "query",
 			Required:    false,
-			Schema:      map[string]interface{}{"type": "string"},
+			Schema:      map[string]any{"type": "string"},
 			Description: "Sort records by field(s). Use '-' prefix for descending order",
 			Example:     "-created",
 		},
@@ -443,7 +443,7 @@ func (rg *RouteGenerator) generateListParameters() []Parameter {
 			Name:        "filter",
 			In:          "query",
 			Required:    false,
-			Schema:      map[string]interface{}{"type": "string"},
+			Schema:      map[string]any{"type": "string"},
 			Description: "Filter records using PocketBase filter syntax",
 			Example:     "",
 		},
@@ -451,7 +451,7 @@ func (rg *RouteGenerator) generateListParameters() []Parameter {
 			Name:        "expand",
 			In:          "query",
 			Required:    false,
-			Schema:      map[string]interface{}{"type": "string"},
+			Schema:      map[string]any{"type": "string"},
 			Description: "Expand relation fields",
 			Example:     "",
 		},
@@ -459,7 +459,7 @@ func (rg *RouteGenerator) generateListParameters() []Parameter {
 			Name:        "fields",
 			In:          "query",
 			Required:    false,
-			Schema:      map[string]interface{}{"type": "string"},
+			Schema:      map[string]any{"type": "string"},
 			Description: "Comma-separated list of fields to return",
 			Example:     "",
 		},
@@ -506,10 +506,10 @@ func (rg *RouteGenerator) generateAuthWithPasswordRoute(collection EnhancedColle
 		return nil, fmt.Errorf("failed to generate record schema: %w", err)
 	}
 
-	authResponseSchema := map[string]interface{}{
+	authResponseSchema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"token": map[string]interface{}{
+		"properties": map[string]any{
+			"token": map[string]any{
 				"type":        "string",
 				"description": "JWT authentication token",
 				"example":     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -527,23 +527,35 @@ func (rg *RouteGenerator) generateAuthWithPasswordRoute(collection EnhancedColle
 		Description: fmt.Sprintf("Authenticate a %s using email/username and password", collection.Name),
 		Tags:        []string{"Authentication"},
 		OperationID: fmt.Sprintf("auth%sWithPassword", caser.String(collection.Name)),
+		Parameters: []Parameter{
+			{
+				Name:        "expand",
+				In:          "query",
+				Description: "Auto expand record relations. Ex: `roles.permissions,permissions`",
+				Required:    false,
+				Schema: map[string]any{
+					"type":    "string",
+					"example": "roles.permissions,permissions",
+				},
+			},
+		},
 		RequestBody: &RequestBody{
 			Description: "Authentication credentials",
 			Required:    true,
 			Content: map[string]MediaType{
 				"application/json": {
-					Schema: map[string]interface{}{
+					Schema: map[string]any{
 						"type": "object",
-						"properties": map[string]interface{}{
-							"identity": map[string]interface{}{
+						"properties": map[string]any{
+							"identity": map[string]any{
 								"type":        "string",
 								"description": "Email or username",
-								"example":     "user@example.com",
+								"example":     "superadminuser@example.com",
 							},
-							"password": map[string]interface{}{
+							"password": map[string]any{
 								"type":        "string",
 								"description": "User password",
-								"example":     "password123",
+								"example":     "superadmin123",
 							},
 						},
 						"required": []string{"identity", "password"},
@@ -580,10 +592,10 @@ func (rg *RouteGenerator) generateAuthRefreshRoute(collection EnhancedCollection
 		return nil, fmt.Errorf("failed to generate record schema: %w", err)
 	}
 
-	authResponseSchema := map[string]interface{}{
+	authResponseSchema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"token": map[string]interface{}{
+		"properties": map[string]any{
+			"token": map[string]any{
 				"type":        "string",
 				"description": "New JWT authentication token",
 				"example":     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -637,10 +649,10 @@ func (rg *RouteGenerator) generateRequestPasswordResetRoute(collection EnhancedC
 			Required:    true,
 			Content: map[string]MediaType{
 				"application/json": {
-					Schema: map[string]interface{}{
+					Schema: map[string]any{
 						"type": "object",
-						"properties": map[string]interface{}{
-							"email": map[string]interface{}{
+						"properties": map[string]any{
+							"email": map[string]any{
 								"type":        "string",
 								"format":      "email",
 								"description": "Email address for password reset",
@@ -791,12 +803,17 @@ func (rg *RouteGenerator) getFileFields(collection EnhancedCollectionInfo) []Fil
 		if field.Options != nil {
 			// Check for multiple file uploads
 			if maxSelect, ok := field.Options["maxSelect"]; ok {
+				log.Printf("Debug: Field %s in collection %s has maxSelect: %v (type: %T)", field.Name, collection.Name, maxSelect, maxSelect)
 				if ms, err := rg.parseIntOption(maxSelect); err == nil && ms > 1 {
 					fileField.IsMultiple = true
-
+					log.Printf("Debug: Field %s set as multiple (maxSelect: %d)", field.Name, ms)
 				} else if err != nil {
 					log.Printf("Warning: Failed to parse maxSelect for field %s in collection %s: %v", field.Name, collection.Name, err)
+				} else {
+					log.Printf("Debug: Field %s not multiple (maxSelect: %d <= 1)", field.Name, ms)
 				}
+			} else {
+				log.Printf("Debug: Field %s in collection %s has no maxSelect option", field.Name, collection.Name)
 			}
 
 			// Extract max file size
@@ -811,7 +828,7 @@ func (rg *RouteGenerator) getFileFields(collection EnhancedCollectionInfo) []Fil
 
 			// Extract allowed MIME types
 			if mimeTypes, ok := field.Options["mimeTypes"]; ok {
-				if types, ok := mimeTypes.([]interface{}); ok {
+				if types, ok := mimeTypes.([]any); ok {
 					for _, t := range types {
 						if typeStr, ok := t.(string); ok {
 							fileField.AllowedTypes = append(fileField.AllowedTypes, typeStr)
@@ -833,7 +850,7 @@ func (rg *RouteGenerator) getFileFields(collection EnhancedCollectionInfo) []Fil
 }
 
 // getStringOrDefault safely gets a string value or returns a default
-func getStringOrDefault(value interface{}, defaultValue string) string {
+func getStringOrDefault(value any, defaultValue string) string {
 	if str, ok := value.(string); ok && str != "" {
 		return str
 	}
@@ -841,7 +858,7 @@ func getStringOrDefault(value interface{}, defaultValue string) string {
 }
 
 // parseIntOption safely parses an integer option value
-func (rg *RouteGenerator) parseIntOption(value interface{}) (int, error) {
+func (rg *RouteGenerator) parseIntOption(value any) (int, error) {
 	switch v := value.(type) {
 	case int:
 		return v, nil
@@ -859,14 +876,14 @@ func (rg *RouteGenerator) parseIntOption(value interface{}) (int, error) {
 }
 
 // isRelationExample checks if an example value looks like a relation field example
-func isRelationExample(example interface{}) bool {
+func isRelationExample(example any) bool {
 	// Check for single relation example
 	if str, ok := example.(string); ok && str == "RELATION_RECORD_ID" {
 		return true
 	}
 
 	// Check for multi-relation example
-	if arr, ok := example.([]interface{}); ok && len(arr) == 1 {
+	if arr, ok := example.([]any); ok && len(arr) == 1 {
 		if str, ok := arr[0].(string); ok && str == "RELATION_RECORD_ID" {
 			return true
 		}
@@ -876,7 +893,7 @@ func isRelationExample(example interface{}) bool {
 }
 
 // isRelationField checks if a field schema represents a relation field
-func isRelationField(fieldSchema map[string]interface{}) bool {
+func isRelationField(fieldSchema map[string]any) bool {
 	if desc, ok := fieldSchema["description"].(string); ok {
 		return strings.Contains(desc, "Related record ID") || strings.Contains(desc, "Relation field")
 	}
@@ -885,7 +902,7 @@ func isRelationField(fieldSchema map[string]interface{}) bool {
 
 // generateRequestContent generates request body content with appropriate media types
 // If collection has file fields, it adds multipart/form-data support for create and update operations
-func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection EnhancedCollectionInfo, operation string) map[string]MediaType {
+func (rg *RouteGenerator) generateRequestContent(schema any, collection EnhancedCollectionInfo, operation string) map[string]MediaType {
 	content := make(map[string]MediaType)
 
 	// Always include application/json
@@ -924,16 +941,16 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 	}
 
 	// Generate form data schema based on the original schema
-	formDataProps := make(map[string]interface{})
+	formDataProps := make(map[string]any)
 
 	// Handle the schema to extract properties - support both map and CollectionSchema types
-	var props map[string]interface{}
+	var props map[string]any
 	var required []string
 
 	switch s := schema.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		// Handle raw map schema
-		if p, ok := s["properties"].(map[string]interface{}); ok {
+		if p, ok := s["properties"].(map[string]any); ok {
 			props = p
 		} else {
 			log.Printf("Warning: Cannot parse schema properties for collection %s (operation: %s), falling back to JSON-only", collection.Name, operation)
@@ -944,10 +961,10 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 		}
 	case *CollectionSchema:
 		// Handle CollectionSchema struct
-		props = make(map[string]interface{})
+		props = make(map[string]any)
 		for propName, fieldSchema := range s.Properties {
-			// Convert FieldSchema to map[string]interface{}
-			propMap := map[string]interface{}{
+			// Convert FieldSchema to map[string]any
+			propMap := map[string]any{
 				"type": fieldSchema.Type,
 			}
 			if fieldSchema.Format != "" {
@@ -979,7 +996,7 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 			}
 			if fieldSchema.Items != nil {
 				// Handle array items
-				itemMap := map[string]interface{}{
+				itemMap := map[string]any{
 					"type": fieldSchema.Items.Type,
 				}
 				if fieldSchema.Items.Format != "" {
@@ -1011,7 +1028,7 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 			// Handle file fields with proper binary format
 			if fileField.IsMultiple {
 				// Multiple files - array of binary
-				itemSchema := map[string]interface{}{
+				itemSchema := map[string]any{
 					"type":        "string",
 					"format":      "binary",
 					"description": "Individual file upload",
@@ -1027,7 +1044,7 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 						itemSchema["description"], strings.Join(fileField.AllowedTypes, ", "))
 				}
 
-				multipleFileSchema := map[string]interface{}{
+				multipleFileSchema := map[string]any{
 					"type":        "array",
 					"items":       itemSchema,
 					"description": fmt.Sprintf("Multiple file uploads for %s", propName),
@@ -1052,7 +1069,7 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 				formDataProps[propName] = multipleFileSchema
 			} else {
 				// Single file - binary format
-				fileSchema := map[string]interface{}{
+				fileSchema := map[string]any{
 					"type":        "string",
 					"format":      "binary",
 					"description": fmt.Sprintf("File upload for %s", propName),
@@ -1078,9 +1095,9 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 			processedFields++
 		} else {
 			// Non-file fields retain their original schema but may need adjustments for form-data
-			if propMap, ok := propValue.(map[string]interface{}); ok {
+			if propMap, ok := propValue.(map[string]any); ok {
 				// Create a copy to avoid modifying the original schema
-				formFieldSchema := make(map[string]interface{})
+				formFieldSchema := make(map[string]any)
 				for k, v := range propMap {
 					formFieldSchema[k] = v
 				}
@@ -1117,7 +1134,7 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 					case "boolean":
 						// Booleans in form-data are typically sent as strings
 						formFieldSchema["type"] = "string"
-						formFieldSchema["enum"] = []interface{}{"true", "false"}
+						formFieldSchema["enum"] = []any{"true", "false"}
 						formFieldSchema["description"] = fmt.Sprintf("%s (boolean as string)",
 							getStringOrDefault(formFieldSchema["description"], fmt.Sprintf("%s field", propName)))
 						formFieldSchema["example"] = "true"
@@ -1143,7 +1160,7 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 	}
 
 	// Create the form data schema
-	formDataSchema := map[string]interface{}{
+	formDataSchema := map[string]any{
 		"type":       "object",
 		"properties": formDataProps,
 	}
@@ -1154,9 +1171,9 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 	}
 
 	// Add example for form-data
-	formDataExample := make(map[string]interface{})
+	formDataExample := make(map[string]any)
 	for propName, propSchema := range formDataProps {
-		if propMap, ok := propSchema.(map[string]interface{}); ok {
+		if propMap, ok := propSchema.(map[string]any); ok {
 			if example, hasExample := propMap["example"]; hasExample {
 				formDataExample[propName] = example
 			} else {
@@ -1170,9 +1187,9 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 							formDataExample[propName] = fmt.Sprintf("example_%s", propName)
 						}
 					case "array":
-						if items, ok := propMap["items"].(map[string]interface{}); ok {
+						if items, ok := propMap["items"].(map[string]any); ok {
 							if itemFormat, ok := items["format"].(string); ok && itemFormat == "binary" {
-								formDataExample[propName] = []interface{}{
+								formDataExample[propName] = []any{
 									fmt.Sprintf("@%s_file1", propName),
 									fmt.Sprintf("@%s_file2", propName),
 								}
@@ -1201,4 +1218,243 @@ func (rg *RouteGenerator) generateRequestContent(schema interface{}, collection 
 	}
 
 	return content
+}
+
+// generateHybridCreateContent generates hybrid content for POST operations:
+// - application/json for non-file fields only
+// - multipart/form-data for file fields only
+func (rg *RouteGenerator) generateHybridCreateContent(schema any, collection EnhancedCollectionInfo) map[string]MediaType {
+	content := make(map[string]MediaType)
+
+	// Check if dynamic content types are enabled and collection has file fields
+	if !rg.enableDynamicContentTypes || !rg.hasFileFields(collection) {
+		// Fallback to standard behavior if no file fields or feature disabled
+		return rg.generateRequestContent(schema, collection, "create")
+	}
+
+	// Get file fields for filtering
+	fileFields := rg.getFileFields(collection)
+	fileFieldMap := make(map[string]bool)
+	for _, fileField := range fileFields {
+		fileFieldMap[fileField.Name] = true
+	}
+
+	// Extract properties from schema
+	var props map[string]any
+	var required []string
+
+	switch s := schema.(type) {
+	case map[string]any:
+		if p, ok := s["properties"].(map[string]any); ok {
+			props = p
+		}
+		if r, ok := s["required"].([]string); ok {
+			required = r
+		}
+	case *CollectionSchema:
+		props = make(map[string]any)
+		for propName, fieldSchema := range s.Properties {
+			propMap := map[string]any{
+				"type": fieldSchema.Type,
+			}
+			if fieldSchema.Format != "" {
+				propMap["format"] = fieldSchema.Format
+			}
+			if fieldSchema.Description != "" {
+				propMap["description"] = fieldSchema.Description
+			}
+			if fieldSchema.Example != nil {
+				propMap["example"] = fieldSchema.Example
+			}
+			props[propName] = propMap
+		}
+		required = s.Required
+	default:
+		// Fallback to standard behavior if schema type is unknown
+		return rg.generateRequestContent(schema, collection, "create")
+	}
+
+	// 1. Generate JSON content with NON-file fields only
+	jsonProps := make(map[string]any)
+	jsonRequired := []string{}
+
+	for propName, propValue := range props {
+		if !fileFieldMap[propName] {
+			jsonProps[propName] = propValue
+		}
+	}
+
+	for _, reqField := range required {
+		if !fileFieldMap[reqField] {
+			jsonRequired = append(jsonRequired, reqField)
+		}
+	}
+
+	jsonSchema := map[string]any{
+		"type":       "object",
+		"properties": jsonProps,
+	}
+	if len(jsonRequired) > 0 {
+		jsonSchema["required"] = jsonRequired
+	}
+
+	content["application/json"] = MediaType{
+		Schema: jsonSchema,
+	}
+
+	// 2. Generate multipart content with FILE fields only
+	return rg.addMultipartContent(content, fileFields)
+}
+
+// addMultipartContent adds multipart/form-data content type with file fields to existing content
+func (rg *RouteGenerator) addMultipartContent(content map[string]MediaType, fileFields []FileFieldInfo) map[string]MediaType {
+	multipartProps := make(map[string]any)
+
+	for _, fileField := range fileFields {
+		if fileField.IsMultiple {
+			// Multiple files - array of binary with proper UI support
+			itemDescription := "File upload"
+			if fileField.MaxSize > 0 {
+				itemDescription = fmt.Sprintf("File upload (max size: %d bytes)", fileField.MaxSize)
+			}
+			if len(fileField.AllowedTypes) > 0 {
+				itemDescription = fmt.Sprintf("%s (allowed types: %s)", itemDescription, strings.Join(fileField.AllowedTypes, ", "))
+			}
+
+			itemSchema := map[string]any{
+				"type":        "string",
+				"format":      "binary",
+				"description": itemDescription,
+				"title":       "File",
+			}
+
+			multipleFileSchema := map[string]any{
+				"type":        "array",
+				"items":       itemSchema,
+				"description": fmt.Sprintf("Multiple file uploads for %s (multiple values supported)", fileField.Name),
+				"title":       fmt.Sprintf("%s files", fileField.Name),
+				"minItems":    0,
+				"default":     []any{},
+			}
+
+			multipartProps[fileField.Name] = multipleFileSchema
+		} else {
+			// Single file
+			singleFileSchema := map[string]any{
+				"type":        "string",
+				"format":      "binary",
+				"description": fmt.Sprintf("File upload for %s", fileField.Name),
+			}
+
+			if fileField.MaxSize > 0 {
+				singleFileSchema["description"] = fmt.Sprintf("%s (max size: %d bytes)",
+					singleFileSchema["description"], fileField.MaxSize)
+			}
+
+			if len(fileField.AllowedTypes) > 0 {
+				singleFileSchema["description"] = fmt.Sprintf("%s (allowed types: %s)",
+					singleFileSchema["description"], strings.Join(fileField.AllowedTypes, ", "))
+			}
+
+			multipartProps[fileField.Name] = singleFileSchema
+		}
+	}
+
+	multipartSchema := map[string]any{
+		"type":        "object",
+		"properties":  multipartProps,
+		"description": "File fields only - use this content type when uploading files",
+	}
+
+	content["multipart/form-data"] = MediaType{
+		Schema: multipartSchema,
+	}
+
+	return content
+}
+
+// generateHybridUpdateContent generates hybrid content for PATCH operations:
+// - application/json for non-file fields only
+// - multipart/form-data for file fields only
+func (rg *RouteGenerator) generateHybridUpdateContent(schema any, collection EnhancedCollectionInfo) map[string]MediaType {
+	content := make(map[string]MediaType)
+
+	// Check if dynamic content types are enabled and collection has file fields
+	if !rg.enableDynamicContentTypes || !rg.hasFileFields(collection) {
+		// Fallback to standard behavior if no file fields or feature disabled
+		return rg.generateRequestContent(schema, collection, "update")
+	}
+
+	// Get file fields for filtering
+	fileFields := rg.getFileFields(collection)
+	fileFieldMap := make(map[string]bool)
+	for _, fileField := range fileFields {
+		fileFieldMap[fileField.Name] = true
+	}
+
+	// Extract properties from schema
+	var props map[string]any
+	var required []string
+
+	switch s := schema.(type) {
+	case map[string]any:
+		if p, ok := s["properties"].(map[string]any); ok {
+			props = p
+		}
+		if r, ok := s["required"].([]string); ok {
+			required = r
+		}
+	case *CollectionSchema:
+		props = make(map[string]any)
+		for propName, fieldSchema := range s.Properties {
+			propMap := map[string]any{
+				"type": fieldSchema.Type,
+			}
+			if fieldSchema.Format != "" {
+				propMap["format"] = fieldSchema.Format
+			}
+			if fieldSchema.Description != "" {
+				propMap["description"] = fieldSchema.Description
+			}
+			if fieldSchema.Example != nil {
+				propMap["example"] = fieldSchema.Example
+			}
+			props[propName] = propMap
+		}
+		required = s.Required
+	default:
+		// Fallback to standard behavior if schema type is unknown
+		return rg.generateRequestContent(schema, collection, "update")
+	}
+
+	// 1. Generate JSON content with NON-file fields only
+	jsonProps := make(map[string]any)
+	jsonRequired := []string{}
+
+	for propName, propValue := range props {
+		if !fileFieldMap[propName] {
+			jsonProps[propName] = propValue
+		}
+	}
+
+	for _, reqField := range required {
+		if !fileFieldMap[reqField] {
+			jsonRequired = append(jsonRequired, reqField)
+		}
+	}
+
+	jsonSchema := map[string]any{
+		"type":       "object",
+		"properties": jsonProps,
+	}
+	if len(jsonRequired) > 0 {
+		jsonSchema["required"] = jsonRequired
+	}
+
+	content["application/json"] = MediaType{
+		Schema: jsonSchema,
+	}
+
+	// 2. Generate multipart content with FILE fields only
+	return rg.addMultipartContent(content, fileFields)
 }

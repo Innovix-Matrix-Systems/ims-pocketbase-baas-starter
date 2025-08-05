@@ -19,25 +19,25 @@ type CollectionDiscovery struct {
 
 // EnhancedCollectionInfo holds complete collection metadata for OpenAPI generation
 type EnhancedCollectionInfo struct {
-	Name       string                 `json:"name"`
-	Type       string                 `json:"type"` // "base", "auth", "view"
-	System     bool                   `json:"system"`
-	Fields     []FieldInfo            `json:"fields"`
-	ListRule   *string                `json:"listRule"`
-	ViewRule   *string                `json:"viewRule"`
-	CreateRule *string                `json:"createRule"`
-	UpdateRule *string                `json:"updateRule"`
-	DeleteRule *string                `json:"deleteRule"`
-	Options    map[string]interface{} `json:"options"`
+	Name       string         `json:"name"`
+	Type       string         `json:"type"` // "base", "auth", "view"
+	System     bool           `json:"system"`
+	Fields     []FieldInfo    `json:"fields"`
+	ListRule   *string        `json:"listRule"`
+	ViewRule   *string        `json:"viewRule"`
+	CreateRule *string        `json:"createRule"`
+	UpdateRule *string        `json:"updateRule"`
+	DeleteRule *string        `json:"deleteRule"`
+	Options    map[string]any `json:"options"`
 }
 
 // FieldInfo holds field metadata for schema generation
 type FieldInfo struct {
-	Name     string                 `json:"name"`
-	Type     string                 `json:"type"`
-	Required bool                   `json:"required"`
-	System   bool                   `json:"system"`
-	Options  map[string]interface{} `json:"options"`
+	Name     string         `json:"name"`
+	Type     string         `json:"type"`
+	Required bool           `json:"required"`
+	System   bool           `json:"system"`
+	Options  map[string]any `json:"options"`
 }
 
 // Discovery interface for collection discovery
@@ -116,7 +116,7 @@ func (cd *CollectionDiscovery) GetCollection(name string) (*EnhancedCollectionIn
 
 	var dbCol dbCollection
 	err := cd.app.DB().NewQuery("SELECT name, type, system, schema, listRule, viewRule, createRule, updateRule, deleteRule, options FROM _collections WHERE name = {:name}").
-		Bind(map[string]interface{}{"name": name}).
+		Bind(map[string]any{"name": name}).
 		One(&dbCol)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find collection %s: %w", name, err)
@@ -184,7 +184,7 @@ func (cd *CollectionDiscovery) extractCollectionInfo(dbCol dbCollection) (*Enhan
 	collectionInfo.DeleteRule = dbCol.DeleteRule
 
 	// Initialize options
-	collectionInfo.Options = make(map[string]interface{})
+	collectionInfo.Options = make(map[string]any)
 
 	// Parse schema JSON to extract fields
 	if dbCol.Schema != "" {
@@ -216,7 +216,7 @@ func (cd *CollectionDiscovery) parseSchemaFields(schemaJSON string) ([]FieldInfo
 	}
 
 	// Parse the schema JSON
-	var schemaData []map[string]interface{}
+	var schemaData []map[string]any
 	if err := json.Unmarshal([]byte(schemaJSON), &schemaData); err != nil {
 		return nil, fmt.Errorf("failed to parse schema JSON: %w", err)
 	}
@@ -235,9 +235,9 @@ func (cd *CollectionDiscovery) parseSchemaFields(schemaJSON string) ([]FieldInfo
 }
 
 // parseFieldInfo parses a single field from the schema data
-func (cd *CollectionDiscovery) parseFieldInfo(fieldData map[string]interface{}) (*FieldInfo, error) {
+func (cd *CollectionDiscovery) parseFieldInfo(fieldData map[string]any) (*FieldInfo, error) {
 	field := &FieldInfo{
-		Options: make(map[string]interface{}),
+		Options: make(map[string]any),
 	}
 
 	// Extract field name
@@ -265,7 +265,7 @@ func (cd *CollectionDiscovery) parseFieldInfo(fieldData map[string]interface{}) 
 	}
 
 	// Extract options
-	if options, ok := fieldData["options"].(map[string]interface{}); ok {
+	if options, ok := fieldData["options"].(map[string]any); ok {
 		field.Options = options
 	}
 
@@ -284,12 +284,12 @@ func (cd *CollectionDiscovery) parseFieldInfo(fieldData map[string]interface{}) 
 }
 
 // parseOptionsJSON parses the options JSON string
-func (cd *CollectionDiscovery) parseOptionsJSON(optionsJSON string) (map[string]interface{}, error) {
+func (cd *CollectionDiscovery) parseOptionsJSON(optionsJSON string) (map[string]any, error) {
 	if optionsJSON == "" {
-		return make(map[string]interface{}), nil
+		return make(map[string]any), nil
 	}
 
-	var options map[string]interface{}
+	var options map[string]any
 	if err := json.Unmarshal([]byte(optionsJSON), &options); err != nil {
 		return nil, fmt.Errorf("failed to parse options JSON: %w", err)
 	}
@@ -430,7 +430,7 @@ func (cd *CollectionDiscovery) GetSystemFields() []FieldInfo {
 			Type:     "text",
 			Required: true,
 			System:   true,
-			Options: map[string]interface{}{
+			Options: map[string]any{
 				"description": "Unique record identifier",
 			},
 		},
@@ -439,7 +439,7 @@ func (cd *CollectionDiscovery) GetSystemFields() []FieldInfo {
 			Type:     "date",
 			Required: true,
 			System:   true,
-			Options: map[string]interface{}{
+			Options: map[string]any{
 				"description": "Record creation timestamp",
 			},
 		},
@@ -448,7 +448,7 @@ func (cd *CollectionDiscovery) GetSystemFields() []FieldInfo {
 			Type:     "date",
 			Required: true,
 			System:   true,
-			Options: map[string]interface{}{
+			Options: map[string]any{
 				"description": "Record last update timestamp",
 			},
 		},
@@ -462,7 +462,7 @@ func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Coll
 		Type:    collection.Type,
 		System:  collection.System,
 		Fields:  []FieldInfo{},
-		Options: make(map[string]interface{}),
+		Options: make(map[string]any),
 	}
 
 	// Extract API rules
@@ -476,14 +476,14 @@ func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Coll
 	// For PocketBase v0.29, we'll marshal and unmarshal the schema to get field info
 	schemaBytes, err := collection.MarshalJSON()
 	if err == nil {
-		var collectionData map[string]interface{}
+		var collectionData map[string]any
 		if err := json.Unmarshal(schemaBytes, &collectionData); err == nil {
-			if schema, ok := collectionData["fields"].([]interface{}); ok {
+			if schema, ok := collectionData["fields"].([]any); ok {
 				for _, fieldData := range schema {
-					if fieldMap, ok := fieldData.(map[string]interface{}); ok {
+					if fieldMap, ok := fieldData.(map[string]any); ok {
 
 						fieldInfo := FieldInfo{
-							Options: make(map[string]interface{}),
+							Options: make(map[string]any),
 						}
 
 						if name, ok := fieldMap["name"].(string); ok {
@@ -498,7 +498,7 @@ func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Coll
 						if system, ok := fieldMap["system"].(bool); ok {
 							fieldInfo.System = system
 						}
-						if options, ok := fieldMap["options"].(map[string]interface{}); ok {
+						if options, ok := fieldMap["options"].(map[string]any); ok {
 							fieldInfo.Options = options
 						}
 
@@ -507,6 +507,17 @@ func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Coll
 							// Copy relation-specific properties from field level to options
 							relationProps := []string{"maxSelect", "minSelect", "collectionId", "cascadeDelete", "presentable", "hidden"}
 							for _, prop := range relationProps {
+								if value, exists := fieldMap[prop]; exists {
+									fieldInfo.Options[prop] = value
+								}
+							}
+						}
+
+						// For file fields, copy field-level properties to options for consistency
+						if fieldInfo.Type == "file" {
+							// Copy file-specific properties from field level to options
+							fileProps := []string{"maxSelect", "maxSize", "mimeTypes", "thumbs", "protected"}
+							for _, prop := range fileProps {
 								if value, exists := fieldMap[prop]; exists {
 									fieldInfo.Options[prop] = value
 								}
@@ -536,7 +547,7 @@ func (cd *CollectionDiscovery) IsCollectionAccessible(name string) bool {
 
 	var count int
 	err := cd.app.DB().NewQuery("SELECT COUNT(*) FROM _collections WHERE name = {:name}").
-		Bind(map[string]interface{}{"name": name}).
+		Bind(map[string]any{"name": name}).
 		One(&count)
 
 	return err == nil && count > 0

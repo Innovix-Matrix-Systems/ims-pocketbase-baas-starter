@@ -395,7 +395,7 @@ func TestParseFieldInfo(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		fieldData        map[string]interface{}
+		fieldData        map[string]any
 		expectError      bool
 		expectedName     string
 		expectedType     string
@@ -403,12 +403,12 @@ func TestParseFieldInfo(t *testing.T) {
 	}{
 		{
 			name: "Valid field data",
-			fieldData: map[string]interface{}{
+			fieldData: map[string]any{
 				"name":     "title",
 				"type":     "text",
 				"required": true,
 				"system":   false,
-				"options":  map[string]interface{}{"max": 100},
+				"options":  map[string]any{"max": 100},
 			},
 			expectError:      false,
 			expectedName:     "title",
@@ -417,7 +417,7 @@ func TestParseFieldInfo(t *testing.T) {
 		},
 		{
 			name: "Missing field name",
-			fieldData: map[string]interface{}{
+			fieldData: map[string]any{
 				"type":     "text",
 				"required": true,
 			},
@@ -425,7 +425,7 @@ func TestParseFieldInfo(t *testing.T) {
 		},
 		{
 			name: "Missing field type",
-			fieldData: map[string]interface{}{
+			fieldData: map[string]any{
 				"name":     "title",
 				"required": true,
 			},
@@ -433,7 +433,7 @@ func TestParseFieldInfo(t *testing.T) {
 		},
 		{
 			name: "Field with minimal data",
-			fieldData: map[string]interface{}{
+			fieldData: map[string]any{
 				"name": "simple",
 				"type": "text",
 			},

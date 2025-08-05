@@ -5,10 +5,8 @@ import (
 	"ims-pocketbase-baas-starter/pkg/common"
 	"log"
 	"strings"
-	"sync"
 
 	"github.com/pocketbase/pocketbase"
-	"github.com/pocketbase/pocketbase/core"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -59,7 +57,7 @@ type Operation struct {
 
 // Components represents OpenAPI components
 type Components struct {
-	Schemas         map[string]interface{}    `json:"schemas,omitempty"`
+	Schemas         map[string]any            `json:"schemas,omitempty"`
 	SecuritySchemes map[string]SecurityScheme `json:"securitySchemes,omitempty"`
 }
 
@@ -82,110 +80,7 @@ type UnifiedConfig struct {
 	CustomRoutes              []CustomRoute
 	EnableAuth                bool
 	IncludeExamples           bool
-	EnableDiscovery           bool // Enable automatic route discovery
 	EnableDynamicContentTypes bool // Enable dynamic content type detection for file fields
-}
-
-// RouteInfo contains metadata about a discovered route
-type RouteInfo struct {
-	Method      string           `json:"method"`
-	Path        string           `json:"path"`
-	Handler     string           `json:"handler"`
-	Summary     string           `json:"summary"`
-	Description string           `json:"description"`
-	Tags        []string         `json:"tags"`
-	IsProtected bool             `json:"is_protected"`
-	Middleware  []string         `json:"middleware"`
-	Parameters  []RouteParameter `json:"parameters,omitempty"`
-}
-
-// RouteParameter represents a route parameter
-type RouteParameter struct {
-	Name        string `json:"name"`
-	In          string `json:"in"` // path, query, header
-	Required    bool   `json:"required"`
-	Type        string `json:"type"`
-	Description string `json:"description"`
-}
-
-// RouteRegistry provides thread-safe storage for discovered routes
-type RouteRegistry struct {
-	routes    map[string]map[string]RouteInfo // path -> method -> RouteInfo
-	mutex     sync.RWMutex
-	collected bool
-}
-
-// NewRouteRegistry creates a new route registry
-func NewRouteRegistry() *RouteRegistry {
-	return &RouteRegistry{
-		routes: make(map[string]map[string]RouteInfo),
-	}
-}
-
-// AddRoute adds a route to the registry
-func (r *RouteRegistry) AddRoute(info RouteInfo) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	if r.routes[info.Path] == nil {
-		r.routes[info.Path] = make(map[string]RouteInfo)
-	}
-	r.routes[info.Path][strings.ToLower(info.Method)] = info
-}
-
-// GetRoute retrieves a specific route
-func (r *RouteRegistry) GetRoute(path, method string) (RouteInfo, bool) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-
-	if pathRoutes, exists := r.routes[path]; exists {
-		if route, exists := pathRoutes[strings.ToLower(method)]; exists {
-			return route, true
-		}
-	}
-	return RouteInfo{}, false
-}
-
-// GetAllRoutes returns all registered routes
-func (r *RouteRegistry) GetAllRoutes() map[string]map[string]RouteInfo {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-
-	// Create a deep copy to avoid race conditions
-	result := make(map[string]map[string]RouteInfo)
-	for path, methods := range r.routes {
-		result[path] = make(map[string]RouteInfo)
-		for method, info := range methods {
-			result[path][method] = info
-		}
-	}
-	return result
-}
-
-// IsCollected returns whether routes have been collected
-func (r *RouteRegistry) IsCollected() bool {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	return r.collected
-}
-
-// SetCollected marks the registry as having collected routes
-func (r *RouteRegistry) SetCollected(collected bool) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	r.collected = collected
-}
-
-// Count returns the total number of routes
-func (r *RouteRegistry) Count() int {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-
-	count := 0
-	for _, methods := range r.routes {
-		count += len(methods)
-	}
-	return count
 }
 
 // Generator handles OpenAPI specification generation
@@ -195,8 +90,6 @@ type Generator struct {
 	discovery Discovery
 	schemaGen SchemaGen
 	routeGen  RouteGen
-	registry  *RouteRegistry
-	collector *SimpleRouteCollector
 }
 
 // NewGenerator creates a new OpenAPI generator
@@ -217,13 +110,10 @@ func NewGenerator(app *pocketbase.PocketBase, config UnifiedConfig) *Generator {
 	// Initialize route generator
 	routeGen := NewRouteGeneratorWithConfig(schemaGen, config.EnableDynamicContentTypes)
 
-	// Register custom routes
+	// Register custom routes from config
 	for _, customRoute := range config.CustomRoutes {
 		routeGen.RegisterCustomRoute(customRoute)
 	}
-
-	registry := NewRouteRegistry()
-	collector := NewSimpleRouteCollector(app, registry)
 
 	return &Generator{
 		app:       app,
@@ -231,17 +121,7 @@ func NewGenerator(app *pocketbase.PocketBase, config UnifiedConfig) *Generator {
 		discovery: discovery,
 		schemaGen: schemaGen,
 		routeGen:  routeGen,
-		registry:  registry,
-		collector: collector,
 	}
-}
-
-// CollectRoutes triggers route collection using the collector
-func (g *Generator) CollectRoutes(se *core.ServeEvent) error {
-	if g.config.EnableDiscovery {
-		return g.collector.CollectRoutes(se)
-	}
-	return nil
 }
 
 // GenerateSpec generates the unified OpenAPI specification
@@ -280,7 +160,7 @@ func (g *Generator) GenerateSpec() (*CombinedOpenAPISpec, error) {
 		Servers: []Server{
 			{
 				URL:         g.config.ServerURL,
-				Description: "PocketBase server",
+				Description: "PocketBase BaaS API server",
 			},
 		},
 		Paths:      g.buildPaths(routes),
@@ -297,7 +177,7 @@ var globalGenerator *Generator
 
 // InitializeGenerator creates and stores a global generator instance
 func InitializeGenerator(app *pocketbase.PocketBase) *Generator {
-	config := DefaultUnifiedConfig()
+	config := DefaultConfig()
 	globalGenerator = NewGenerator(app, config)
 	return globalGenerator
 }
@@ -321,8 +201,8 @@ func GenerateOpenAPI(app *pocketbase.PocketBase) (*CombinedOpenAPISpec, error) {
 }
 
 // generateAllSchemas generates schemas for all collections
-func (g *Generator) generateAllSchemas(collections []EnhancedCollectionInfo) (map[string]interface{}, error) {
-	allSchemas := make(map[string]interface{})
+func (g *Generator) generateAllSchemas(collections []EnhancedCollectionInfo) (map[string]any, error) {
+	allSchemas := make(map[string]any)
 
 	for _, collection := range collections {
 		// Generate main collection schema
@@ -396,7 +276,7 @@ func (g *Generator) buildPaths(routes []GeneratedRoute) map[string]PathItem {
 }
 
 // buildComponents builds the components section of the OpenAPI spec
-func (g *Generator) buildComponents(schemas map[string]interface{}) *Components {
+func (g *Generator) buildComponents(schemas map[string]any) *Components {
 	components := &Components{
 		Schemas: schemas,
 	}
@@ -579,10 +459,10 @@ func (g *Generator) validateConfig(config UnifiedConfig) error {
 }
 
 // GetHealthStatus returns the health status of the generator
-func (g *Generator) GetHealthStatus() map[string]interface{} {
-	status := map[string]interface{}{
+func (g *Generator) GetHealthStatus() map[string]any {
+	status := map[string]any{
 		"status": "healthy",
-		"components": map[string]interface{}{
+		"components": map[string]any{
 			"discovery": g.discovery != nil,
 			"schemaGen": g.schemaGen != nil,
 			"routeGen":  g.routeGen != nil,
@@ -601,19 +481,18 @@ func (g *Generator) GetHealthStatus() map[string]interface{} {
 	return status
 }
 
-// DefaultUnifiedConfig returns a default configuration
-func DefaultUnifiedConfig() UnifiedConfig {
+// DefaultConfig returns a default configuration
+func DefaultConfig() UnifiedConfig {
 	return UnifiedConfig{
 		Title:                     common.GetEnv("APP_NAME", "IMS Pocketbase") + " API",
 		Version:                   "1.0.0",
 		Description:               "Auto-generated API documentation for PocketBase collections",
 		ServerURL:                 common.GetEnv("APP_URL", "http://localhost:8090"),
-		ExcludedCollections:       []string{},
+		ExcludedCollections:       []string{"_pb_users_auth_", "_mfas", "_otps", "_externalAuths", "_authOrigins", "collections", "export_files", "queues"},
 		IncludeSystem:             false,
-		CustomRoutes:              []CustomRoute{},
+		CustomRoutes:              GetCustomRoutes(),
 		EnableAuth:                true,
 		IncludeExamples:           true,
-		EnableDiscovery:           true,
 		EnableDynamicContentTypes: true, // Enable dynamic content types by default
 	}
 }

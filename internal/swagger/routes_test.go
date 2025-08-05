@@ -51,15 +51,15 @@ func (m *mockSchemaGen) GenerateUpdateSchema(collection EnhancedCollectionInfo) 
 	}, nil
 }
 
-func (m *mockSchemaGen) GenerateListResponseSchema(collection EnhancedCollectionInfo) (map[string]interface{}, error) {
-	return map[string]interface{}{
+func (m *mockSchemaGen) GenerateListResponseSchema(collection EnhancedCollectionInfo) (map[string]any, error) {
+	return map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"page":       map[string]interface{}{"type": "integer"},
-			"perPage":    map[string]interface{}{"type": "integer"},
-			"totalItems": map[string]interface{}{"type": "integer"},
-			"totalPages": map[string]interface{}{"type": "integer"},
-			"items": map[string]interface{}{
+		"properties": map[string]any{
+			"page":       map[string]any{"type": "integer"},
+			"perPage":    map[string]any{"type": "integer"},
+			"totalItems": map[string]any{"type": "integer"},
+			"totalPages": map[string]any{"type": "integer"},
+			"items": map[string]any{
 				"type": "array",
 				"items": &CollectionSchema{
 					Type: "object",

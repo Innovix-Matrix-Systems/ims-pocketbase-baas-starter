@@ -78,16 +78,16 @@ func TestGetFileFields(t *testing.T) {
 				Name:     "avatar",
 				Type:     "file",
 				Required: false,
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSize":   1048576, // 1MB
-					"mimeTypes": []interface{}{"image/jpeg", "image/png"},
+					"mimeTypes": []any{"image/jpeg", "image/png"},
 				},
 			},
 			{
 				Name:     "attachments",
 				Type:     "file",
 				Required: false,
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSelect": 5,
 					"maxSize":   5242880, // 5MB
 				},
@@ -157,7 +157,7 @@ func TestRouteGeneratorParseIntOption(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expected int
 		hasError bool
 	}{
@@ -225,15 +225,15 @@ func TestGenerateRequestContentOperationSupport(t *testing.T) {
 	}
 
 	// Mock schema
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"avatar": map[string]interface{}{
+		"properties": map[string]any{
+			"avatar": map[string]any{
 				"type":        "string",
 				"format":      "binary",
 				"description": "File upload",
 			},
-			"name": map[string]interface{}{
+			"name": map[string]any{
 				"type":        "string",
 				"description": "User name",
 			},
@@ -309,13 +309,13 @@ func TestGenerateRequestContentNoFileFields(t *testing.T) {
 		},
 	}
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"title": map[string]interface{}{
+		"properties": map[string]any{
+			"title": map[string]any{
 				"type": "string",
 			},
-			"content": map[string]interface{}{
+			"content": map[string]any{
 				"type": "string",
 			},
 		},
@@ -348,7 +348,7 @@ func TestGenerateRequestContentFormDataSchema(t *testing.T) {
 				Name:     "avatar",
 				Type:     "file",
 				Required: false,
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSize": 1048576,
 				},
 			},
@@ -356,7 +356,7 @@ func TestGenerateRequestContentFormDataSchema(t *testing.T) {
 				Name:     "attachments",
 				Type:     "file",
 				Required: false,
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSelect": 3,
 				},
 			},
@@ -364,23 +364,23 @@ func TestGenerateRequestContentFormDataSchema(t *testing.T) {
 		},
 	}
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"avatar": map[string]interface{}{
+		"properties": map[string]any{
+			"avatar": map[string]any{
 				"type":        "string",
 				"format":      "binary",
 				"description": "File upload",
 			},
-			"attachments": map[string]interface{}{
+			"attachments": map[string]any{
 				"type": "array",
-				"items": map[string]interface{}{
+				"items": map[string]any{
 					"type":        "string",
 					"format":      "binary",
 					"description": "File upload",
 				},
 			},
-			"title": map[string]interface{}{
+			"title": map[string]any{
 				"type": "string",
 			},
 		},
@@ -400,12 +400,12 @@ func TestGenerateRequestContentFormDataSchema(t *testing.T) {
 		t.Fatal("Expected multipart/form-data content type")
 	}
 
-	formSchema, ok := formData.Schema.(map[string]interface{})
+	formSchema, ok := formData.Schema.(map[string]any)
 	if !ok {
 		t.Fatal("Expected form-data schema to be a map")
 	}
 
-	props, ok := formSchema["properties"].(map[string]interface{})
+	props, ok := formSchema["properties"].(map[string]any)
 	if !ok {
 		t.Fatal("Expected form-data schema to have properties")
 	}
@@ -415,7 +415,7 @@ func TestGenerateRequestContentFormDataSchema(t *testing.T) {
 	if !hasAvatar {
 		t.Error("Expected avatar property in form-data schema")
 	} else {
-		avatarMap, ok := avatarProp.(map[string]interface{})
+		avatarMap, ok := avatarProp.(map[string]any)
 		if !ok {
 			t.Error("Expected avatar property to be a map")
 		} else {
@@ -430,7 +430,7 @@ func TestGenerateRequestContentFormDataSchema(t *testing.T) {
 	if !hasTitle {
 		t.Error("Expected title property in form-data schema")
 	} else {
-		titleMap, ok := titleProp.(map[string]interface{})
+		titleMap, ok := titleProp.(map[string]any)
 		if !ok {
 			t.Error("Expected title property to be a map")
 		} else {
@@ -451,16 +451,16 @@ func TestImprovedFormDataSchemaGeneration(t *testing.T) {
 				Name:     "avatar",
 				Type:     "file",
 				Required: true,
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSize":   2097152, // 2MB
-					"mimeTypes": []interface{}{"image/jpeg", "image/png"},
+					"mimeTypes": []any{"image/jpeg", "image/png"},
 				},
 			},
 			{
 				Name:     "documents",
 				Type:     "file",
 				Required: false,
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSelect": 3,
 					"maxSize":   5242880, // 5MB
 				},
@@ -471,31 +471,31 @@ func TestImprovedFormDataSchemaGeneration(t *testing.T) {
 		},
 	}
 
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"avatar": map[string]interface{}{
+		"properties": map[string]any{
+			"avatar": map[string]any{
 				"type":        "string",
 				"format":      "binary",
 				"description": "Avatar file",
 			},
-			"documents": map[string]interface{}{
+			"documents": map[string]any{
 				"type": "array",
-				"items": map[string]interface{}{
+				"items": map[string]any{
 					"type":        "string",
 					"format":      "binary",
 					"description": "Document file",
 				},
 			},
-			"title": map[string]interface{}{
+			"title": map[string]any{
 				"type":        "string",
 				"description": "Title field",
 			},
-			"active": map[string]interface{}{
+			"active": map[string]any{
 				"type":        "boolean",
 				"description": "Active status",
 			},
-			"metadata": map[string]interface{}{
+			"metadata": map[string]any{
 				"type":        "object",
 				"description": "Metadata object",
 			},
@@ -516,12 +516,12 @@ func TestImprovedFormDataSchemaGeneration(t *testing.T) {
 		t.Fatal("Expected multipart/form-data content type")
 	}
 
-	formSchema, ok := formData.Schema.(map[string]interface{})
+	formSchema, ok := formData.Schema.(map[string]any)
 	if !ok {
 		t.Fatal("Expected form-data schema to be a map")
 	}
 
-	props, ok := formSchema["properties"].(map[string]interface{})
+	props, ok := formSchema["properties"].(map[string]any)
 	if !ok {
 		t.Fatal("Expected form-data schema to have properties")
 	}
@@ -531,7 +531,7 @@ func TestImprovedFormDataSchemaGeneration(t *testing.T) {
 	if !hasAvatar {
 		t.Error("Expected avatar property in form-data schema")
 	} else {
-		avatarMap, ok := avatarProp.(map[string]interface{})
+		avatarMap, ok := avatarProp.(map[string]any)
 		if !ok {
 			t.Error("Expected avatar property to be a map")
 		} else {
@@ -559,7 +559,7 @@ func TestImprovedFormDataSchemaGeneration(t *testing.T) {
 	if !hasDocs {
 		t.Error("Expected documents property in form-data schema")
 	} else {
-		docsMap, ok := docsProp.(map[string]interface{})
+		docsMap, ok := docsProp.(map[string]any)
 		if !ok {
 			t.Error("Expected documents property to be a map")
 		} else {
@@ -579,14 +579,14 @@ func TestImprovedFormDataSchemaGeneration(t *testing.T) {
 	if !hasActive {
 		t.Error("Expected active property in form-data schema")
 	} else {
-		activeMap, ok := activeProp.(map[string]interface{})
+		activeMap, ok := activeProp.(map[string]any)
 		if !ok {
 			t.Error("Expected active property to be a map")
 		} else {
 			if activeMap["type"] != "string" {
 				t.Error("Expected active to be converted to string type for form-data")
 			}
-			if enum, ok := activeMap["enum"].([]interface{}); ok {
+			if enum, ok := activeMap["enum"].([]any); ok {
 				if len(enum) != 2 || enum[0] != "true" || enum[1] != "false" {
 					t.Error("Expected active to have true/false enum values")
 				}
@@ -599,7 +599,7 @@ func TestImprovedFormDataSchemaGeneration(t *testing.T) {
 	if !hasMetadata {
 		t.Error("Expected metadata property in form-data schema")
 	} else {
-		metadataMap, ok := metadataProp.(map[string]interface{})
+		metadataMap, ok := metadataProp.(map[string]any)
 		if !ok {
 			t.Error("Expected metadata property to be a map")
 		} else {
@@ -641,15 +641,15 @@ func TestConfigurationDisablesDynamicContentTypes(t *testing.T) {
 	}
 
 	// Mock schema
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"avatar": map[string]interface{}{
+		"properties": map[string]any{
+			"avatar": map[string]any{
 				"type":        "string",
 				"format":      "binary",
 				"description": "File upload",
 			},
-			"name": map[string]interface{}{
+			"name": map[string]any{
 				"type":        "string",
 				"description": "User name",
 			},
@@ -687,15 +687,15 @@ func TestConfigurationEnablesDynamicContentTypes(t *testing.T) {
 	}
 
 	// Mock schema
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"avatar": map[string]interface{}{
+		"properties": map[string]any{
+			"avatar": map[string]any{
 				"type":        "string",
 				"format":      "binary",
 				"description": "File upload",
 			},
-			"name": map[string]interface{}{
+			"name": map[string]any{
 				"type":        "string",
 				"description": "User name",
 			},
@@ -733,15 +733,15 @@ func TestDefaultRouteGeneratorEnablesDynamicContentTypes(t *testing.T) {
 	}
 
 	// Mock schema
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"avatar": map[string]interface{}{
+		"properties": map[string]any{
+			"avatar": map[string]any{
 				"type":        "string",
 				"format":      "binary",
 				"description": "File upload",
 			},
-			"name": map[string]interface{}{
+			"name": map[string]any{
 				"type":        "string",
 				"description": "User name",
 			},
@@ -775,7 +775,7 @@ func TestErrorHandlingAndLogging(t *testing.T) {
 				Name:     "avatar",
 				Type:     "file",
 				Required: false,
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSize":   "invalid_size", // Invalid size
 					"maxSelect": "not_a_number", // Invalid maxSelect
 					"mimeTypes": "not_an_array", // Invalid mimeTypes format
@@ -828,9 +828,9 @@ func TestErrorHandlingEmptyCollection(t *testing.T) {
 	}
 
 	// Should return JSON-only content
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type":       "object",
-		"properties": map[string]interface{}{},
+		"properties": map[string]any{},
 	}
 
 	content := rg.generateRequestContent(schema, collection, "create")
@@ -872,7 +872,7 @@ func TestErrorHandlingInvalidSchema(t *testing.T) {
 	}
 
 	// Test with schema missing properties
-	schemaWithoutProps := map[string]interface{}{
+	schemaWithoutProps := map[string]any{
 		"type": "object",
 		// Missing "properties" field
 	}
@@ -896,13 +896,13 @@ func TestRelationFieldExamplesInFormData(t *testing.T) {
 		Name: "posts",
 		Fields: []FieldInfo{
 			{Name: "title", Type: "text", Required: true},
-			{Name: "author", Type: "relation", Required: true, Options: map[string]interface{}{
+			{Name: "author", Type: "relation", Required: true, Options: map[string]any{
 				"maxSelect": 1, "collectionId": "users",
 			}},
-			{Name: "categories", Type: "relation", Required: false, Options: map[string]interface{}{
+			{Name: "categories", Type: "relation", Required: false, Options: map[string]any{
 				"maxSelect": 5, "collectionId": "categories",
 			}},
-			{Name: "featured_image", Type: "file", Required: false, Options: map[string]interface{}{
+			{Name: "featured_image", Type: "file", Required: false, Options: map[string]any{
 				"maxSelect": 1,
 			}},
 			{Name: "is_published", Type: "bool", Required: false},
@@ -910,44 +910,44 @@ func TestRelationFieldExamplesInFormData(t *testing.T) {
 	}
 
 	// Mock schema with relation examples
-	schema := map[string]interface{}{
+	schema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"title": map[string]interface{}{
+		"properties": map[string]any{
+			"title": map[string]any{
 				"type":        "string",
 				"description": "Post title",
 				"example":     "example_title",
 			},
-			"author": map[string]interface{}{
+			"author": map[string]any{
 				"type":        "string",
 				"description": "Related record ID (references collection: users)",
 				"example":     "RELATION_RECORD_ID",
 			},
-			"categories": map[string]interface{}{
+			"categories": map[string]any{
 				"type":        "array",
 				"description": "Relation field (references collection: categories)",
-				"items": map[string]interface{}{
+				"items": map[string]any{
 					"type":        "string",
 					"description": "Related record ID",
 				},
-				"example": []interface{}{"RELATION_RECORD_ID"},
+				"example": []any{"RELATION_RECORD_ID"},
 			},
-			"featured_image": map[string]interface{}{
+			"featured_image": map[string]any{
 				"type":        "string",
 				"format":      "binary",
 				"description": "File upload",
 			},
-			"is_published": map[string]interface{}{
+			"is_published": map[string]any{
 				"type":        "boolean",
 				"description": "Boolean field",
 				"example":     true,
 			},
 		},
 		"required": []string{"title", "author"},
-		"example": map[string]interface{}{
+		"example": map[string]any{
 			"title":        "example_title",
 			"author":       "RELATION_RECORD_ID",
-			"categories":   []interface{}{"RELATION_RECORD_ID"},
+			"categories":   []any{"RELATION_RECORD_ID"},
 			"is_published": true,
 		},
 	}
@@ -965,18 +965,18 @@ func TestRelationFieldExamplesInFormData(t *testing.T) {
 		t.Fatal("Expected JSON content type")
 	}
 
-	jsonSchema := jsonContent.Schema.(map[string]interface{})
-	jsonProps := jsonSchema["properties"].(map[string]interface{})
+	jsonSchema := jsonContent.Schema.(map[string]any)
+	jsonProps := jsonSchema["properties"].(map[string]any)
 
 	// Verify author field in JSON
-	authorProp := jsonProps["author"].(map[string]interface{})
+	authorProp := jsonProps["author"].(map[string]any)
 	if authorProp["example"] != "RELATION_RECORD_ID" {
 		t.Errorf("Expected author example 'RELATION_RECORD_ID' in JSON, got %v", authorProp["example"])
 	}
 
 	// Verify categories field in JSON
-	categoriesProp := jsonProps["categories"].(map[string]interface{})
-	expectedCategoriesExample := []interface{}{"RELATION_RECORD_ID"}
+	categoriesProp := jsonProps["categories"].(map[string]any)
+	expectedCategoriesExample := []any{"RELATION_RECORD_ID"}
 	if !reflect.DeepEqual(categoriesProp["example"], expectedCategoriesExample) {
 		t.Errorf("Expected categories example %v in JSON, got %v", expectedCategoriesExample, categoriesProp["example"])
 	}
@@ -987,24 +987,24 @@ func TestRelationFieldExamplesInFormData(t *testing.T) {
 		t.Fatal("Expected multipart/form-data content type")
 	}
 
-	formSchema := formContent.Schema.(map[string]interface{})
-	formProps := formSchema["properties"].(map[string]interface{})
+	formSchema := formContent.Schema.(map[string]any)
+	formProps := formSchema["properties"].(map[string]any)
 
 	// Verify author field in form-data
-	formAuthorProp := formProps["author"].(map[string]interface{})
+	formAuthorProp := formProps["author"].(map[string]any)
 	if formAuthorProp["example"] != "RELATION_RECORD_ID" {
 		t.Errorf("Expected author example 'RELATION_RECORD_ID' in form-data, got %v", formAuthorProp["example"])
 	}
 
 	// Verify categories field in form-data
-	formCategoriesProp := formProps["categories"].(map[string]interface{})
+	formCategoriesProp := formProps["categories"].(map[string]any)
 	if !reflect.DeepEqual(formCategoriesProp["example"], expectedCategoriesExample) {
 		t.Errorf("Expected categories example %v in form-data, got %v", expectedCategoriesExample, formCategoriesProp["example"])
 	}
 
 	// Verify form-data example includes relation fields
 	if formExample, hasExample := formSchema["example"]; hasExample {
-		exampleMap := formExample.(map[string]interface{})
+		exampleMap := formExample.(map[string]any)
 
 		if exampleMap["author"] != "RELATION_RECORD_ID" {
 			t.Errorf("Expected author 'RELATION_RECORD_ID' in form-data example, got %v", exampleMap["author"])

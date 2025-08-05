@@ -12,19 +12,19 @@ import (
 
 // FieldSchema represents an OpenAPI field schema definition
 type FieldSchema struct {
-	Type        string                 `json:"type"`
-	Format      string                 `json:"format,omitempty"`
-	Description string                 `json:"description,omitempty"`
-	Required    bool                   `json:"required"`
-	Enum        []interface{}          `json:"enum,omitempty"`
-	Properties  map[string]interface{} `json:"properties,omitempty"`
-	Items       *FieldSchema           `json:"items,omitempty"`
-	Minimum     *float64               `json:"minimum,omitempty"`
-	Maximum     *float64               `json:"maximum,omitempty"`
-	MinLength   *int                   `json:"minLength,omitempty"`
-	MaxLength   *int                   `json:"maxLength,omitempty"`
-	Pattern     string                 `json:"pattern,omitempty"`
-	Example     interface{}            `json:"example,omitempty"`
+	Type        string         `json:"type"`
+	Format      string         `json:"format,omitempty"`
+	Description string         `json:"description,omitempty"`
+	Required    bool           `json:"required"`
+	Enum        []any          `json:"enum,omitempty"`
+	Properties  map[string]any `json:"properties,omitempty"`
+	Items       *FieldSchema   `json:"items,omitempty"`
+	Minimum     *float64       `json:"minimum,omitempty"`
+	Maximum     *float64       `json:"maximum,omitempty"`
+	MinLength   *int           `json:"minLength,omitempty"`
+	MaxLength   *int           `json:"maxLength,omitempty"`
+	Pattern     string         `json:"pattern,omitempty"`
+	Example     any            `json:"example,omitempty"`
 }
 
 // FieldSchemaMapper handles mapping PocketBase field types to OpenAPI schemas
@@ -199,12 +199,12 @@ func (fsm *FieldSchemaMapper) mapSelectField(field FieldInfo, schema *FieldSchem
 	if options := field.Options; options != nil {
 		// Handle enum values
 		if valuesVal, ok := options["values"]; ok {
-			if values, ok := valuesVal.([]interface{}); ok && len(values) > 0 {
+			if values, ok := valuesVal.([]any); ok && len(values) > 0 {
 				schema.Enum = values
 			} else if valuesStr, ok := valuesVal.(string); ok && valuesStr != "" {
 				// Handle comma-separated values
 				valuesList := strings.Split(valuesStr, ",")
-				schema.Enum = make([]interface{}, len(valuesList))
+				schema.Enum = make([]any, len(valuesList))
 				for i, v := range valuesList {
 					schema.Enum[i] = strings.TrimSpace(v)
 				}
@@ -293,7 +293,7 @@ func (fsm *FieldSchemaMapper) mapFileField(field FieldInfo, schema *FieldSchema)
 
 		// Add mime type constraints
 		if mimeTypesVal, ok := options["mimeTypes"]; ok {
-			if mimeTypes, ok := mimeTypesVal.([]interface{}); ok && len(mimeTypes) > 0 {
+			if mimeTypes, ok := mimeTypesVal.([]any); ok && len(mimeTypes) > 0 {
 				var types []string
 				for _, mt := range mimeTypes {
 					if mimeType, ok := mt.(string); ok {
@@ -396,7 +396,7 @@ func (fsm *FieldSchemaMapper) addRelationFieldExample(field FieldInfo, schema *F
 		schema.Example = "RELATION_RECORD_ID"
 	case "array":
 		// Multi-relation field
-		schema.Example = []interface{}{"RELATION_RECORD_ID"}
+		schema.Example = []any{"RELATION_RECORD_ID"}
 	default:
 		// Fallback to generic example for unexpected schema types
 		log.Printf("Warning: Unexpected schema type %s for relation field %s, using fallback", schema.Type, field.Name)
@@ -433,12 +433,12 @@ func (fsm *FieldSchemaMapper) addGenericFieldExample(field FieldInfo, schema *Fi
 		schema.Example = true
 	case "array":
 		if schema.Items != nil && len(schema.Items.Enum) > 0 {
-			schema.Example = []interface{}{schema.Items.Enum[0]}
+			schema.Example = []any{schema.Items.Enum[0]}
 		} else {
-			schema.Example = []interface{}{"example_item"}
+			schema.Example = []any{"example_item"}
 		}
 	case "object":
-		schema.Example = map[string]interface{}{
+		schema.Example = map[string]any{
 			"key": "value",
 		}
 	}
@@ -510,7 +510,7 @@ func (fsm *FieldSchemaMapper) GetFallbackSchema(fieldType string) *FieldSchema {
 // Helper methods for parsing options
 
 // parseIntOption safely parses an integer option value
-func (fsm *FieldSchemaMapper) parseIntOption(value interface{}) (int, error) {
+func (fsm *FieldSchemaMapper) parseIntOption(value any) (int, error) {
 	switch v := value.(type) {
 	case int:
 		return v, nil
@@ -524,7 +524,7 @@ func (fsm *FieldSchemaMapper) parseIntOption(value interface{}) (int, error) {
 }
 
 // parseFloatOption safely parses a float option value
-func (fsm *FieldSchemaMapper) parseFloatOption(value interface{}) (float64, error) {
+func (fsm *FieldSchemaMapper) parseFloatOption(value any) (float64, error) {
 	switch v := value.(type) {
 	case float64:
 		return v, nil

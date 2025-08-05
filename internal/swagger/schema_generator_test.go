@@ -52,7 +52,7 @@ func TestGenerateCollectionSchema(t *testing.T) {
 				Name:     "name",
 				Type:     "text",
 				Required: true,
-				Options:  map[string]interface{}{"max": 100},
+				Options:  map[string]any{"max": 100},
 			},
 			{
 				Name:     "email",
@@ -63,7 +63,7 @@ func TestGenerateCollectionSchema(t *testing.T) {
 				Name:     "age",
 				Type:     "number",
 				Required: false,
-				Options:  map[string]interface{}{"min": 0, "max": 120},
+				Options:  map[string]any{"min": 0, "max": 120},
 			},
 		},
 	}
@@ -358,7 +358,7 @@ func TestGenerateListResponseSchema(t *testing.T) {
 		t.Error("Expected list response type to be 'object'")
 	}
 
-	properties, ok := schema["properties"].(map[string]interface{})
+	properties, ok := schema["properties"].(map[string]any)
 	if !ok {
 		t.Fatal("Expected properties to be a map")
 	}
@@ -372,7 +372,7 @@ func TestGenerateListResponseSchema(t *testing.T) {
 	}
 
 	// Check items field is array type
-	items, ok := properties["items"].(map[string]interface{})
+	items, ok := properties["items"].(map[string]any)
 	if !ok {
 		t.Fatal("Expected items to be a map")
 	}
@@ -383,7 +383,7 @@ func TestGenerateListResponseSchema(t *testing.T) {
 
 	// Check example is generated
 	if example, exists := schema["example"]; exists {
-		exampleMap, ok := example.(map[string]interface{})
+		exampleMap, ok := example.(map[string]any)
 		if !ok {
 			t.Error("Expected example to be a map")
 		} else {
@@ -401,7 +401,7 @@ func TestGenerateBasicExample(t *testing.T) {
 		name        string
 		fieldSchema *FieldSchema
 		fieldName   string
-		expected    interface{}
+		expected    any
 	}{
 		{
 			name: "string field",
@@ -457,7 +457,7 @@ func TestGenerateBasicExample(t *testing.T) {
 				}
 			} else if tt.fieldSchema.Type == "array" {
 				// For arrays, just check that we got a slice
-				if _, ok := result.([]interface{}); !ok {
+				if _, ok := result.([]any); !ok {
 					t.Errorf("Expected array result, got %T", result)
 				}
 			} else {

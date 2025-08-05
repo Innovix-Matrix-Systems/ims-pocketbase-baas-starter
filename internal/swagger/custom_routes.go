@@ -1,27 +1,10 @@
 package swagger
 
-// CustomRouteRegistry holds all custom route definitions
-type CustomRouteRegistry struct {
-	routes []CustomRoute
-}
-
-// NewCustomRouteRegistry creates a new custom route registry
-func NewCustomRouteRegistry() *CustomRouteRegistry {
-	return &CustomRouteRegistry{
-		routes: defineCustomRoutes(),
-	}
-}
-
-// GetRoutes returns all custom routes
-func (r *CustomRouteRegistry) GetRoutes() []CustomRoute {
-	return r.routes
-}
-
-// RegisterWithGenerator registers all custom routes with the given generator
-func (r *CustomRouteRegistry) RegisterWithGenerator(generator *Generator) {
-	for _, route := range r.routes {
-		generator.AddCustomRoute(route)
-	}
+// GetCustomRoutes returns all predefined custom routes
+// These routes are automatically registered when creating a new generator
+// through the DefaultConfig function
+func GetCustomRoutes() []CustomRoute {
+	return defineCustomRoutes()
 }
 
 // defineCustomRoutes defines all custom routes for the application
@@ -86,7 +69,7 @@ func defineCustomRoutes() []CustomRoute {
 					Name:        "id",
 					In:          "path",
 					Required:    true,
-					Schema:      map[string]interface{}{"type": "string"},
+					Schema:      map[string]any{"type": "string"},
 					Description: "The unique identifier of the job",
 				},
 			},
@@ -103,16 +86,10 @@ func defineCustomRoutes() []CustomRoute {
 					Name:        "id",
 					In:          "path",
 					Required:    true,
-					Schema:      map[string]interface{}{"type": "string"},
+					Schema:      map[string]any{"type": "string"},
 					Description: "The unique identifier of the job",
 				},
 			},
 		},
 	}
-}
-
-// RegisterCustomRoutes is a convenience function to register all custom routes with a generator
-func RegisterCustomRoutes(generator *Generator) {
-	registry := NewCustomRouteRegistry()
-	registry.RegisterWithGenerator(generator)
 }

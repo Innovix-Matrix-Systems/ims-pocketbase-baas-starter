@@ -18,7 +18,7 @@ type CollectionSchema struct {
 	Type       string                  `json:"type"`
 	Properties map[string]*FieldSchema `json:"properties"`
 	Required   []string                `json:"required"`
-	Example    map[string]interface{}  `json:"example,omitempty"`
+	Example    map[string]any          `json:"example,omitempty"`
 }
 
 // SchemaGen interface for schema generation
@@ -27,7 +27,7 @@ type SchemaGen interface {
 	GenerateCollectionSchemas(collections []EnhancedCollectionInfo) (map[string]*CollectionSchema, error)
 	GenerateCreateSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error)
 	GenerateUpdateSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error)
-	GenerateListResponseSchema(collection EnhancedCollectionInfo) (map[string]interface{}, error)
+	GenerateListResponseSchema(collection EnhancedCollectionInfo) (map[string]any, error)
 	GetSchemaName(collection EnhancedCollectionInfo) string
 	GetCreateSchemaName(collection EnhancedCollectionInfo) string
 	GetUpdateSchemaName(collection EnhancedCollectionInfo) string
@@ -128,16 +128,9 @@ func (sg *SchemaGenerator) GenerateCreateSchema(collection EnhancedCollectionInf
 
 	// Only add collection fields (no system fields for create operations)
 	for _, field := range collection.Fields {
-		// Debug logging for email field
-		if field.Type == "email" || field.Name == "email" {
-			log.Printf("DEBUG: Processing email field - Name: %s, Type: %s, System: %v, Required: %v", field.Name, field.Type, field.System, field.Required)
-		}
 
 		// Skip system fields in create schema, except for password and email fields in auth collections
 		if field.System && field.Type != "password" && !(collection.Type == "auth" && field.Type == "email") {
-			if field.Type == "email" || field.Name == "email" {
-				log.Printf("DEBUG: Skipping email field due to system field check")
-			}
 			continue
 		}
 
@@ -176,7 +169,6 @@ func (sg *SchemaGenerator) GenerateCreateSchema(collection EnhancedCollectionInf
 	if collection.Type == "auth" {
 		for _, field := range collection.Fields {
 			if field.Type == "email" && field.Name == "email" {
-				log.Printf("DEBUG: Found email field for auth collection %s, adding to schema", collection.Name)
 				fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
 				if err != nil {
 					log.Printf("Warning: Failed to map email field: %v", err)
@@ -246,7 +238,6 @@ func (sg *SchemaGenerator) GenerateUpdateSchema(collection EnhancedCollectionInf
 	if collection.Type == "auth" {
 		for _, field := range collection.Fields {
 			if field.Type == "email" && field.Name == "email" {
-				log.Printf("DEBUG: Found email field for auth collection %s update schema, adding to schema", collection.Name)
 				fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
 				if err != nil {
 					log.Printf("Warning: Failed to map email field: %v", err)
@@ -274,7 +265,7 @@ func (sg *SchemaGenerator) GenerateUpdateSchema(collection EnhancedCollectionInf
 }
 
 // GenerateListResponseSchema generates a schema for list responses with pagination
-func (sg *SchemaGenerator) GenerateListResponseSchema(collection EnhancedCollectionInfo) (map[string]interface{}, error) {
+func (sg *SchemaGenerator) GenerateListResponseSchema(collection EnhancedCollectionInfo) (map[string]any, error) {
 	// Generate the item schema
 	itemSchema, err := sg.GenerateCollectionSchema(collection)
 	if err != nil {
@@ -282,30 +273,30 @@ func (sg *SchemaGenerator) GenerateListResponseSchema(collection EnhancedCollect
 	}
 
 	// Create the list response schema
-	listSchema := map[string]interface{}{
+	listSchema := map[string]any{
 		"type": "object",
-		"properties": map[string]interface{}{
-			"page": map[string]interface{}{
+		"properties": map[string]any{
+			"page": map[string]any{
 				"type":        "integer",
 				"description": "Current page number",
 				"example":     1,
 			},
-			"perPage": map[string]interface{}{
+			"perPage": map[string]any{
 				"type":        "integer",
 				"description": "Number of items per page",
 				"example":     30,
 			},
-			"totalItems": map[string]interface{}{
+			"totalItems": map[string]any{
 				"type":        "integer",
 				"description": "Total number of items",
 				"example":     100,
 			},
-			"totalPages": map[string]interface{}{
+			"totalPages": map[string]any{
 				"type":        "integer",
 				"description": "Total number of pages",
 				"example":     4,
 			},
-			"items": map[string]interface{}{
+			"items": map[string]any{
 				"type":        "array",
 				"description": fmt.Sprintf("Array of %s records", collection.Name),
 				"items":       itemSchema,
@@ -323,8 +314,8 @@ func (sg *SchemaGenerator) GenerateListResponseSchema(collection EnhancedCollect
 }
 
 // generateCollectionExample generates an example object for a collection schema
-func (sg *SchemaGenerator) generateCollectionExample(collection EnhancedCollectionInfo, schema *CollectionSchema) map[string]interface{} {
-	example := make(map[string]interface{})
+func (sg *SchemaGenerator) generateCollectionExample(collection EnhancedCollectionInfo, schema *CollectionSchema) map[string]any {
+	example := make(map[string]any)
 
 	for fieldName, fieldSchema := range schema.Properties {
 		if fieldSchema.Example != nil {
@@ -339,8 +330,8 @@ func (sg *SchemaGenerator) generateCollectionExample(collection EnhancedCollecti
 }
 
 // generateCreateExample generates an example object for create operations
-func (sg *SchemaGenerator) generateCreateExample(collection EnhancedCollectionInfo, schema *CollectionSchema) map[string]interface{} {
-	example := make(map[string]interface{})
+func (sg *SchemaGenerator) generateCreateExample(collection EnhancedCollectionInfo, schema *CollectionSchema) map[string]any {
+	example := make(map[string]any)
 
 	for fieldName, fieldSchema := range schema.Properties {
 		// Only include required fields and some optional fields in create examples
@@ -357,8 +348,8 @@ func (sg *SchemaGenerator) generateCreateExample(collection EnhancedCollectionIn
 }
 
 // generateUpdateExample generates an example object for update operations
-func (sg *SchemaGenerator) generateUpdateExample(collection EnhancedCollectionInfo, schema *CollectionSchema) map[string]interface{} {
-	example := make(map[string]interface{})
+func (sg *SchemaGenerator) generateUpdateExample(collection EnhancedCollectionInfo, schema *CollectionSchema) map[string]any {
+	example := make(map[string]any)
 
 	// Include a subset of fields for update examples
 	count := 0
@@ -383,9 +374,9 @@ func (sg *SchemaGenerator) generateUpdateExample(collection EnhancedCollectionIn
 }
 
 // generateListResponseExample generates an example for list responses
-func (sg *SchemaGenerator) generateListResponseExample(collection EnhancedCollectionInfo, itemSchema *CollectionSchema) map[string]interface{} {
+func (sg *SchemaGenerator) generateListResponseExample(collection EnhancedCollectionInfo, itemSchema *CollectionSchema) map[string]any {
 	// Generate a couple of item examples
-	items := []interface{}{}
+	items := []any{}
 	if itemSchema.Example != nil {
 		items = append(items, itemSchema.Example)
 
@@ -395,7 +386,7 @@ func (sg *SchemaGenerator) generateListResponseExample(collection EnhancedCollec
 		}
 	}
 
-	return map[string]interface{}{
+	return map[string]any{
 		"page":       1,
 		"perPage":    30,
 		"totalItems": len(items),
@@ -405,7 +396,7 @@ func (sg *SchemaGenerator) generateListResponseExample(collection EnhancedCollec
 }
 
 // generateBasicExample generates a basic example value based on field schema
-func (sg *SchemaGenerator) generateBasicExample(fieldSchema *FieldSchema, fieldName string) interface{} {
+func (sg *SchemaGenerator) generateBasicExample(fieldSchema *FieldSchema, fieldName string) any {
 	switch fieldSchema.Type {
 	case "string":
 		if fieldSchema.Format == "email" {
@@ -428,9 +419,9 @@ func (sg *SchemaGenerator) generateBasicExample(fieldSchema *FieldSchema, fieldN
 	case "boolean":
 		return true
 	case "array":
-		return []interface{}{}
+		return []any{}
 	case "object":
-		return map[string]interface{}{}
+		return map[string]any{}
 	default:
 		return fmt.Sprintf("example_%s", fieldName)
 	}
@@ -497,9 +488,9 @@ func (sg *SchemaGenerator) shouldIncludeInUpdateExample(fieldName string, fieldS
 }
 
 // createVariationExample creates a variation of an example for list responses
-func (sg *SchemaGenerator) createVariationExample(original interface{}) interface{} {
-	if originalMap, ok := original.(map[string]interface{}); ok {
-		variation := make(map[string]interface{})
+func (sg *SchemaGenerator) createVariationExample(original any) any {
+	if originalMap, ok := original.(map[string]any); ok {
+		variation := make(map[string]any)
 		for key, value := range originalMap {
 			variation[key] = sg.createVariationValue(value, key)
 		}
@@ -509,7 +500,7 @@ func (sg *SchemaGenerator) createVariationExample(original interface{}) interfac
 }
 
 // createVariationValue creates a variation of a single value
-func (sg *SchemaGenerator) createVariationValue(value interface{}, key string) interface{} {
+func (sg *SchemaGenerator) createVariationValue(value any, key string) any {
 	switch v := value.(type) {
 	case string:
 		if strings.Contains(v, "example_") {

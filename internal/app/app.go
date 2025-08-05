@@ -47,14 +47,7 @@ func NewApp() *pocketbase.PocketBase {
 		middleware := middlewares.NewAuthMiddleware()
 
 		// Initialize Swagger generator with collection filtering
-		config := swagger.DefaultUnifiedConfig()
-		config.Title = common.GetEnv("APP_NAME", "IMS Pocketbase") + " API"
-		config.Version = "1.0.0"
-		config.Description = "API documentation for IMS PocketBase collections"
-		config.ExcludedCollections = []string{
-			"_pb_users_auth_", "_mfas", "_otps", "_externalAuths", "_authOrigins", "collections", "export_files", "queues",
-		} // Exclude system collections
-		config.IncludeSystem = false
+		config := swagger.DefaultConfig()
 		generator := swagger.NewGenerator(app, config)
 
 		// Apply auth to specific PocketBase API endpoints
@@ -88,9 +81,6 @@ func NewApp() *pocketbase.PocketBase {
 
 		// static files
 		se.Router.GET("/{path...}", apis.Static(os.DirFS("./pb_public"), false))
-
-		// Register custom routes with Swagger using the custom routes registry
-		swagger.RegisterCustomRoutes(generator)
 
 		// custom business routes
 		routes.RegisterCustom(se)

@@ -45,7 +45,7 @@ func TestMapFieldToSchemaTextField(t *testing.T) {
 		Name:     "title",
 		Type:     "text",
 		Required: true,
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"max": 100,
 			"min": 5,
 		},
@@ -88,7 +88,7 @@ func TestMapFieldToSchemaNumberField(t *testing.T) {
 		Name:     "count",
 		Type:     "number",
 		Required: false,
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"max": 1000.5,
 			"min": 0.1,
 		},
@@ -123,7 +123,7 @@ func TestMapFieldToSchemaIntegerField(t *testing.T) {
 		Name:     "age",
 		Type:     "number",
 		Required: true,
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"onlyInt": true,
 			"max":     120,
 			"min":     0,
@@ -240,8 +240,8 @@ func TestMapFieldToSchemaSelectField(t *testing.T) {
 	field := FieldInfo{
 		Name: "status",
 		Type: "select",
-		Options: map[string]interface{}{
-			"values": []interface{}{"active", "inactive", "pending"},
+		Options: map[string]any{
+			"values": []any{"active", "inactive", "pending"},
 		},
 	}
 
@@ -269,8 +269,8 @@ func TestMapFieldToSchemaMultiSelectField(t *testing.T) {
 	field := FieldInfo{
 		Name: "tags",
 		Type: "select",
-		Options: map[string]interface{}{
-			"values":    []interface{}{"tag1", "tag2", "tag3"},
+		Options: map[string]any{
+			"values":    []any{"tag1", "tag2", "tag3"},
 			"maxSelect": 3,
 		},
 	}
@@ -303,7 +303,7 @@ func TestMapFieldToSchemaRelationField(t *testing.T) {
 	field := FieldInfo{
 		Name: "user_id",
 		Type: "relation",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"collectionId": "users",
 		},
 	}
@@ -332,7 +332,7 @@ func TestMapFieldToSchemaMultiRelationField(t *testing.T) {
 	field := FieldInfo{
 		Name: "categories",
 		Type: "relation",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"collectionId": "categories",
 			"maxSelect":    5,
 		},
@@ -362,9 +362,9 @@ func TestMapFieldToSchemaFileField(t *testing.T) {
 	field := FieldInfo{
 		Name: "avatar",
 		Type: "file",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"maxSize":   1048576, // 1MB
-			"mimeTypes": []interface{}{"image/jpeg", "image/png"},
+			"mimeTypes": []any{"image/jpeg", "image/png"},
 		},
 	}
 
@@ -396,7 +396,7 @@ func TestMapFieldToSchemaMultiFileField(t *testing.T) {
 	field := FieldInfo{
 		Name: "attachments",
 		Type: "file",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"maxSelect": 5,
 		},
 	}
@@ -592,7 +592,7 @@ func TestParseIntOption(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expected int
 		hasError bool
 	}{
@@ -628,7 +628,7 @@ func TestParseFloatOption(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		expected float64
 		hasError bool
 	}{
@@ -664,7 +664,7 @@ func TestRelationFieldExampleSingleRelation(t *testing.T) {
 	field := FieldInfo{
 		Name: "user",
 		Type: "relation",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"maxSelect":    1,
 			"collectionId": "users",
 		},
@@ -690,7 +690,7 @@ func TestRelationFieldExampleMultiRelation(t *testing.T) {
 	field := FieldInfo{
 		Name: "categories",
 		Type: "relation",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"maxSelect":    5,
 			"collectionId": "categories",
 		},
@@ -705,7 +705,7 @@ func TestRelationFieldExampleMultiRelation(t *testing.T) {
 		t.Errorf("Expected type 'array', got %s", schema.Type)
 	}
 
-	expected := []interface{}{"RELATION_RECORD_ID"}
+	expected := []any{"RELATION_RECORD_ID"}
 	if !reflect.DeepEqual(schema.Example, expected) {
 		t.Errorf("Expected %v, got %v", expected, schema.Example)
 	}
@@ -717,7 +717,7 @@ func TestRelationFieldExampleNoMaxSelect(t *testing.T) {
 	field := FieldInfo{
 		Name: "owner",
 		Type: "relation",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"collectionId": "users",
 		},
 	}
@@ -741,14 +741,14 @@ func TestRelationFieldExampleEdgeCases(t *testing.T) {
 		name            string
 		field           FieldInfo
 		expectedType    string
-		expectedExample interface{}
+		expectedExample any
 	}{
 		{
 			name: "zero maxSelect",
 			field: FieldInfo{
 				Name: "optional_relation",
 				Type: "relation",
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSelect":    0,
 					"collectionId": "users",
 				},
@@ -761,7 +761,7 @@ func TestRelationFieldExampleEdgeCases(t *testing.T) {
 			field: FieldInfo{
 				Name: "invalid_relation",
 				Type: "relation",
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSelect":    -1,
 					"collectionId": "users",
 				},
@@ -774,7 +774,7 @@ func TestRelationFieldExampleEdgeCases(t *testing.T) {
 			field: FieldInfo{
 				Name: "string_max_select",
 				Type: "relation",
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSelect":    "invalid",
 					"collectionId": "users",
 				},
@@ -797,7 +797,7 @@ func TestRelationFieldExampleEdgeCases(t *testing.T) {
 			field: FieldInfo{
 				Name: "exactly_one",
 				Type: "relation",
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSelect":    1,
 					"collectionId": "users",
 				},
@@ -810,13 +810,13 @@ func TestRelationFieldExampleEdgeCases(t *testing.T) {
 			field: FieldInfo{
 				Name: "exactly_two",
 				Type: "relation",
-				Options: map[string]interface{}{
+				Options: map[string]any{
 					"maxSelect":    2,
 					"collectionId": "tags",
 				},
 			},
 			expectedType:    "array",
-			expectedExample: []interface{}{"RELATION_RECORD_ID"},
+			expectedExample: []any{"RELATION_RECORD_ID"},
 		},
 	}
 
@@ -846,7 +846,7 @@ func TestRelationFieldExampleWithoutExamplesEnabled(t *testing.T) {
 	field := FieldInfo{
 		Name: "user",
 		Type: "relation",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"maxSelect":    1,
 			"collectionId": "users",
 		},
