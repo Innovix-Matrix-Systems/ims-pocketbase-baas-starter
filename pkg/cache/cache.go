@@ -44,17 +44,17 @@ func NewCacheService(config CacheConfig) *CacheService {
 }
 
 // Set stores a value in the cache with the default expiration
-func (cs *CacheService) Set(key string, value interface{}) {
+func (cs *CacheService) Set(key string, value any) {
 	cs.cache.Set(key, value, cache.DefaultExpiration)
 }
 
 // SetWithExpiration stores a value in the cache with a custom expiration
-func (cs *CacheService) SetWithExpiration(key string, value interface{}, expiration time.Duration) {
+func (cs *CacheService) SetWithExpiration(key string, value any, expiration time.Duration) {
 	cs.cache.Set(key, value, expiration)
 }
 
 // Get retrieves a value from the cache
-func (cs *CacheService) Get(key string) (interface{}, bool) {
+func (cs *CacheService) Get(key string) (any, bool) {
 	return cs.cache.Get(key)
 }
 
@@ -79,9 +79,9 @@ func (cs *CacheService) GetStringSlice(key string) ([]string, bool) {
 }
 
 // GetMap retrieves a map from the cache
-func (cs *CacheService) GetMap(key string) (map[string]interface{}, bool) {
+func (cs *CacheService) GetMap(key string) (map[string]any, bool) {
 	if value, found := cs.cache.Get(key); found {
-		if m, ok := value.(map[string]interface{}); ok {
+		if m, ok := value.(map[string]any); ok {
 			return m, true
 		}
 	}
@@ -123,18 +123,18 @@ func (cs *CacheService) ItemCount() int {
 }
 
 // GetStats returns cache statistics
-func (cs *CacheService) GetStats() map[string]interface{} {
+func (cs *CacheService) GetStats() map[string]any {
 	items := cs.cache.Items()
 
-	stats := map[string]interface{}{
+	stats := map[string]any{
 		"item_count": len(items),
-		"items":      make(map[string]interface{}),
+		"items":      make(map[string]any),
 	}
 
 	// Add item details (without actual values for security)
-	itemDetails := make(map[string]interface{})
+	itemDetails := make(map[string]any)
 	for key, item := range items {
-		itemDetails[key] = map[string]interface{}{
+		itemDetails[key] = map[string]any{
 			"expires_at": item.Expiration,
 			"expired":    item.Expired(),
 		}

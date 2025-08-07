@@ -120,19 +120,19 @@ func (cd *CollectionDiscovery) GetCollection(name string) (*CollectionInfo, erro
 		return nil, fmt.Errorf("PocketBase app is nil")
 	}
 
-	var dbCollection databaseCollection
+	var dbCol databaseCollection
 	err := cd.app.DB().NewQuery("SELECT name, type, system, schema, listRule, viewRule, createRule, updateRule, deleteRule, options FROM _collections WHERE name = {:name}").
 		Bind(map[string]any{"name": name}).
-		One(&dbCollection)
+		One(&dbCol)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find collection %s: %w", name, err)
 	}
 
-	if !cd.ShouldIncludeCollection(dbCollection.Name, dbCollection.Type, dbCollection.System) {
+	if !cd.ShouldIncludeCollection(dbCol.Name, dbCol.Type, dbCol.System) {
 		return nil, fmt.Errorf("collection %s is excluded from documentation", name)
 	}
 
-	return cd.extractCollectionInfo(dbCollection)
+	return cd.extractCollectionInfo(dbCol)
 }
 
 // ShouldIncludeCollection determines if a collection should be included in documentation
@@ -172,41 +172,41 @@ type databaseCollection struct {
 }
 
 // extractCollectionInfo extracts complete metadata from a database collection record
-func (cd *CollectionDiscovery) extractCollectionInfo(dbCollection databaseCollection) (*CollectionInfo, error) {
+func (cd *CollectionDiscovery) extractCollectionInfo(dbCol databaseCollection) (*CollectionInfo, error) {
 
 	// Extract basic information
 	collectionInfo := &CollectionInfo{
-		Name:   dbCollection.Name,
-		Type:   dbCollection.Type,
-		System: dbCollection.System,
+		Name:   dbCol.Name,
+		Type:   dbCol.Type,
+		System: dbCol.System,
 		Fields: []FieldInfo{},
 	}
 
 	// Extract API rules
-	collectionInfo.ListRule = dbCollection.ListRule
-	collectionInfo.ViewRule = dbCollection.ViewRule
-	collectionInfo.CreateRule = dbCollection.CreateRule
-	collectionInfo.UpdateRule = dbCollection.UpdateRule
-	collectionInfo.DeleteRule = dbCollection.DeleteRule
+	collectionInfo.ListRule = dbCol.ListRule
+	collectionInfo.ViewRule = dbCol.ViewRule
+	collectionInfo.CreateRule = dbCol.CreateRule
+	collectionInfo.UpdateRule = dbCol.UpdateRule
+	collectionInfo.DeleteRule = dbCol.DeleteRule
 
 	// Initialize options
 	collectionInfo.Options = make(map[string]any)
 
 	// Parse schema JSON to extract fields
-	if dbCollection.Schema != "" {
-		fields, err := cd.parseSchemaFields(dbCollection.Schema)
+	if dbCol.Schema != "" {
+		fields, err := cd.parseSchemaFields(dbCol.Schema)
 		if err != nil {
-			log.Printf("Warning: Failed to parse schema for collection %s: %v", dbCollection.Name, err)
+			log.Printf("Warning: Failed to parse schema for collection %s: %v", dbCol.Name, err)
 		} else {
 			collectionInfo.Fields = fields
 		}
 	}
 
 	// Parse options JSON
-	if dbCollection.Options != "" {
-		options, err := cd.parseOptionsJSON(dbCollection.Options)
+	if dbCol.Options != "" {
+		options, err := cd.parseOptionsJSON(dbCol.Options)
 		if err != nil {
-			log.Printf("Warning: Failed to parse options for collection %s: %v", dbCollection.Name, err)
+			log.Printf("Warning: Failed to parse options for collection %s: %v", dbCol.Name, err)
 		} else {
 			collectionInfo.Options = options
 		}

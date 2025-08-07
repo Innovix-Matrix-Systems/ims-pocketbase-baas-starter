@@ -93,7 +93,7 @@ func (wp *WorkerPool) ProcessJobs(jobs []*core.Record) []error {
 
 	// Collect results
 	results := make([]error, len(jobs))
-	for i := 0; i < len(jobs); i++ {
+	for i := range len(jobs) {
 		select {
 		case result := <-wp.resultQueue:
 			// Find the job index and store the result
@@ -146,8 +146,8 @@ func (wp *WorkerPool) Shutdown(ctx context.Context) error {
 }
 
 // GetStats returns worker pool statistics
-func (wp *WorkerPool) GetStats() map[string]interface{} {
-	return map[string]interface{}{
+func (wp *WorkerPool) GetStats() map[string]any {
+	return map[string]any{
 		"worker_count":      len(wp.workers),
 		"max_workers":       wp.maxWorkers,
 		"job_queue_size":    len(wp.jobQueue),
@@ -258,8 +258,8 @@ func (w *Worker) validateJobRecord(record *core.Record) error {
 	if record.Id == "" {
 		return fmt.Errorf("job record must have a valid ID")
 	}
-	if record.Collection().Name != "queues" {
-		return fmt.Errorf("job record must be from the 'queues' collection")
+	if record.Collection().Name != QueuesCollection {
+		return fmt.Errorf("job record must be from the '%s' collection", QueuesCollection)
 	}
 	return nil
 }

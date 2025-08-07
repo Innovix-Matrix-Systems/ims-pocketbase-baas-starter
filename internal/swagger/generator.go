@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ims-pocketbase-baas-starter/pkg/common"
 	"log"
+	"slices"
 	"strings"
 
 	"github.com/pocketbase/pocketbase"
@@ -333,14 +334,7 @@ func (g *Generator) buildTags(collections []CollectionInfo, routes []GeneratedRo
 
 	// Add any custom tags that aren't in our order
 	for tag := range tagMap {
-		found := false
-		for _, orderedTag := range tagOrder {
-			if tag == orderedTag {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(tagOrder, tag) {
 			tagOrder = append(tagOrder, tag)
 		}
 	}

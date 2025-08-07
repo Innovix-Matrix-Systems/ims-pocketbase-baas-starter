@@ -12,6 +12,11 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+// Collection names constants
+const (
+	QueuesCollection = "queues"
+)
+
 // NewJobRegistry creates a new job registry
 func NewJobRegistry() *JobRegistry {
 	return &JobRegistry{
@@ -201,8 +206,8 @@ func (p *JobProcessor) validateJobRecord(record *core.Record) error {
 		return fmt.Errorf("job record must have a valid ID")
 	}
 
-	if record.Collection().Name != "queues" {
-		return fmt.Errorf("job record must be from the 'queues' collection")
+	if record.Collection().Name != QueuesCollection {
+		return fmt.Errorf("job record must be from the '%s' collection", QueuesCollection)
 	}
 
 	return nil

@@ -9,6 +9,12 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
+const (
+	RolesCollection       = "roles"
+	PermissionsCollection = "permissions"
+	PermissionCacheTime   = 1 * time.Minute
+)
+
 // PermissionMiddleware provides permission-based middleware functionality
 // It extends the authentication system to check for specific permissions
 type PermissionMiddleware struct {
@@ -23,11 +29,6 @@ func NewPermissionMiddleware() *PermissionMiddleware {
 		cacheKey: cache.CacheKey{},
 	}
 }
-
-// Permission cache time Constant
-const (
-	PERMISSION_CACHE_TIME = 1 * time.Minute
-)
 
 // getUserPermissions extracts and processes all permissions for a user with caching
 // This includes direct permissions and those inherited from roles
@@ -50,7 +51,7 @@ func (m *PermissionMiddleware) getUserPermissions(app core.App, user *core.Recor
 	permissions := m.fetchUserPermissions(app, user)
 
 	// Cache for 5 minutes
-	m.cache.SetWithExpiration(cacheKey, permissions, PERMISSION_CACHE_TIME)
+	m.cache.SetWithExpiration(cacheKey, permissions, PermissionCacheTime)
 
 	return permissions
 }
@@ -63,7 +64,7 @@ func (m *PermissionMiddleware) fetchUserPermissions(app core.App, user *core.Rec
 
 	// Batch fetch all roles to get their permissions
 	if len(roles) > 0 {
-		roleRecords, err := app.FindRecordsByIds("roles", roles)
+		roleRecords, err := app.FindRecordsByIds(RolesCollection, roles)
 		if err != nil {
 			log.Printf("Error fetching roles: %v", err)
 		} else {
@@ -94,7 +95,7 @@ func (m *PermissionMiddleware) fetchUserPermissions(app core.App, user *core.Rec
 		return []string{}
 	}
 
-	permissionsRecords, err := app.FindRecordsByIds("permissions", permissionIDs)
+	permissionsRecords, err := app.FindRecordsByIds(PermissionsCollection, permissionIDs)
 	if err != nil {
 		log.Printf("Error fetching permissions: %v", err)
 		return []string{}
@@ -203,6 +204,6 @@ func (m *PermissionMiddleware) InvalidateAllUserPermissions() int {
 }
 
 // GetCacheStats returns cache statistics for debugging
-func (m *PermissionMiddleware) GetCacheStats() map[string]interface{} {
+func (m *PermissionMiddleware) GetCacheStats() map[string]any {
 	return m.cache.GetStats()
 }
