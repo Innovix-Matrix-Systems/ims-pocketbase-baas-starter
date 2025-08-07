@@ -23,15 +23,15 @@ type CollectionSchema struct {
 
 // SchemaGen interface for schema generation
 type SchemaGen interface {
-	GenerateCollectionSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error)
-	GenerateCollectionSchemas(collections []EnhancedCollectionInfo) (map[string]*CollectionSchema, error)
-	GenerateCreateSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error)
-	GenerateUpdateSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error)
-	GenerateListResponseSchema(collection EnhancedCollectionInfo) (map[string]any, error)
-	GetSchemaName(collection EnhancedCollectionInfo) string
-	GetCreateSchemaName(collection EnhancedCollectionInfo) string
-	GetUpdateSchemaName(collection EnhancedCollectionInfo) string
-	GetListResponseSchemaName(collection EnhancedCollectionInfo) string
+	GenerateCollectionSchema(collection CollectionInfo) (*CollectionSchema, error)
+	GenerateCollectionSchemas(collections []CollectionInfo) (map[string]*CollectionSchema, error)
+	GenerateCreateSchema(collection CollectionInfo) (*CollectionSchema, error)
+	GenerateUpdateSchema(collection CollectionInfo) (*CollectionSchema, error)
+	GenerateListResponseSchema(collection CollectionInfo) (map[string]any, error)
+	GetSchemaName(collection CollectionInfo) string
+	GetCreateSchemaName(collection CollectionInfo) string
+	GetUpdateSchemaName(collection CollectionInfo) string
+	GetListResponseSchemaName(collection CollectionInfo) string
 }
 
 // NewSchemaGenerator creates a new schema generator
@@ -53,7 +53,7 @@ func NewSchemaGeneratorWithConfig(includeExamples, includeSystem bool) *SchemaGe
 }
 
 // GenerateCollectionSchema generates a complete OpenAPI schema for a collection
-func (sg *SchemaGenerator) GenerateCollectionSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error) {
+func (sg *SchemaGenerator) GenerateCollectionSchema(collection CollectionInfo) (*CollectionSchema, error) {
 	if collection.Name == "" {
 		return nil, fmt.Errorf("collection name is required")
 	}
@@ -99,7 +99,7 @@ func (sg *SchemaGenerator) GenerateCollectionSchema(collection EnhancedCollectio
 }
 
 // GenerateCollectionSchemas generates schemas for multiple collections
-func (sg *SchemaGenerator) GenerateCollectionSchemas(collections []EnhancedCollectionInfo) (map[string]*CollectionSchema, error) {
+func (sg *SchemaGenerator) GenerateCollectionSchemas(collections []CollectionInfo) (map[string]*CollectionSchema, error) {
 	schemas := make(map[string]*CollectionSchema)
 
 	for _, collection := range collections {
@@ -115,7 +115,7 @@ func (sg *SchemaGenerator) GenerateCollectionSchemas(collections []EnhancedColle
 }
 
 // GenerateCreateSchema generates a schema for creating records (excludes system fields)
-func (sg *SchemaGenerator) GenerateCreateSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error) {
+func (sg *SchemaGenerator) GenerateCreateSchema(collection CollectionInfo) (*CollectionSchema, error) {
 	if collection.Name == "" {
 		return nil, fmt.Errorf("collection name is required")
 	}
@@ -200,7 +200,7 @@ func (sg *SchemaGenerator) GenerateCreateSchema(collection EnhancedCollectionInf
 }
 
 // GenerateUpdateSchema generates a schema for updating records (all fields optional)
-func (sg *SchemaGenerator) GenerateUpdateSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error) {
+func (sg *SchemaGenerator) GenerateUpdateSchema(collection CollectionInfo) (*CollectionSchema, error) {
 	if collection.Name == "" {
 		return nil, fmt.Errorf("collection name is required")
 	}
@@ -265,7 +265,7 @@ func (sg *SchemaGenerator) GenerateUpdateSchema(collection EnhancedCollectionInf
 }
 
 // GenerateListResponseSchema generates a schema for list responses with pagination
-func (sg *SchemaGenerator) GenerateListResponseSchema(collection EnhancedCollectionInfo) (map[string]any, error) {
+func (sg *SchemaGenerator) GenerateListResponseSchema(collection CollectionInfo) (map[string]any, error) {
 	// Generate the item schema
 	itemSchema, err := sg.GenerateCollectionSchema(collection)
 	if err != nil {
@@ -314,7 +314,7 @@ func (sg *SchemaGenerator) GenerateListResponseSchema(collection EnhancedCollect
 }
 
 // generateCollectionExample generates an example object for a collection schema
-func (sg *SchemaGenerator) generateCollectionExample(collection EnhancedCollectionInfo, schema *CollectionSchema) map[string]any {
+func (sg *SchemaGenerator) generateCollectionExample(collection CollectionInfo, schema *CollectionSchema) map[string]any {
 	example := make(map[string]any)
 
 	for fieldName, fieldSchema := range schema.Properties {
@@ -330,7 +330,7 @@ func (sg *SchemaGenerator) generateCollectionExample(collection EnhancedCollecti
 }
 
 // generateCreateExample generates an example object for create operations
-func (sg *SchemaGenerator) generateCreateExample(collection EnhancedCollectionInfo, schema *CollectionSchema) map[string]any {
+func (sg *SchemaGenerator) generateCreateExample(collection CollectionInfo, schema *CollectionSchema) map[string]any {
 	example := make(map[string]any)
 
 	for fieldName, fieldSchema := range schema.Properties {
@@ -348,7 +348,7 @@ func (sg *SchemaGenerator) generateCreateExample(collection EnhancedCollectionIn
 }
 
 // generateUpdateExample generates an example object for update operations
-func (sg *SchemaGenerator) generateUpdateExample(collection EnhancedCollectionInfo, schema *CollectionSchema) map[string]any {
+func (sg *SchemaGenerator) generateUpdateExample(collection CollectionInfo, schema *CollectionSchema) map[string]any {
 	example := make(map[string]any)
 
 	// Include a subset of fields for update examples
@@ -374,7 +374,7 @@ func (sg *SchemaGenerator) generateUpdateExample(collection EnhancedCollectionIn
 }
 
 // generateListResponseExample generates an example for list responses
-func (sg *SchemaGenerator) generateListResponseExample(collection EnhancedCollectionInfo, itemSchema *CollectionSchema) map[string]any {
+func (sg *SchemaGenerator) generateListResponseExample(collection CollectionInfo, itemSchema *CollectionSchema) map[string]any {
 	// Generate a couple of item examples
 	items := []any{}
 	if itemSchema.Example != nil {
@@ -523,22 +523,22 @@ func (sg *SchemaGenerator) createVariationValue(value any, key string) any {
 }
 
 // GetSchemaName returns the schema name for a collection
-func (sg *SchemaGenerator) GetSchemaName(collection EnhancedCollectionInfo) string {
+func (sg *SchemaGenerator) GetSchemaName(collection CollectionInfo) string {
 	return collection.Name
 }
 
 // GetCreateSchemaName returns the schema name for create operations
-func (sg *SchemaGenerator) GetCreateSchemaName(collection EnhancedCollectionInfo) string {
+func (sg *SchemaGenerator) GetCreateSchemaName(collection CollectionInfo) string {
 	return collection.Name + "Create"
 }
 
 // GetUpdateSchemaName returns the schema name for update operations
-func (sg *SchemaGenerator) GetUpdateSchemaName(collection EnhancedCollectionInfo) string {
+func (sg *SchemaGenerator) GetUpdateSchemaName(collection CollectionInfo) string {
 	return collection.Name + "Update"
 }
 
 // GetListResponseSchemaName returns the schema name for list responses
-func (sg *SchemaGenerator) GetListResponseSchemaName(collection EnhancedCollectionInfo) string {
+func (sg *SchemaGenerator) GetListResponseSchemaName(collection CollectionInfo) string {
 	return collection.Name + "ListResponse"
 }
 

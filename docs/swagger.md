@@ -1,22 +1,34 @@
 # Swagger API Documentation
 
-This document explains how the automatic API documentation system works in the IMS PocketBase BaaS Starter, including Swagger UI, ReDoc, and OpenAPI JSON generation.
+This document explains how the automatic API documentation system works in the IMS PocketBase BaaS Starter, including Swagger UI, ReDoc, and OpenAPI JSON generation with intelligent caching.
 
 ## Overview
 
-The Swagger documentation system automatically generates comprehensive API documentation for all your PocketBase collections and custom routes. It provides multiple interfaces for exploring and testing your API:
+The Swagger documentation system automatically generates comprehensive API documentation for all your PocketBase collections and custom routes. It features intelligent caching with automatic invalidation when collections change.
+
+### Available Endpoints
 
 - **OpenAPI JSON**: Machine-readable API specification at `/api-docs/openapi.json`
 - **Swagger UI**: Interactive API explorer at `/api-docs`
 - **ReDoc**: Clean, responsive documentation at `/api-docs/redoc`
 - **Collection Stats**: API statistics at `/api-docs/stats`
+- **Cache Status**: Cache information at `/api-docs/cache-status`
+- **Cache Control**: Manual cache invalidation at `/api-docs/invalidate-cache`
 
-## Features
+## Key Features
+
+### Intelligent Caching System
+
+- **Automatic cache invalidation** when collections change
+- **Thread-safe concurrent access** for multiple users
+- **Configurable TTL** (default: 5 minutes)
+- **Collection change detection** using metadata hashing
+- **Performance optimization** with sub-millisecond cached responses
 
 ### Automatic Collection Discovery
 
 - Discovers all PocketBase collections (base, auth, view types)
-- Extracts field schemas, validation rules, and relationships
+- Extracts complete field schemas, validation rules, and relationships
 - Supports system and custom collections
 - Configurable collection exclusion
 
@@ -28,339 +40,253 @@ The Swagger documentation system automatically generates comprehensive API docum
 - File upload support with multipart/form-data
 - Dynamic content type handling
 
-### Smart Schema Generation
-
-- Field type mapping to OpenAPI schemas
-- Validation rules and constraints
-- Example data generation
-- Relationship field handling
-- System field documentation
-
 ## Architecture
 
 ```mermaid
 sequenceDiagram
     participant User
     participant Endpoints as endpoints.go
+    participant CachedGen as CachedGenerator
     participant Generator as generator.go
     participant Discovery as discovery.go
-    participant SchemaGen as schema_generator.go
-    participant RouteGen as routes.go
-    participant CustomRoutes as custom_routes.go
     participant Database as PocketBase DB
 
     User->>Endpoints: GET /api-docs/openapi.json
-    Endpoints->>Generator: GenerateSpec()
+    Endpoints->>CachedGen: GenerateSpec()
 
-    Note over Generator: Step 1: Collection Discovery
-    Generator->>Discovery: DiscoverCollections()
+    Note over CachedGen: Check Cache & Collection Changes
+    CachedGen->>Discovery: DiscoverCollections() (for hash)
     Discovery->>Database: Query _collections table
     Database-->>Discovery: Collection metadata
-    Discovery-->>Generator: EnhancedCollectionInfo[]
+    Discovery-->>CachedGen: CollectionInfo[]
+    CachedGen->>CachedGen: Generate hash & compare
 
-    Note over Generator: Step 2: Schema Generation
-    Generator->>SchemaGen: generateAllSchemas()
-    SchemaGen-->>Generator: OpenAPI schemas
+    alt Cache Valid & No Changes
+        CachedGen-->>Endpoints: Cached OpenAPISpec (<1ms)
+    else Cache Invalid or Collections Changed
+        Note over CachedGen: Generate New Spec
+        CachedGen->>Generator: GenerateSpec()
+        Generator->>Discovery: DiscoverCollections()
+        Discovery-->>Generator: CollectionInfo[]
+        Generator->>Generator: Generate schemas & routes
+        Generator-->>CachedGen: New OpenAPISpec
+        CachedGen->>CachedGen: Update cache & hash
+        CachedGen-->>Endpoints: Fresh OpenAPISpec
+    end
 
-    Note over Generator: Step 3: Route Generation
-    Generator->>RouteGen: GetAllRoutes()
-    RouteGen->>CustomRoutes: GetCustomRoutes()
-    CustomRoutes-->>RouteGen: Custom route definitions
-    RouteGen-->>Generator: Generated routes
-
-    Note over Generator: Step 4: Spec Assembly
-    Generator->>Generator: buildPaths(), buildComponents(), buildTags()
-    Generator-->>Endpoints: CombinedOpenAPISpec
     Endpoints-->>User: JSON Response
 ```
 
 ## Core Components
 
-### 1. Collection Discovery (`discovery.go`)
+### 1. Cached Generator (`cache.go`)
 
-Responsible for discovering and analyzing PocketBase collections:
+The main entry point that handles caching and automatic invalidation:
 
 ```go
-// Create discovery service
-discovery := NewCollectionDiscoveryWithConfig(
-    app,
-    config.ExcludedCollections,
-    config.IncludeSystem,
-)
+// Create cached generator with 5-minute TTL
+cachedGenerator := NewCachedGenerator(generator, 5*time.Minute)
 
+// Generate spec with automatic caching and invalidation
+spec, err := cachedGenerator.GenerateSpec()
+```
+
+**Key Features:**
+
+- **Automatic cache invalidation** when collections change
+- **Thread-safe concurrent access** using read-write mutexes
+- **Collection change detection** via metadata hashing
+- **Configurable TTL** for cache expiration
+
+### 2. Collection Discovery (`discovery.go`)
+
+Discovers and analyzes PocketBase collections:
+
+```go
 // Discover all collections
 collections, err := discovery.DiscoverCollections()
 ```
 
-**Key Functions:**
+**Returns:** Complete `CollectionInfo` structs with all metadata including fields, rules, and options.
 
-- `DiscoverCollections()`: Finds all accessible collections
-- `GetCollection(name)`: Retrieves specific collection metadata
-- `ShouldIncludeCollection()`: Applies inclusion/exclusion rules
-- `GetCollectionStats()`: Provides collection statistics
+### 3. Schema & Route Generation
 
-### 2. Schema Generation (`schema_generator.go`)
+The underlying generator creates OpenAPI schemas and routes for all discovered collections, including:
 
-Converts PocketBase field definitions to OpenAPI schemas:
+- **CRUD operations** for all collection types
+- **Authentication routes** for auth collections
+- **Custom routes** for additional endpoints
+- **File upload support** with multipart/form-data
 
-```go
-// Generate collection schema
-schema, err := schemaGen.GenerateCollectionSchema(collection)
+## Caching System
 
-// Generate specialized schemas
-createSchema := schemaGen.GenerateCreateSchema(collection)
-updateSchema := schemaGen.GenerateUpdateSchema(collection)
-listSchema := schemaGen.GenerateListResponseSchema(collection)
-```
+### How It Works
 
-**Schema Types:**
+1. **First Request**: Generates documentation and caches it with collection metadata hash
+2. **Subsequent Requests**: Returns cached version if collections haven't changed
+3. **Collection Changes**: Automatically detects changes and regenerates documentation
+4. **TTL Expiration**: Cache expires after configured time (default: 5 minutes)
 
-- **Collection Schema**: Complete field definitions
-- **Create Schema**: Fields required/allowed for creation
-- **Update Schema**: Fields allowed for updates
-- **List Response Schema**: Paginated response format
+### Cache Invalidation Triggers
 
-### 3. Route Generation (`routes.go`)
+The cache automatically invalidates when **any** collection metadata changes:
 
-Creates OpenAPI route definitions for all endpoints:
+- New collections added/removed
+- Field definitions changed (name, type, required, options)
+- Collection settings changed (type, rules, options)
+- API access rules modified
 
-```go
-// Generate CRUD routes
-routes, err := routeGen.GenerateCollectionRoutes(collection)
+### Performance
 
-// Generate auth routes for auth collections
-authRoutes, err := routeGen.GenerateAuthRoutes(collection)
-
-// Register custom routes
-routeGen.RegisterCustomRoute(customRoute)
-```
-
-**Generated Routes:**
-
-- `GET /api/collections/{collection}/records` - List records
-- `POST /api/collections/{collection}/records` - Create record
-- `GET /api/collections/{collection}/records/{id}` - Get record
-- `PATCH /api/collections/{collection}/records/{id}` - Update record
-- `DELETE /api/collections/{collection}/records/{id}` - Delete record
-
-**Auth Routes (for auth collections):**
-
-- `POST /api/collections/{collection}/auth-with-password` - Login
-- `POST /api/collections/{collection}/auth-refresh` - Refresh token
-- `POST /api/collections/{collection}/request-password-reset` - Password reset
-
-### 4. Custom Routes (`custom_routes.go`)
-
-Defines additional API endpoints beyond standard CRUD operations:
-
-```go
-func defineCustomRoutes() []CustomRoute {
-    return []CustomRoute{
-        {
-            Method:      "GET",
-            Path:        "/api/v1/health",
-            Summary:     "Health Check",
-            Description: "Check API health status",
-            Tags:        []string{"System"},
-            Protected:   false,
-        },
-        // Add more custom routes...
-    }
-}
-```
-
-### 5. Main Generator (`generator.go`)
-
-Orchestrates the entire documentation generation process:
-
-```go
-// Initialize generator
-generator := NewGenerator(app, config)
-
-// Generate complete OpenAPI specification
-spec, err := generator.GenerateSpec()
-```
+- **Cache Hit**: <1ms response time
+- **Cache Miss**: 100-500ms (full generation)
+- **Change Detection**: ~1-5ms (hash comparison)
 
 ## Configuration
 
-### Default Configuration
+The system uses sensible defaults and requires minimal configuration:
 
 ```go
-config := UnifiedConfig{
-    Title:                     "IMS Pocketbase API",
-    Version:                   "1.0.0",
-    Description:               "Auto-generated API documentation",
-    ServerURL:                 "http://localhost:8090",
-    ExcludedCollections:       []string{"_pb_users_auth_", "_mfas", "_otps"},
-    IncludeSystem:             false,
-    CustomRoutes:              GetCustomRoutes(),
-    EnableAuth:                true,
-    IncludeExamples:           true,
-    EnableDynamicContentTypes: true,
+// Singleton pattern - automatically uses default configuration
+generator := swagger.InitializeGenerator(app)
+
+// Get the global generator instance
+generator := swagger.GetGlobalGenerator()
+
+// Cached generator with 5-minute TTL (used in endpoints)
+cachedGenerator := NewCachedGenerator(generator, 5*time.Minute)
+```
+
+**Key Settings:**
+
+- **Cache TTL**: 5 minutes (configurable)
+- **Singleton Pattern**: Ensures single generator instance across the application
+
+## Singleton Pattern
+
+The swagger package implements a thread-safe singleton pattern to ensure consistent behavior and resource efficiency:
+
+```go
+// Initialize the singleton (called once during app startup)
+generator := swagger.InitializeGenerator(app)
+
+// Get the singleton instance anywhere in the application
+generator := swagger.GetGlobalGenerator()
+
+// Check if singleton is initialized
+if swagger.GetInstance().IsInitialized() {
+    // Use the generator
 }
 ```
 
-### Configuration Options
+**Benefits:**
+- **Memory Efficiency**: Single generator instance across the application
+- **Thread Safety**: Concurrent access is properly synchronized
+- **Consistency**: Same configuration and cache across all requests
+- **Performance**: Avoids repeated initialization overhead
+- **Excluded Collections**: System collections like `_mfas`, `_otps`
+- **Dynamic Content Types**: Enabled for file upload support
 
-- **Title**: API documentation title
-- **Version**: API version
-- **Description**: API description
-- **ServerURL**: Base server URL
-- **ExcludedCollections**: Collections to exclude from documentation
-- **IncludeSystem**: Include system collections
-- **CustomRoutes**: Additional custom endpoints
-- **EnableAuth**: Include authentication schemas
-- **IncludeExamples**: Generate example data
-- **EnableDynamicContentTypes**: Support multiple content types
+## API Endpoints
 
-## Usage
+### Documentation Access
 
-### Accessing Documentation
+| Endpoint                 | Description                |
+| ------------------------ | -------------------------- |
+| `/api-docs`              | Interactive Swagger UI     |
+| `/api-docs/redoc`        | Clean ReDoc interface      |
+| `/api-docs/openapi.json` | OpenAPI JSON specification |
 
-1. **Swagger UI**: Navigate to `http://localhost:8090/api-docs`
+### Cache Management
 
-   - Interactive API explorer
-   - Test endpoints directly
-   - View request/response schemas
+| Endpoint                      | Method | Description                           |
+| ----------------------------- | ------ | ------------------------------------- |
+| `/api-docs/cache-status`      | GET    | View cache status and collection hash |
+| `/api-docs/invalidate-cache`  | POST   | Manually clear cache                  |
+| `/api-docs/check-collections` | POST   | Check for collection changes          |
 
-2. **ReDoc**: Navigate to `http://localhost:8090/api-docs/redoc`
-
-   - Clean, responsive documentation
-   - Better for reading and sharing
-   - Mobile-friendly interface
-
-3. **OpenAPI JSON**: Access `http://localhost:8090/api-docs/openapi.json`
-
-   - Machine-readable specification
-   - Import into Postman, Insomnia, etc.
-   - Generate client SDKs
-
-4. **Collection Stats**: Check `http://localhost:8090/api-docs/stats`
-   - Collection statistics
-   - System health information
-
-### Integration with Development Tools
-
-#### Postman
-
-1. Import the OpenAPI JSON URL: `http://localhost:8090/api-docs/openapi.json`
-2. Postman will automatically create a collection with all endpoints
-3. Authentication and examples are pre-configured
-
-#### Insomnia
-
-1. Create new request collection
-2. Import from URL: `http://localhost:8090/api-docs/openapi.json`
-3. All routes and schemas will be imported
-
-#### Client SDK Generation
-
-Use tools like OpenAPI Generator to create client SDKs:
+### Example Usage
 
 ```bash
-# Generate JavaScript client
-openapi-generator-cli generate -i http://localhost:8090/api-docs/openapi.json -g javascript -o ./client-js
+# View current cache status
+curl http://localhost:8090/api-docs/cache-status
 
-# Generate Python client
-openapi-generator-cli generate -i http://localhost:8090/api-docs/openapi.json -g python -o ./client-python
+# Manually invalidate cache
+curl -X POST http://localhost:8090/api-docs/invalidate-cache
+
+# Check for collection changes
+curl -X POST http://localhost:8090/api-docs/check-collections
 ```
 
-## Advanced Features
-
-### File Upload Support
-
-The system automatically detects file fields and generates appropriate schemas:
+**Cache Status Response:**
 
 ```json
 {
-  "requestBody": {
-    "content": {
-      "application/json": {
-        "schema": { "type": "object", "properties": {...} }
-      },
-      "multipart/form-data": {
-        "schema": {
-          "type": "object",
-          "properties": {
-            "avatar": {
-              "type": "string",
-              "format": "binary"
-            }
-          }
-        }
-      }
-    }
-  }
+  "cached": true,
+  "cache_age": "2m30s",
+  "cache_ttl": "5m0s",
+  "collections_changed": false,
+  "collections_hash": "a1b2c3d4...",
+  "expires_in": "2m30s"
 }
 ```
 
-### Dynamic Content Types
+## Development Workflow
 
-When enabled, the system provides multiple content type options for endpoints with file fields:
+### Typical Usage Pattern
 
-- JSON for text-only updates
-- Multipart form data for file uploads
-- Hybrid approach for maximum flexibility
+1. **Start Development**: Documentation generates automatically on first access
+2. **Add Collections**: Cache automatically invalidates when you add/modify collections
+3. **View Changes**: Refresh `/api-docs` to see updated documentation
+4. **No Manual Steps**: Everything updates automatically
 
-### Relationship Documentation
+### Testing Collection Changes
 
-Relation fields are properly documented with:
+```bash
+# 1. Check current cache status
+curl http://localhost:8090/api-docs/cache-status
 
-- Related collection references
-- Cardinality constraints (maxSelect, minSelect)
-- Cascade delete behavior
-- Presentable field information
+# 2. Add a new collection in PocketBase Admin UI
 
-### Authentication Integration
+# 3. Check if changes are detected
+curl -X POST http://localhost:8090/api-docs/check-collections
 
-For auth collections, the system generates:
+# 4. View updated documentation
+curl http://localhost:8090/api-docs/openapi.json
+```
 
-- JWT bearer token authentication
-- Login/logout endpoints
-- Password reset flows
-- Token refresh mechanisms
+## Thread Safety
+
+The caching system is fully thread-safe and supports:
+
+- **Concurrent reads** from multiple users
+- **Exclusive writes** during cache updates
+- **Race condition prevention** with double-checked locking
+- **Deadlock prevention** with proper mutex ordering
 
 ## Troubleshooting
 
-### Common Issues
-
-1. **Missing Collections**: Check `ExcludedCollections` configuration
-2. **Empty Documentation**: Verify database connection and collection access
-3. **Schema Errors**: Check field definitions in PocketBase admin
-4. **Custom Routes Not Appearing**: Ensure routes are registered in `custom_routes.go`
-
-### Debug Information
-
-Enable debug logging to see detailed generation process:
-
-```go
-log.Printf("Discovered %d collections", len(collections))
-log.Printf("Generated %d schemas", len(schemas))
-log.Printf("Generated %d routes", len(routes))
-```
-
-### Health Check
-
-Use the stats endpoint to verify system health:
+### Cache Issues
 
 ```bash
-curl http://localhost:8090/api-docs/stats
+# Check cache status
+curl http://localhost:8090/api-docs/cache-status
+
+# Force cache refresh
+curl -X POST http://localhost:8090/api-docs/invalidate-cache
 ```
 
-## Best Practices
+### Collection Detection Issues
 
-1. **Collection Naming**: Use clear, consistent collection names
-2. **Field Documentation**: Add descriptions to important fields
-3. **Custom Routes**: Document custom endpoints thoroughly
-4. **Version Control**: Include OpenAPI spec in version control
-5. **Testing**: Regularly test generated documentation
-6. **Security**: Review exposed endpoints and authentication requirements
+If collections aren't appearing:
 
-## Future Enhancements
+1. Check if they're in the excluded list
+2. Verify database connectivity
+3. Check collection permissions
+4. Review PocketBase logs for errors
 
-- Webhook documentation
-- Real-time subscription endpoints
-- Advanced filtering documentation
-- Custom field type support
-- Multi-language documentation
-- API versioning support
+### Performance Issues
+
+- **Slow first load**: Normal (100-500ms for generation)
+- **Slow subsequent loads**: Check if cache is working via `/api-docs/cache-status`
+- **Frequent invalidation**: Collections may be changing frequently

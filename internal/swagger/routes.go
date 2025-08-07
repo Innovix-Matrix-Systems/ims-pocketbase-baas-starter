@@ -74,10 +74,10 @@ type CustomRoute struct {
 
 // RouteGen interface for route generation
 type RouteGen interface {
-	GenerateCollectionRoutes(collection EnhancedCollectionInfo) ([]GeneratedRoute, error)
-	GenerateAuthRoutes(collection EnhancedCollectionInfo) ([]GeneratedRoute, error)
+	GenerateCollectionRoutes(collection CollectionInfo) ([]GeneratedRoute, error)
+	GenerateAuthRoutes(collection CollectionInfo) ([]GeneratedRoute, error)
 	RegisterCustomRoute(route CustomRoute)
-	GetAllRoutes(collections []EnhancedCollectionInfo) ([]GeneratedRoute, error)
+	GetAllRoutes(collections []CollectionInfo) ([]GeneratedRoute, error)
 }
 
 // NewRouteGenerator creates a new route generator
@@ -101,7 +101,7 @@ func NewRouteGeneratorWithConfig(schemaGen SchemaGen, enableDynamicContentTypes 
 }
 
 // GenerateCollectionRoutes generates standard CRUD routes for a collection
-func (rg *RouteGenerator) GenerateCollectionRoutes(collection EnhancedCollectionInfo) ([]GeneratedRoute, error) {
+func (rg *RouteGenerator) GenerateCollectionRoutes(collection CollectionInfo) ([]GeneratedRoute, error) {
 	if collection.Name == "" {
 		return nil, fmt.Errorf("collection name is required")
 	}
@@ -147,7 +147,7 @@ func (rg *RouteGenerator) GenerateCollectionRoutes(collection EnhancedCollection
 }
 
 // generateListRoute generates a list/search route for a collection
-func (rg *RouteGenerator) generateListRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+func (rg *RouteGenerator) generateListRoute(collection CollectionInfo) (*GeneratedRoute, error) {
 	// Generate list response schema
 	listResponseSchema, err := rg.schemaGen.GenerateListResponseSchema(collection)
 	if err != nil {
@@ -191,7 +191,7 @@ func (rg *RouteGenerator) generateListRoute(collection EnhancedCollectionInfo) (
 }
 
 // generateCreateRoute generates a create route for a collection
-func (rg *RouteGenerator) generateCreateRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+func (rg *RouteGenerator) generateCreateRoute(collection CollectionInfo) (*GeneratedRoute, error) {
 	// Generate create schema
 	createSchema, err := rg.schemaGen.GenerateCreateSchema(collection)
 	if err != nil {
@@ -248,7 +248,7 @@ func (rg *RouteGenerator) generateCreateRoute(collection EnhancedCollectionInfo)
 }
 
 // generateViewRoute generates a view route for a single record
-func (rg *RouteGenerator) generateViewRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+func (rg *RouteGenerator) generateViewRoute(collection CollectionInfo) (*GeneratedRoute, error) {
 	// Generate response schema
 	responseSchema, err := rg.schemaGen.GenerateCollectionSchema(collection)
 	if err != nil {
@@ -302,7 +302,7 @@ func (rg *RouteGenerator) generateViewRoute(collection EnhancedCollectionInfo) (
 }
 
 // generateUpdateRoute generates an update route for a record
-func (rg *RouteGenerator) generateUpdateRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+func (rg *RouteGenerator) generateUpdateRoute(collection CollectionInfo) (*GeneratedRoute, error) {
 	// Generate update schema
 	updateSchema, err := rg.schemaGen.GenerateUpdateSchema(collection)
 	if err != nil {
@@ -370,7 +370,7 @@ func (rg *RouteGenerator) generateUpdateRoute(collection EnhancedCollectionInfo)
 }
 
 // generateDeleteRoute generates a delete route for a record
-func (rg *RouteGenerator) generateDeleteRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+func (rg *RouteGenerator) generateDeleteRoute(collection CollectionInfo) (*GeneratedRoute, error) {
 	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "DELETE",
@@ -467,7 +467,7 @@ func (rg *RouteGenerator) generateListParameters() []Parameter {
 }
 
 // GenerateAuthRoutes generates authentication routes for auth collections
-func (rg *RouteGenerator) GenerateAuthRoutes(collection EnhancedCollectionInfo) ([]GeneratedRoute, error) {
+func (rg *RouteGenerator) GenerateAuthRoutes(collection CollectionInfo) ([]GeneratedRoute, error) {
 	if collection.Type != "auth" {
 		return []GeneratedRoute{}, nil // No auth routes for non-auth collections
 	}
@@ -499,7 +499,7 @@ func (rg *RouteGenerator) GenerateAuthRoutes(collection EnhancedCollectionInfo) 
 }
 
 // generateAuthWithPasswordRoute generates the auth-with-password route
-func (rg *RouteGenerator) generateAuthWithPasswordRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+func (rg *RouteGenerator) generateAuthWithPasswordRoute(collection CollectionInfo) (*GeneratedRoute, error) {
 	// Generate response schema (includes token and record)
 	recordSchema, err := rg.schemaGen.GenerateCollectionSchema(collection)
 	if err != nil {
@@ -585,7 +585,7 @@ func (rg *RouteGenerator) generateAuthWithPasswordRoute(collection EnhancedColle
 }
 
 // generateAuthRefreshRoute generates the auth-refresh route
-func (rg *RouteGenerator) generateAuthRefreshRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+func (rg *RouteGenerator) generateAuthRefreshRoute(collection CollectionInfo) (*GeneratedRoute, error) {
 	// Generate response schema
 	recordSchema, err := rg.schemaGen.GenerateCollectionSchema(collection)
 	if err != nil {
@@ -635,7 +635,7 @@ func (rg *RouteGenerator) generateAuthRefreshRoute(collection EnhancedCollection
 }
 
 // generateRequestPasswordResetRoute generates the request-password-reset route
-func (rg *RouteGenerator) generateRequestPasswordResetRoute(collection EnhancedCollectionInfo) (*GeneratedRoute, error) {
+func (rg *RouteGenerator) generateRequestPasswordResetRoute(collection CollectionInfo) (*GeneratedRoute, error) {
 	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "POST",
@@ -683,7 +683,7 @@ func (rg *RouteGenerator) RegisterCustomRoute(route CustomRoute) {
 }
 
 // GetAllRoutes generates all routes for the given collections plus custom routes
-func (rg *RouteGenerator) GetAllRoutes(collections []EnhancedCollectionInfo) ([]GeneratedRoute, error) {
+func (rg *RouteGenerator) GetAllRoutes(collections []CollectionInfo) ([]GeneratedRoute, error) {
 	var allRoutes []GeneratedRoute
 
 	// Generate collection routes
@@ -772,7 +772,7 @@ type FileFieldInfo struct {
 }
 
 // hasFileFields checks if a collection contains any file fields
-func (rg *RouteGenerator) hasFileFields(collection EnhancedCollectionInfo) bool {
+func (rg *RouteGenerator) hasFileFields(collection CollectionInfo) bool {
 	for _, field := range collection.Fields {
 		if strings.ToLower(field.Type) == "file" {
 			return true
@@ -782,7 +782,7 @@ func (rg *RouteGenerator) hasFileFields(collection EnhancedCollectionInfo) bool 
 }
 
 // getFileFields returns a list of file fields with their options
-func (rg *RouteGenerator) getFileFields(collection EnhancedCollectionInfo) []FileFieldInfo {
+func (rg *RouteGenerator) getFileFields(collection CollectionInfo) []FileFieldInfo {
 	var fileFields []FileFieldInfo
 
 	if len(collection.Fields) == 0 {
@@ -902,7 +902,7 @@ func isRelationField(fieldSchema map[string]any) bool {
 
 // generateRequestContent generates request body content with appropriate media types
 // If collection has file fields, it adds multipart/form-data support for create and update operations
-func (rg *RouteGenerator) generateRequestContent(schema any, collection EnhancedCollectionInfo, operation string) map[string]MediaType {
+func (rg *RouteGenerator) generateRequestContent(schema any, collection CollectionInfo, operation string) map[string]MediaType {
 	content := make(map[string]MediaType)
 
 	// Always include application/json
@@ -1223,7 +1223,7 @@ func (rg *RouteGenerator) generateRequestContent(schema any, collection Enhanced
 // generateHybridCreateContent generates hybrid content for POST operations:
 // - application/json for non-file fields only
 // - multipart/form-data for file fields only
-func (rg *RouteGenerator) generateHybridCreateContent(schema any, collection EnhancedCollectionInfo) map[string]MediaType {
+func (rg *RouteGenerator) generateHybridCreateContent(schema any, collection CollectionInfo) map[string]MediaType {
 	content := make(map[string]MediaType)
 
 	// Check if dynamic content types are enabled and collection has file fields
@@ -1376,7 +1376,7 @@ func (rg *RouteGenerator) addMultipartContent(content map[string]MediaType, file
 // generateHybridUpdateContent generates hybrid content for PATCH operations:
 // - application/json for non-file fields only
 // - multipart/form-data for file fields only
-func (rg *RouteGenerator) generateHybridUpdateContent(schema any, collection EnhancedCollectionInfo) map[string]MediaType {
+func (rg *RouteGenerator) generateHybridUpdateContent(schema any, collection CollectionInfo) map[string]MediaType {
 	content := make(map[string]MediaType)
 
 	// Check if dynamic content types are enabled and collection has file fields

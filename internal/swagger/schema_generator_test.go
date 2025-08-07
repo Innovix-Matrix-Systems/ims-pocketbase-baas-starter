@@ -44,7 +44,7 @@ func TestNewSchemaGeneratorWithConfig(t *testing.T) {
 func TestGenerateCollectionSchema(t *testing.T) {
 	generator := NewSchemaGenerator()
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Type: "base",
 		Fields: []FieldInfo{
@@ -125,7 +125,7 @@ func TestGenerateCollectionSchema(t *testing.T) {
 func TestGenerateCollectionSchemaWithoutSystemFields(t *testing.T) {
 	generator := NewSchemaGeneratorWithConfig(true, false)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "posts",
 		Type: "base",
 		Fields: []FieldInfo{
@@ -163,7 +163,7 @@ func TestGenerateCollectionSchemaWithoutSystemFields(t *testing.T) {
 func TestGenerateCollectionSchemaEmptyName(t *testing.T) {
 	generator := NewSchemaGenerator()
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "",
 		Type: "base",
 	}
@@ -181,7 +181,7 @@ func TestGenerateCollectionSchemaEmptyName(t *testing.T) {
 func TestGenerateCollectionSchemas(t *testing.T) {
 	generator := NewSchemaGenerator()
 
-	collections := []EnhancedCollectionInfo{
+	collections := []CollectionInfo{
 		{
 			Name: "users",
 			Type: "base",
@@ -219,7 +219,7 @@ func TestGenerateCollectionSchemas(t *testing.T) {
 func TestGenerateCreateSchema(t *testing.T) {
 	generator := NewSchemaGenerator()
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Type: "base",
 		Fields: []FieldInfo{
@@ -284,7 +284,7 @@ func TestGenerateCreateSchema(t *testing.T) {
 func TestGenerateUpdateSchema(t *testing.T) {
 	generator := NewSchemaGenerator()
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Type: "base",
 		Fields: []FieldInfo{
@@ -336,7 +336,7 @@ func TestGenerateUpdateSchema(t *testing.T) {
 func TestGenerateListResponseSchema(t *testing.T) {
 	generator := NewSchemaGenerator()
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Type: "base",
 		Fields: []FieldInfo{
@@ -472,14 +472,14 @@ func TestGenerateBasicExample(t *testing.T) {
 func TestGetSchemaNames(t *testing.T) {
 	generator := NewSchemaGenerator()
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Type: "base",
 	}
 
 	tests := []struct {
 		name     string
-		method   func(EnhancedCollectionInfo) string
+		method   func(CollectionInfo) string
 		expected string
 	}{
 		{"GetSchemaName", generator.GetSchemaName, "users"},

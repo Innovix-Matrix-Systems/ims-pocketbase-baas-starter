@@ -134,7 +134,7 @@ func TestExtractCollectionInfo(t *testing.T) {
 	listRule := "id != ''"
 	createRule := "@request.auth.id != ''"
 
-	dbCol := dbCollection{
+	dbCol := databaseCollection{
 		Name:       "users",
 		Type:       "base",
 		System:     false,
@@ -186,7 +186,7 @@ func TestExtractCollectionInfoWithEmptyData(t *testing.T) {
 	discovery := NewCollectionDiscovery(nil, true)
 
 	// Test with empty collection data
-	dbCol := dbCollection{
+	dbCol := databaseCollection{
 		Name:    "",
 		Type:    "",
 		System:  false,
@@ -554,7 +554,7 @@ func TestExtractCollectionInfoWithSchema(t *testing.T) {
 	schemaJSON := `[{"name":"title","type":"text","required":true,"system":false,"options":{"max":100}},{"name":"count","type":"number","required":false,"system":false}]`
 	optionsJSON := `{"allowEmailAuth":true,"minPasswordLength":8}`
 
-	dbCol := dbCollection{
+	dbCol := databaseCollection{
 		Name:    "test_collection",
 		Type:    "base",
 		System:  false,

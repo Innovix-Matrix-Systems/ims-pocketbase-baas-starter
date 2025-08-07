@@ -17,8 +17,14 @@ type CollectionDiscovery struct {
 	includeSystem       bool
 }
 
-// EnhancedCollectionInfo holds complete collection metadata for OpenAPI generation
-type EnhancedCollectionInfo struct {
+const (
+	CollectionTypeBase = "base"
+	CollectionTypeAuth = "auth"
+	CollectionTypeView = "view"
+)
+
+// CollectionInfo holds complete collection metadata for OpenAPI generation
+type CollectionInfo struct {
 	Name       string         `json:"name"`
 	Type       string         `json:"type"` // "base", "auth", "view"
 	System     bool           `json:"system"`
@@ -42,8 +48,8 @@ type FieldInfo struct {
 
 // Discovery interface for collection discovery
 type Discovery interface {
-	DiscoverCollections() ([]EnhancedCollectionInfo, error)
-	GetCollection(name string) (*EnhancedCollectionInfo, error)
+	DiscoverCollections() ([]CollectionInfo, error)
+	GetCollection(name string) (*CollectionInfo, error)
 	ShouldIncludeCollection(name string, collectionType string, system bool) bool
 	GetCollectionStats() (map[string]int, error)
 	ValidateCollectionAccess() error
@@ -69,7 +75,7 @@ func NewCollectionDiscoveryWithConfig(app *pocketbase.PocketBase, excludedCollec
 }
 
 // DiscoverCollections discovers all collections from PocketBase and returns their metadata
-func (cd *CollectionDiscovery) DiscoverCollections() ([]EnhancedCollectionInfo, error) {
+func (cd *CollectionDiscovery) DiscoverCollections() ([]CollectionInfo, error) {
 	if cd.app == nil {
 		return nil, fmt.Errorf("PocketBase app is nil")
 	}
@@ -80,7 +86,7 @@ func (cd *CollectionDiscovery) DiscoverCollections() ([]EnhancedCollectionInfo, 
 		return nil, fmt.Errorf("failed to find collections: %w", err)
 	}
 
-	var collectionInfos []EnhancedCollectionInfo
+	var collectionInfos []CollectionInfo
 	var skippedCollections []string
 
 	for _, collection := range collections {
@@ -109,24 +115,24 @@ func (cd *CollectionDiscovery) DiscoverCollections() ([]EnhancedCollectionInfo, 
 }
 
 // GetCollection retrieves a specific collection by name
-func (cd *CollectionDiscovery) GetCollection(name string) (*EnhancedCollectionInfo, error) {
+func (cd *CollectionDiscovery) GetCollection(name string) (*CollectionInfo, error) {
 	if cd.app == nil {
 		return nil, fmt.Errorf("PocketBase app is nil")
 	}
 
-	var dbCol dbCollection
+	var dbCollection databaseCollection
 	err := cd.app.DB().NewQuery("SELECT name, type, system, schema, listRule, viewRule, createRule, updateRule, deleteRule, options FROM _collections WHERE name = {:name}").
 		Bind(map[string]any{"name": name}).
-		One(&dbCol)
+		One(&dbCollection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find collection %s: %w", name, err)
 	}
 
-	if !cd.ShouldIncludeCollection(dbCol.Name, dbCol.Type, dbCol.System) {
+	if !cd.ShouldIncludeCollection(dbCollection.Name, dbCollection.Type, dbCollection.System) {
 		return nil, fmt.Errorf("collection %s is excluded from documentation", name)
 	}
 
-	return cd.extractCollectionInfo(dbCol)
+	return cd.extractCollectionInfo(dbCollection)
 }
 
 // ShouldIncludeCollection determines if a collection should be included in documentation
@@ -151,8 +157,8 @@ func (cd *CollectionDiscovery) ShouldIncludeCollection(name string, collectionTy
 	return true
 }
 
-// dbCollection represents the structure of a collection record from the database
-type dbCollection struct {
+// databaseCollection represents the structure of a collection record from the database
+type databaseCollection struct {
 	Name       string  `db:"name"`
 	Type       string  `db:"type"`
 	System     bool    `db:"system"`
@@ -166,41 +172,41 @@ type dbCollection struct {
 }
 
 // extractCollectionInfo extracts complete metadata from a database collection record
-func (cd *CollectionDiscovery) extractCollectionInfo(dbCol dbCollection) (*EnhancedCollectionInfo, error) {
+func (cd *CollectionDiscovery) extractCollectionInfo(dbCollection databaseCollection) (*CollectionInfo, error) {
 
 	// Extract basic information
-	collectionInfo := &EnhancedCollectionInfo{
-		Name:   dbCol.Name,
-		Type:   dbCol.Type,
-		System: dbCol.System,
+	collectionInfo := &CollectionInfo{
+		Name:   dbCollection.Name,
+		Type:   dbCollection.Type,
+		System: dbCollection.System,
 		Fields: []FieldInfo{},
 	}
 
 	// Extract API rules
-	collectionInfo.ListRule = dbCol.ListRule
-	collectionInfo.ViewRule = dbCol.ViewRule
-	collectionInfo.CreateRule = dbCol.CreateRule
-	collectionInfo.UpdateRule = dbCol.UpdateRule
-	collectionInfo.DeleteRule = dbCol.DeleteRule
+	collectionInfo.ListRule = dbCollection.ListRule
+	collectionInfo.ViewRule = dbCollection.ViewRule
+	collectionInfo.CreateRule = dbCollection.CreateRule
+	collectionInfo.UpdateRule = dbCollection.UpdateRule
+	collectionInfo.DeleteRule = dbCollection.DeleteRule
 
 	// Initialize options
 	collectionInfo.Options = make(map[string]any)
 
 	// Parse schema JSON to extract fields
-	if dbCol.Schema != "" {
-		fields, err := cd.parseSchemaFields(dbCol.Schema)
+	if dbCollection.Schema != "" {
+		fields, err := cd.parseSchemaFields(dbCollection.Schema)
 		if err != nil {
-			log.Printf("Warning: Failed to parse schema for collection %s: %v", dbCol.Name, err)
+			log.Printf("Warning: Failed to parse schema for collection %s: %v", dbCollection.Name, err)
 		} else {
 			collectionInfo.Fields = fields
 		}
 	}
 
 	// Parse options JSON
-	if dbCol.Options != "" {
-		options, err := cd.parseOptionsJSON(dbCol.Options)
+	if dbCollection.Options != "" {
+		options, err := cd.parseOptionsJSON(dbCollection.Options)
 		if err != nil {
-			log.Printf("Warning: Failed to parse options for collection %s: %v", dbCol.Name, err)
+			log.Printf("Warning: Failed to parse options for collection %s: %v", dbCollection.Name, err)
 		} else {
 			collectionInfo.Options = options
 		}
@@ -313,13 +319,13 @@ func (cd *CollectionDiscovery) GetCollectionNames() ([]string, error) {
 }
 
 // GetCollectionsByType returns collections filtered by type
-func (cd *CollectionDiscovery) GetCollectionsByType(collectionType string) ([]EnhancedCollectionInfo, error) {
+func (cd *CollectionDiscovery) GetCollectionsByType(collectionType string) ([]CollectionInfo, error) {
 	collections, err := cd.DiscoverCollections()
 	if err != nil {
 		return nil, err
 	}
 
-	var filtered []EnhancedCollectionInfo
+	var filtered []CollectionInfo
 	for _, collection := range collections {
 		if collection.Type == collectionType {
 			filtered = append(filtered, collection)
@@ -330,18 +336,18 @@ func (cd *CollectionDiscovery) GetCollectionsByType(collectionType string) ([]En
 }
 
 // GetAuthCollections returns only auth-type collections
-func (cd *CollectionDiscovery) GetAuthCollections() ([]EnhancedCollectionInfo, error) {
-	return cd.GetCollectionsByType("auth")
+func (cd *CollectionDiscovery) GetAuthCollections() ([]CollectionInfo, error) {
+	return cd.GetCollectionsByType(CollectionTypeAuth)
 }
 
 // GetBaseCollections returns only base-type collections
-func (cd *CollectionDiscovery) GetBaseCollections() ([]EnhancedCollectionInfo, error) {
-	return cd.GetCollectionsByType("base")
+func (cd *CollectionDiscovery) GetBaseCollections() ([]CollectionInfo, error) {
+	return cd.GetCollectionsByType(CollectionTypeBase)
 }
 
 // GetViewCollections returns only view-type collections
-func (cd *CollectionDiscovery) GetViewCollections() ([]EnhancedCollectionInfo, error) {
-	return cd.GetCollectionsByType("view")
+func (cd *CollectionDiscovery) GetViewCollections() ([]CollectionInfo, error) {
+	return cd.GetCollectionsByType(CollectionTypeView)
 }
 
 // ValidateCollectionAccess validates that the discovery service can access collections
@@ -456,8 +462,8 @@ func (cd *CollectionDiscovery) GetSystemFields() []FieldInfo {
 }
 
 // extractCollectionInfoFromPB extracts metadata from a PocketBase collection
-func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Collection) (*EnhancedCollectionInfo, error) {
-	collectionInfo := &EnhancedCollectionInfo{
+func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Collection) (*CollectionInfo, error) {
+	collectionInfo := &CollectionInfo{
 		Name:    collection.Name,
 		Type:    collection.Type,
 		System:  collection.System,
@@ -533,7 +539,7 @@ func (cd *CollectionDiscovery) extractCollectionInfoFromPB(collection *core.Coll
 
 	// Add collection options if available
 	if collection.IsAuth() {
-		collectionInfo.Options["auth"] = true
+		collectionInfo.Options[CollectionTypeAuth] = true
 	}
 
 	return collectionInfo, nil
