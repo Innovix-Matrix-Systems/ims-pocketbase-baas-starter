@@ -62,7 +62,7 @@ func NewFieldSchemaMapperWithConfig(includeExamples, strictValidation bool) *Fie
 	}
 }
 
-// MapFieldToSchema converts a PocketBase field to an OpenAPI schema
+// MapFieldToSchema converts a PocketBase field to an OpenAPI schema with optimized memory allocation
 func (fsm *FieldSchemaMapper) MapFieldToSchema(field FieldInfo) (*FieldSchema, error) {
 	if field.Name == "" {
 		return nil, fmt.Errorf("field name is required")

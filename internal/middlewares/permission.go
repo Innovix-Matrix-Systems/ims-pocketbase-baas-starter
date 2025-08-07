@@ -1,7 +1,9 @@
 package middlewares
 
 import (
+	"ims-pocketbase-baas-starter/pkg/cache"
 	"log"
+	"time"
 
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
@@ -9,15 +11,27 @@ import (
 
 // PermissionMiddleware provides permission-based middleware functionality
 // It extends the authentication system to check for specific permissions
-type PermissionMiddleware struct{}
+type PermissionMiddleware struct {
+	cache    *cache.CacheService
+	cacheKey cache.CacheKey
+}
 
 // NewPermissionMiddleware creates a new instance of PermissionMiddleware
 func NewPermissionMiddleware() *PermissionMiddleware {
-	return &PermissionMiddleware{}
+	return &PermissionMiddleware{
+		cache:    cache.GetInstance(),
+		cacheKey: cache.CacheKey{},
+	}
 }
 
-// getUserPermissions extracts and processes all permissions for a user
+// Permission cache time Constant
+const (
+	PERMISSION_CACHE_TIME = 1 * time.Minute
+)
+
+// getUserPermissions extracts and processes all permissions for a user with caching
 // This includes direct permissions and those inherited from roles
+// Uses centralized caching to avoid N+1 query problems
 //
 // Parameters:
 //   - app: The PocketBase app instance
@@ -26,43 +40,76 @@ func NewPermissionMiddleware() *PermissionMiddleware {
 // Returns:
 //   - []string: Array of permission slugs the user has access to
 func (m *PermissionMiddleware) getUserPermissions(app core.App, user *core.Record) []string {
-	// Extract and log permissions and roles arrays
-	userPermissions, _ := user.Get("permissions").([]string)
-	roles, _ := user.Get("roles").([]string)
-
-	// fetch roles from collection
-	roleRecords, err := app.FindRecordsByIds("roles", roles)
-	if err != nil {
-		log.Printf("Error fetching roles: %v", err)
-	}
-	for _, role := range roleRecords {
-		perms := role.GetStringSlice("permissions")
-		userPermissions = append(userPermissions, perms...)
+	// Check cache first
+	cacheKey := m.cacheKey.UserPermissions(user.Id)
+	if cachedPerms, found := m.cache.GetStringSlice(cacheKey); found {
+		return cachedPerms
 	}
 
+	// Cache miss - fetch and compute permissions
+	permissions := m.fetchUserPermissions(app, user)
+
+	// Cache for 5 minutes
+	m.cache.SetWithExpiration(cacheKey, permissions, PERMISSION_CACHE_TIME)
+
+	return permissions
+}
+
+// fetchUserPermissions fetches user permissions from database (optimized to avoid N+1 queries)
+func (m *PermissionMiddleware) fetchUserPermissions(app core.App, user *core.Record) []string {
+	// Extract user's direct permissions and roles
+	userPermissions := user.GetStringSlice("permissions")
+	roles := user.GetStringSlice("roles")
+
+	// Batch fetch all roles to get their permissions
+	if len(roles) > 0 {
+		roleRecords, err := app.FindRecordsByIds("roles", roles)
+		if err != nil {
+			log.Printf("Error fetching roles: %v", err)
+		} else {
+			// Collect permissions from all roles
+			for _, role := range roleRecords {
+				rolePerms := role.GetStringSlice("permissions")
+				userPermissions = append(userPermissions, rolePerms...)
+			}
+		}
+	}
+
+	// Remove duplicates
 	uniquePerms := make(map[string]struct{})
 	for _, p := range userPermissions {
-		uniquePerms[p] = struct{}{}
-	}
-	userPermissions = userPermissions[:0] // reset slice
-	for p := range uniquePerms {
-		userPermissions = append(userPermissions, p)
+		if p != "" {
+			uniquePerms[p] = struct{}{}
+		}
 	}
 
-	//fetch permissions form collection
-	permissionsRecords, err := app.FindRecordsByIds("permissions", userPermissions)
+	// Convert back to slice
+	permissionIDs := make([]string, 0, len(uniquePerms))
+	for p := range uniquePerms {
+		permissionIDs = append(permissionIDs, p)
+	}
+
+	// Batch fetch all permission records to get slugs
+	if len(permissionIDs) == 0 {
+		return []string{}
+	}
+
+	permissionsRecords, err := app.FindRecordsByIds("permissions", permissionIDs)
 	if err != nil {
 		log.Printf("Error fetching permissions: %v", err)
+		return []string{}
 	}
 
-	userPermissions = userPermissions[:0] // reset slice
-	//now from permission records we only need to get the array of permission slugs
+	// Extract permission slugs
+	permissionSlugs := make([]string, 0, len(permissionsRecords))
 	for _, permission := range permissionsRecords {
-		permSlug := permission.GetString("slug")
-		userPermissions = append(userPermissions, permSlug)
+		slug := permission.GetString("slug")
+		if slug != "" {
+			permissionSlugs = append(permissionSlugs, slug)
+		}
 	}
 
-	return userPermissions
+	return permissionSlugs
 }
 
 // HasPermission checks if a user has any of the specified permissions
@@ -142,4 +189,20 @@ func (m *PermissionMiddleware) RequirePermission(permissions ...string) func(*co
 		// User doesn't have the required permissions, return 403 Forbidden
 		return apis.NewForbiddenError("You don't have permission to access this resource", nil)
 	}
+}
+
+// InvalidateUserPermissions invalidates cached permissions for a specific user
+func (m *PermissionMiddleware) InvalidateUserPermissions(userID string) {
+	cacheKey := m.cacheKey.UserPermissions(userID)
+	m.cache.Delete(cacheKey)
+}
+
+// InvalidateAllUserPermissions invalidates all cached user permissions
+func (m *PermissionMiddleware) InvalidateAllUserPermissions() int {
+	return m.cache.InvalidateUserPermissions()
+}
+
+// GetCacheStats returns cache statistics for debugging
+func (m *PermissionMiddleware) GetCacheStats() map[string]interface{} {
+	return m.cache.GetStats()
 }

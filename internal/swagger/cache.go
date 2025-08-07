@@ -4,22 +4,21 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"ims-pocketbase-baas-starter/pkg/cache"
 	"sync"
 	"time"
 )
 
-// CachedGenerator wraps the Generator with thread-safe caching
+// CachedGenerator wraps the Generator with centralized caching
 type CachedGenerator struct {
 	*Generator
-	cache           *CombinedOpenAPISpec
-	cacheTime       time.Time
-	cacheTTL        time.Duration
-	collectionsHash string // Hash of collection metadata for change detection
-	mutex           sync.RWMutex
-	generating      sync.Mutex // Prevents multiple simultaneous generations
+	cache      *cache.CacheService
+	cacheKey   cache.CacheKey
+	cacheTTL   time.Duration
+	generating sync.Mutex // Prevents multiple simultaneous generations
 }
 
-// NewCachedGenerator creates a new cached generator
+// NewCachedGenerator creates a new cached generator with centralized caching
 func NewCachedGenerator(generator *Generator, ttl time.Duration) *CachedGenerator {
 	if ttl <= 0 {
 		ttl = 5 * time.Minute // Default 5 minutes cache
@@ -27,56 +26,39 @@ func NewCachedGenerator(generator *Generator, ttl time.Duration) *CachedGenerato
 
 	return &CachedGenerator{
 		Generator: generator,
+		cache:     cache.GetInstance(),
+		cacheKey:  cache.CacheKey{},
 		cacheTTL:  ttl,
 	}
 }
 
-// GenerateSpec generates OpenAPI spec with caching and automatic invalidation
+// GenerateSpec generates OpenAPI spec with centralized caching and automatic invalidation
 func (cg *CachedGenerator) GenerateSpec() (*CombinedOpenAPISpec, error) {
-	// Check if collections have changed (this invalidates cache automatically)
-	collectionsChanged, err := cg.hasCollectionsChanged()
-	if err != nil {
-		// If we can't check for changes, log warning but continue with cache logic
-		// This ensures the system remains functional even if change detection fails
-		fmt.Printf("Warning: Failed to check for collection changes: %v\n", err)
+	// Check cache first
+	specKey := cg.cacheKey.SwaggerSpec()
+	if cachedSpec, found := cg.cache.Get(specKey); found {
+		if spec, ok := cachedSpec.(*CombinedOpenAPISpec); ok {
+			// Check if collections have changed
+			if !cg.hasCollectionsChanged() {
+				return spec, nil
+			}
+			// Collections changed, invalidate cache
+			cg.InvalidateCache()
+		}
 	}
-
-	// Check if we have a valid cached version (considering both TTL and collection changes)
-	cg.mutex.RLock()
-	cacheValid := cg.cache != nil &&
-		time.Since(cg.cacheTime) < cg.cacheTTL &&
-		!collectionsChanged
-
-	if cacheValid {
-		cached := cg.cache
-		cg.mutex.RUnlock()
-		return cached, nil
-	}
-	cg.mutex.RUnlock()
 
 	// Prevent multiple simultaneous generations
 	cg.generating.Lock()
 	defer cg.generating.Unlock()
 
-	// Double-check after acquiring the generation lock
-	// Re-check collections changed status in case another goroutine updated it
-	collectionsChanged, err = cg.hasCollectionsChanged()
-	if err != nil {
-		fmt.Printf("Warning: Failed to re-check for collection changes: %v\n", err)
-		collectionsChanged = true // Assume changed to be safe
+	// Double-check cache after acquiring lock
+	if cachedSpec, found := cg.cache.Get(specKey); found {
+		if spec, ok := cachedSpec.(*CombinedOpenAPISpec); ok {
+			if !cg.hasCollectionsChanged() {
+				return spec, nil
+			}
+		}
 	}
-
-	cg.mutex.RLock()
-	cacheValid = cg.cache != nil &&
-		time.Since(cg.cacheTime) < cg.cacheTTL &&
-		!collectionsChanged
-
-	if cacheValid {
-		cached := cg.cache
-		cg.mutex.RUnlock()
-		return cached, nil
-	}
-	cg.mutex.RUnlock()
 
 	// Generate new spec
 	spec, err := cg.Generator.GenerateSpec()
@@ -84,55 +66,39 @@ func (cg *CachedGenerator) GenerateSpec() (*CombinedOpenAPISpec, error) {
 		return nil, err
 	}
 
-	// Update cache and collections hash
-	cg.mutex.Lock()
-	cg.cache = spec
-	cg.cacheTime = time.Now()
-
-	// Update the collections hash to reflect current state
-	if hashErr := cg.updateCollectionsHash(); hashErr != nil {
-		fmt.Printf("Warning: Failed to update collections hash: %v\n", hashErr)
-	}
-	cg.mutex.Unlock()
+	// Cache the spec and update collections hash
+	cg.cache.SetWithExpiration(specKey, spec, cg.cacheTTL)
+	cg.updateCollectionsHash()
 
 	return spec, nil
 }
 
 // InvalidateCache clears the cached spec and collections hash
 func (cg *CachedGenerator) InvalidateCache() {
-	cg.mutex.Lock()
-	defer cg.mutex.Unlock()
-	cg.cache = nil
-	cg.cacheTime = time.Time{}
-	cg.collectionsHash = "" // Clear hash to force regeneration
+	cg.cache.Delete(cg.cacheKey.SwaggerSpec())
+	cg.cache.Delete(cg.cacheKey.SwaggerCollectionsHash())
 }
 
 // GetCacheStatus returns cache information including collection change detection
 func (cg *CachedGenerator) GetCacheStatus() map[string]any {
-	cg.mutex.RLock()
-	collectionsHash := cg.collectionsHash
-	cg.mutex.RUnlock()
+	specKey := cg.cacheKey.SwaggerSpec()
+	hashKey := cg.cacheKey.SwaggerCollectionsHash()
+
+	_, specCached := cg.cache.Get(specKey)
+	collectionsHash, _ := cg.cache.GetString(hashKey)
 
 	status := map[string]any{
-		"cached":           cg.cache != nil,
+		"cached":           specCached,
 		"cache_ttl":        cg.cacheTTL.String(),
 		"collections_hash": collectionsHash,
 	}
 
-	cg.mutex.RLock()
-	if cg.cache != nil {
-		status["cache_age"] = time.Since(cg.cacheTime).String()
-		status["expires_in"] = (cg.cacheTTL - time.Since(cg.cacheTime)).String()
-	}
-	cg.mutex.RUnlock()
+	// Check if collections have changed
+	collectionsChanged := cg.hasCollectionsChanged()
+	status["collections_changed"] = collectionsChanged
 
-	// Check if collections have changed (without holding the lock too long)
-	collectionsChanged, err := cg.hasCollectionsChanged()
-	if err != nil {
-		status["collections_check_error"] = err.Error()
-	} else {
-		status["collections_changed"] = collectionsChanged
-	}
+	// Add general cache stats
+	status["cache_stats"] = cg.cache.GetStats()
 
 	return status
 }
@@ -157,41 +123,41 @@ func (cg *CachedGenerator) generateCollectionsHash() (string, error) {
 }
 
 // hasCollectionsChanged checks if collections have changed since last cache
-func (cg *CachedGenerator) hasCollectionsChanged() (bool, error) {
+func (cg *CachedGenerator) hasCollectionsChanged() bool {
 	currentHash, err := cg.generateCollectionsHash()
 	if err != nil {
-		return false, err
+		fmt.Printf("Warning: Failed to generate collections hash: %v\n", err)
+		return true // Assume changed to be safe
 	}
+
+	hashKey := cg.cacheKey.SwaggerCollectionsHash()
+	cachedHash, found := cg.cache.GetString(hashKey)
 
 	// If we don't have a previous hash, consider it changed
-	if cg.collectionsHash == "" {
-		return true, nil
+	if !found || cachedHash == "" {
+		return true
 	}
 
-	return currentHash != cg.collectionsHash, nil
+	return currentHash != cachedHash
 }
 
 // updateCollectionsHash updates the stored collections hash
-func (cg *CachedGenerator) updateCollectionsHash() error {
+func (cg *CachedGenerator) updateCollectionsHash() {
 	hash, err := cg.generateCollectionsHash()
 	if err != nil {
-		return err
+		fmt.Printf("Warning: Failed to generate collections hash: %v\n", err)
+		return
 	}
-	cg.collectionsHash = hash
-	return nil
+
+	hashKey := cg.cacheKey.SwaggerCollectionsHash()
+	cg.cache.SetWithExpiration(hashKey, hash, cg.cacheTTL)
 }
 
 // CheckAndInvalidateIfChanged checks for collection changes and invalidates cache if needed
-func (cg *CachedGenerator) CheckAndInvalidateIfChanged() (bool, error) {
-	changed, err := cg.hasCollectionsChanged()
-	if err != nil {
-		return false, fmt.Errorf("failed to check for collection changes: %w", err)
-	}
-
-	if changed {
+func (cg *CachedGenerator) CheckAndInvalidateIfChanged() bool {
+	if cg.hasCollectionsChanged() {
 		cg.InvalidateCache()
-		return true, nil
+		return true
 	}
-
-	return false, nil
+	return false
 }

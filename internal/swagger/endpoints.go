@@ -64,13 +64,7 @@ func RegisterEndpoints(se *core.ServeEvent, generator *Generator) {
 
 	// Check for collection changes endpoint
 	se.Router.POST("/api-docs/check-collections", func(e *core.RequestEvent) error {
-		invalidated, err := cachedGenerator.CheckAndInvalidateIfChanged()
-		if err != nil {
-			return e.JSON(http.StatusInternalServerError, map[string]string{
-				"error":   "Failed to check for collection changes",
-				"details": err.Error(),
-			})
-		}
+		invalidated := cachedGenerator.CheckAndInvalidateIfChanged()
 
 		response := map[string]any{
 			"collections_changed": invalidated,

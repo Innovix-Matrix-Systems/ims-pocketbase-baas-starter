@@ -3,6 +3,7 @@ module ims-pocketbase-baas-starter
 go 1.24.1
 
 require (
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pocketbase/dbx v1.11.0
 	github.com/pocketbase/pocketbase v0.29.1
 	golang.org/x/text v0.27.0

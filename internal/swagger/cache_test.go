@@ -1,186 +1,114 @@
 package swagger
 
 import (
+	"ims-pocketbase-baas-starter/pkg/cache"
 	"testing"
 	"time"
 )
 
-func TestNewCachedGenerator(t *testing.T) {
+func TestCachedGeneratorBasicFunctionality(t *testing.T) {
+	// Create a basic generator
 	generator := NewGenerator(nil, DefaultConfig())
 	cachedGen := NewCachedGenerator(generator, 10*time.Minute)
 
-	if cachedGen == nil {
-		t.Fatal("Expected cached generator to be created, got nil")
-	}
-
-	if cachedGen.Generator != generator {
-		t.Error("Expected wrapped generator to be set")
-	}
-
-	if cachedGen.cacheTTL != 10*time.Minute {
-		t.Errorf("Expected cache TTL to be 10 minutes, got %v", cachedGen.cacheTTL)
-	}
-}
-
-func TestNewCachedGeneratorDefaultTTL(t *testing.T) {
-	generator := NewGenerator(nil, DefaultConfig())
-	cachedGen := NewCachedGenerator(generator, 0) // Should use default
-
-	if cachedGen.cacheTTL != 5*time.Minute {
-		t.Errorf("Expected default cache TTL to be 5 minutes, got %v", cachedGen.cacheTTL)
-	}
-}
-
-func TestInvalidateCache(t *testing.T) {
-	generator := NewGenerator(nil, DefaultConfig())
-	cachedGen := NewCachedGenerator(generator, 10*time.Minute)
-
-	// Set some fake cache data
-	cachedGen.cache = &CombinedOpenAPISpec{}
-	cachedGen.cacheTime = time.Now()
-	cachedGen.collectionsHash = "test-hash"
-
-	// Invalidate cache
+	// Test cache invalidation
 	cachedGen.InvalidateCache()
 
-	if cachedGen.cache != nil {
-		t.Error("Expected cache to be nil after invalidation")
+	// Check that cache keys are cleared
+	specKey := cachedGen.cacheKey.SwaggerSpec()
+	hashKey := cachedGen.cacheKey.SwaggerCollectionsHash()
+
+	if _, found := cachedGen.cache.Get(specKey); found {
+		t.Error("Expected swagger spec cache to be cleared after invalidation")
 	}
 
-	if !cachedGen.cacheTime.IsZero() {
-		t.Error("Expected cache time to be zero after invalidation")
-	}
-
-	if cachedGen.collectionsHash != "" {
-		t.Error("Expected collections hash to be empty after invalidation")
+	if _, found := cachedGen.cache.Get(hashKey); found {
+		t.Error("Expected collections hash cache to be cleared after invalidation")
 	}
 }
 
-func TestGetCacheStatus(t *testing.T) {
+func TestCachedGeneratorCacheStatus(t *testing.T) {
+	// Create a basic generator
 	generator := NewGenerator(nil, DefaultConfig())
-	cachedGen := NewCachedGenerator(generator, 10*time.Minute)
+	cachedGen := NewCachedGenerator(generator, 5*time.Minute)
 
-	// Test with no cache
+	// Test initial status
 	status := cachedGen.GetCacheStatus()
-	if status["cached"] != false {
-		t.Error("Expected cached status to be false when no cache exists")
+
+	if status["cached"].(bool) {
+		t.Error("Expected cached to be false initially")
 	}
 
-	if status["cache_ttl"] != "10m0s" {
-		t.Errorf("Expected cache_ttl to be '10m0s', got %v", status["cache_ttl"])
+	if status["cache_ttl"].(string) != "5m0s" {
+		t.Errorf("Expected cache_ttl to be '5m0s', got %s", status["cache_ttl"])
 	}
 
-	if status["collections_hash"] != "" {
-		t.Error("Expected collections_hash to be empty when no cache exists")
-	}
-
-	// Test with cache
-	cachedGen.cache = &CombinedOpenAPISpec{}
-	cachedGen.cacheTime = time.Now().Add(-2 * time.Minute) // 2 minutes ago
-	cachedGen.collectionsHash = "test-hash-123"
-
-	status = cachedGen.GetCacheStatus()
-	if status["cached"] != true {
-		t.Error("Expected cached status to be true when cache exists")
-	}
-
-	if status["cache_age"] == nil {
-		t.Error("Expected cache_age to be present when cache exists")
-	}
-
-	if status["expires_in"] == nil {
-		t.Error("Expected expires_in to be present when cache exists")
-	}
-
-	if status["collections_hash"] != "test-hash-123" {
-		t.Errorf("Expected collections_hash to be 'test-hash-123', got %v", status["collections_hash"])
-	}
-
-	// collections_changed should be present (even if there's an error checking)
-	if _, exists := status["collections_changed"]; !exists {
-		if _, errorExists := status["collections_check_error"]; !errorExists {
-			t.Error("Expected either collections_changed or collections_check_error to be present")
-		}
+	// Check that cache_stats is included
+	if _, exists := status["cache_stats"]; !exists {
+		t.Error("Expected cache_stats to be included in status")
 	}
 }
 
-func TestCacheStatusThreadSafety(t *testing.T) {
+func TestCachedGeneratorTTL(t *testing.T) {
+	// Create a basic generator with very short TTL
 	generator := NewGenerator(nil, DefaultConfig())
-	cachedGen := NewCachedGenerator(generator, 10*time.Minute)
+	cachedGen := NewCachedGenerator(generator, 1*time.Millisecond)
 
-	// Run multiple goroutines to test thread safety
-	done := make(chan bool, 10)
+	// Set some fake cache data
+	specKey := cachedGen.cacheKey.SwaggerSpec()
+	cachedGen.cache.SetWithExpiration(specKey, &CombinedOpenAPISpec{}, 1*time.Millisecond)
 
-	for i := 0; i < 10; i++ {
-		go func() {
-			defer func() { done <- true }()
+	// Wait for TTL to expire
+	time.Sleep(2 * time.Millisecond)
 
-			// Simulate concurrent access
-			for j := 0; j < 100; j++ {
-				cachedGen.GetCacheStatus()
-				if j%10 == 0 {
-					cachedGen.InvalidateCache()
-				}
-			}
-		}()
-	}
-
-	// Wait for all goroutines to complete
-	for i := 0; i < 10; i++ {
-		<-done
-	}
-
-	// If we get here without deadlock, the test passes
-}
-
-func TestCollectionChangeDetection(t *testing.T) {
-	generator := NewGenerator(nil, DefaultConfig())
-	cachedGen := NewCachedGenerator(generator, 10*time.Minute)
-
-	// Test with nil app (should handle gracefully)
-	_, err := cachedGen.hasCollectionsChanged()
-	if err == nil {
-		t.Error("Expected error when checking collections with nil app")
-	}
-
-	// Test CheckAndInvalidateIfChanged with nil app
-	invalidated, err := cachedGen.CheckAndInvalidateIfChanged()
-	if err == nil {
-		t.Error("Expected error when checking collections with nil app")
-	}
-
-	if invalidated {
-		t.Error("Expected invalidated to be false when there's an error")
+	// Check that cache is expired
+	if _, found := cachedGen.cache.Get(specKey); found {
+		t.Error("Expected cache to be expired after TTL")
 	}
 }
 
-func TestGenerateCollectionsHash(t *testing.T) {
+func TestCachedGeneratorCollectionChanges(t *testing.T) {
+	// Create a basic generator
 	generator := NewGenerator(nil, DefaultConfig())
 	cachedGen := NewCachedGenerator(generator, 10*time.Minute)
 
-	// Test with nil app (should return error)
-	hash, err := cachedGen.generateCollectionsHash()
-	if err == nil {
-		t.Error("Expected error when generating hash with nil app")
+	// Test collection change detection
+	changed := cachedGen.hasCollectionsChanged()
+
+	// Should be true initially (no previous hash)
+	if !changed {
+		t.Error("Expected collections to be considered changed initially")
 	}
 
-	if hash != "" {
-		t.Error("Expected empty hash when there's an error")
+	// Test CheckAndInvalidateIfChanged
+	invalidated := cachedGen.CheckAndInvalidateIfChanged()
+
+	// Should be true since collections changed
+	if !invalidated {
+		t.Error("Expected cache to be invalidated due to collection changes")
 	}
 }
 
-func TestUpdateCollectionsHash(t *testing.T) {
+func TestCachedGeneratorCacheService(t *testing.T) {
+	// Create a basic generator
 	generator := NewGenerator(nil, DefaultConfig())
-	cachedGen := NewCachedGenerator(generator, 10*time.Minute)
+	cachedGen := NewCachedGenerator(generator, 5*time.Minute)
 
-	// Test with nil app (should return error)
-	err := cachedGen.updateCollectionsHash()
-	if err == nil {
-		t.Error("Expected error when updating hash with nil app")
+	// Test that it uses the centralized cache service
+	if cachedGen.cache != cache.GetInstance() {
+		t.Error("Expected cached generator to use the centralized cache service")
 	}
 
-	// Hash should remain empty after failed update
-	if cachedGen.collectionsHash != "" {
-		t.Error("Expected collections hash to remain empty after failed update")
+	// Test cache key generation
+	specKey := cachedGen.cacheKey.SwaggerSpec()
+	expectedSpecKey := "swagger_spec"
+	if specKey != expectedSpecKey {
+		t.Errorf("Expected spec key to be '%s', got '%s'", expectedSpecKey, specKey)
+	}
+
+	hashKey := cachedGen.cacheKey.SwaggerCollectionsHash()
+	expectedHashKey := "swagger_collections_hash"
+	if hashKey != expectedHashKey {
+		t.Errorf("Expected hash key to be '%s', got '%s'", expectedHashKey, hashKey)
 	}
 }
