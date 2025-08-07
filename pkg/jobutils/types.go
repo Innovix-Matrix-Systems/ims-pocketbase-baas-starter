@@ -16,8 +16,9 @@ type JobRegistry struct {
 
 // JobProcessor coordinates job execution and queue management
 type JobProcessor struct {
-	app      *pocketbase.PocketBase
-	registry *JobRegistry
+	app        *pocketbase.PocketBase
+	registry   *JobRegistry
+	workerPool *WorkerPool
 }
 
 // JobHandler defines the interface that all job handlers must implement

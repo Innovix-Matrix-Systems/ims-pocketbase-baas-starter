@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"ims-pocketbase-baas-starter/pkg/common"
 	"log"
+	"slices"
 	"strings"
 
 	"github.com/pocketbase/pocketbase"
@@ -69,8 +70,8 @@ type SecurityScheme struct {
 	Description  string `json:"description,omitempty"`
 }
 
-// UnifiedConfig holds the unified generator configuration
-type UnifiedConfig struct {
+// Config holds the generator configuration
+type Config struct {
 	Title                     string
 	Version                   string
 	Description               string
@@ -86,14 +87,14 @@ type UnifiedConfig struct {
 // Generator handles OpenAPI specification generation
 type Generator struct {
 	app       *pocketbase.PocketBase
-	config    UnifiedConfig
+	config    Config
 	discovery Discovery
 	schemaGen SchemaGen
 	routeGen  RouteGen
 }
 
 // NewGenerator creates a new OpenAPI generator
-func NewGenerator(app *pocketbase.PocketBase, config UnifiedConfig) *Generator {
+func NewGenerator(app *pocketbase.PocketBase, config Config) *Generator {
 	// Initialize discovery
 	discovery := NewCollectionDiscoveryWithConfig(
 		app,
@@ -172,36 +173,24 @@ func (g *Generator) GenerateSpec() (*CombinedOpenAPISpec, error) {
 	return spec, nil
 }
 
-// Global generator instance for sharing between OnServe hook and endpoints
-var globalGenerator *Generator
-
-// InitializeGenerator creates and stores a global generator instance
+// InitializeGenerator creates and stores a global generator instance using singleton pattern
 func InitializeGenerator(app *pocketbase.PocketBase) *Generator {
-	config := DefaultConfig()
-	globalGenerator = NewGenerator(app, config)
-	return globalGenerator
+	return GetInstance().Initialize(app)
 }
 
-// GetGlobalGenerator returns the global generator instance
+// GetGlobalGenerator returns the global generator instance using singleton pattern
 func GetGlobalGenerator() *Generator {
-	return globalGenerator
+	return GetInstance().GetGenerator()
 }
 
-// GenerateOpenAPI generates OpenAPI specification from PocketBase app
+// GenerateOpenAPI generates OpenAPI specification from PocketBase app using singleton
 func GenerateOpenAPI(app *pocketbase.PocketBase) (*CombinedOpenAPISpec, error) {
-	// Use global generator if available, otherwise create a new one
-	var generator *Generator
-	if globalGenerator != nil {
-		generator = globalGenerator
-	} else {
-		generator = InitializeGenerator(app)
-	}
-
+	generator := InitializeGenerator(app)
 	return generator.GenerateSpec()
 }
 
 // generateAllSchemas generates schemas for all collections
-func (g *Generator) generateAllSchemas(collections []EnhancedCollectionInfo) (map[string]any, error) {
+func (g *Generator) generateAllSchemas(collections []CollectionInfo) (map[string]any, error) {
 	allSchemas := make(map[string]any)
 
 	for _, collection := range collections {
@@ -297,7 +286,7 @@ func (g *Generator) buildComponents(schemas map[string]any) *Components {
 }
 
 // buildTags builds the tags section of the OpenAPI spec with controlled ordering
-func (g *Generator) buildTags(collections []EnhancedCollectionInfo, routes []GeneratedRoute) []Tag {
+func (g *Generator) buildTags(collections []CollectionInfo, routes []GeneratedRoute) []Tag {
 	tagMap := make(map[string]string)
 	caser := cases.Title(language.English)
 
@@ -345,14 +334,7 @@ func (g *Generator) buildTags(collections []EnhancedCollectionInfo, routes []Gen
 
 	// Add any custom tags that aren't in our order
 	for tag := range tagMap {
-		found := false
-		for _, orderedTag := range tagOrder {
-			if tag == orderedTag {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(tagOrder, tag) {
 			tagOrder = append(tagOrder, tag)
 		}
 	}
@@ -410,12 +392,12 @@ func (g *Generator) ValidateConfiguration() error {
 }
 
 // GetConfiguration returns the current configuration
-func (g *Generator) GetConfiguration() UnifiedConfig {
+func (g *Generator) GetConfiguration() Config {
 	return g.config
 }
 
 // UpdateConfiguration updates the generator configuration
-func (g *Generator) UpdateConfiguration(config UnifiedConfig) error {
+func (g *Generator) UpdateConfiguration(config Config) error {
 	if err := g.validateConfig(config); err != nil {
 		return fmt.Errorf("invalid configuration: %w", err)
 	}
@@ -445,7 +427,7 @@ func (g *Generator) UpdateConfiguration(config UnifiedConfig) error {
 }
 
 // validateConfig validates a configuration
-func (g *Generator) validateConfig(config UnifiedConfig) error {
+func (g *Generator) validateConfig(config Config) error {
 	if config.Title == "" {
 		return fmt.Errorf("title is required")
 	}
@@ -482,8 +464,8 @@ func (g *Generator) GetHealthStatus() map[string]any {
 }
 
 // DefaultConfig returns a default configuration
-func DefaultConfig() UnifiedConfig {
-	return UnifiedConfig{
+func DefaultConfig() Config {
+	return Config{
 		Title:                     common.GetEnv("APP_NAME", "IMS Pocketbase") + " API",
 		Version:                   "1.0.0",
 		Description:               "Auto-generated API documentation for PocketBase collections",

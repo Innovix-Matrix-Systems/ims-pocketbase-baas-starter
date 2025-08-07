@@ -11,12 +11,12 @@ func TestHasFileFields(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		collection EnhancedCollectionInfo
+		collection CollectionInfo
 		expected   bool
 	}{
 		{
 			name: "collection with file field",
-			collection: EnhancedCollectionInfo{
+			collection: CollectionInfo{
 				Name: "users",
 				Fields: []FieldInfo{
 					{Name: "avatar", Type: "file", Required: false},
@@ -27,7 +27,7 @@ func TestHasFileFields(t *testing.T) {
 		},
 		{
 			name: "collection without file field",
-			collection: EnhancedCollectionInfo{
+			collection: CollectionInfo{
 				Name: "posts",
 				Fields: []FieldInfo{
 					{Name: "title", Type: "text", Required: true},
@@ -38,7 +38,7 @@ func TestHasFileFields(t *testing.T) {
 		},
 		{
 			name: "collection with multiple file fields",
-			collection: EnhancedCollectionInfo{
+			collection: CollectionInfo{
 				Name: "documents",
 				Fields: []FieldInfo{
 					{Name: "avatar", Type: "file", Required: false},
@@ -50,7 +50,7 @@ func TestHasFileFields(t *testing.T) {
 		},
 		{
 			name: "empty collection",
-			collection: EnhancedCollectionInfo{
+			collection: CollectionInfo{
 				Name:   "empty",
 				Fields: []FieldInfo{},
 			},
@@ -71,7 +71,7 @@ func TestHasFileFields(t *testing.T) {
 func TestGetFileFields(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "documents",
 		Fields: []FieldInfo{
 			{
@@ -137,7 +137,7 @@ func TestGetFileFields(t *testing.T) {
 func TestGetFileFieldsNoFileFields(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "posts",
 		Fields: []FieldInfo{
 			{Name: "title", Type: "text", Required: true},
@@ -216,7 +216,7 @@ func TestGenerateRequestContentOperationSupport(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
 	// Collection with file field
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Fields: []FieldInfo{
 			{Name: "avatar", Type: "file", Required: false},
@@ -301,7 +301,7 @@ func TestGenerateRequestContentNoFileFields(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
 	// Collection without file fields
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "posts",
 		Fields: []FieldInfo{
 			{Name: "title", Type: "text", Required: true},
@@ -341,7 +341,7 @@ func TestGenerateRequestContentFormDataSchema(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
 	// Collection with mixed field types
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "documents",
 		Fields: []FieldInfo{
 			{
@@ -444,7 +444,7 @@ func TestImprovedFormDataSchemaGeneration(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
 	// Collection with various field types
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "mixed_fields",
 		Fields: []FieldInfo{
 			{
@@ -632,7 +632,7 @@ func TestConfigurationDisablesDynamicContentTypes(t *testing.T) {
 	rg := NewRouteGeneratorWithConfig(nil, false)
 
 	// Collection with file field
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Fields: []FieldInfo{
 			{Name: "avatar", Type: "file", Required: false},
@@ -678,7 +678,7 @@ func TestConfigurationEnablesDynamicContentTypes(t *testing.T) {
 	rg := NewRouteGeneratorWithConfig(nil, true)
 
 	// Collection with file field
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Fields: []FieldInfo{
 			{Name: "avatar", Type: "file", Required: false},
@@ -724,7 +724,7 @@ func TestDefaultRouteGeneratorEnablesDynamicContentTypes(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
 	// Collection with file field
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Fields: []FieldInfo{
 			{Name: "avatar", Type: "file", Required: false},
@@ -768,7 +768,7 @@ func TestErrorHandlingAndLogging(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
 	// Test with malformed field options
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "test_errors",
 		Fields: []FieldInfo{
 			{
@@ -815,7 +815,7 @@ func TestErrorHandlingEmptyCollection(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
 	// Test with empty collection
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name:   "empty_collection",
 		Fields: []FieldInfo{},
 	}
@@ -851,7 +851,7 @@ func TestErrorHandlingEmptyCollection(t *testing.T) {
 func TestErrorHandlingInvalidSchema(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Fields: []FieldInfo{
 			{Name: "avatar", Type: "file", Required: false},
@@ -892,7 +892,7 @@ func TestRelationFieldExamplesInFormData(t *testing.T) {
 	rg := NewRouteGenerator(nil)
 
 	// Collection with relation fields and file fields
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "posts",
 		Fields: []FieldInfo{
 			{Name: "title", Type: "text", Required: true},

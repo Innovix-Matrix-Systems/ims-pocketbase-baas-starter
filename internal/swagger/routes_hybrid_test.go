@@ -10,7 +10,7 @@ func TestGenerateHybridUpdateContent(t *testing.T) {
 	routeGen := NewRouteGeneratorWithConfig(mockSchemaGen, true)
 
 	// Test collection with file fields
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "posts",
 		Type: "base",
 		Fields: []FieldInfo{
@@ -149,7 +149,7 @@ func TestGenerateHybridUpdateContentNoFileFields(t *testing.T) {
 	routeGen := NewRouteGeneratorWithConfig(mockSchemaGen, true)
 
 	// Test collection without file fields
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "posts",
 		Type: "base",
 		Fields: []FieldInfo{
@@ -192,7 +192,7 @@ func TestGenerateHybridUpdateContentDisabledFeature(t *testing.T) {
 	routeGen := NewRouteGeneratorWithConfig(mockSchemaGen, false)
 
 	// Test collection with file fields
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "posts",
 		Type: "base",
 		Fields: []FieldInfo{

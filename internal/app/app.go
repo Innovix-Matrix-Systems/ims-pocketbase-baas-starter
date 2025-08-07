@@ -46,9 +46,8 @@ func NewApp() *pocketbase.PocketBase {
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		middleware := middlewares.NewAuthMiddleware()
 
-		// Initialize Swagger generator with collection filtering
-		config := swagger.DefaultConfig()
-		generator := swagger.NewGenerator(app, config)
+		// Initialize Swagger generator using singleton pattern
+		generator := swagger.InitializeGenerator(app)
 
 		// Apply auth to specific PocketBase API endpoints
 		se.Router.Bind(&hook.Handler[*core.RequestEvent]{

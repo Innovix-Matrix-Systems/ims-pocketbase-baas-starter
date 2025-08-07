@@ -105,7 +105,10 @@
         "type": "autodate"
       }
     ],
-    "indexes": [],
+    "indexes": [
+      "CREATE INDEX `idx_IWj9MvRHKF` ON `queues` (`reserved_at`)",
+      "CREATE INDEX `idx_1RktchuUJ7` ON `queues` (`created`)"
+    ],
     "system": false
   }
 ]

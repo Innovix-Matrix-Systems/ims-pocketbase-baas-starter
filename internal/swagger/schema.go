@@ -49,6 +49,11 @@ func NewFieldSchemaMapper() *FieldSchemaMapper {
 	}
 }
 
+const (
+	DefaultEditorMaxLength   = 10000
+	DefaultPasswordMinLength = 8
+)
+
 // NewFieldSchemaMapperWithConfig creates a new field schema mapper with configuration
 func NewFieldSchemaMapperWithConfig(includeExamples, strictValidation bool) *FieldSchemaMapper {
 	return &FieldSchemaMapper{
@@ -57,7 +62,7 @@ func NewFieldSchemaMapperWithConfig(includeExamples, strictValidation bool) *Fie
 	}
 }
 
-// MapFieldToSchema converts a PocketBase field to an OpenAPI schema
+// MapFieldToSchema converts a PocketBase field to an OpenAPI schema with optimized memory allocation
 func (fsm *FieldSchemaMapper) MapFieldToSchema(field FieldInfo) (*FieldSchema, error) {
 	if field.Name == "" {
 		return nil, fmt.Errorf("field name is required")
@@ -324,7 +329,7 @@ func (fsm *FieldSchemaMapper) mapEditorField(field FieldInfo, schema *FieldSchem
 
 	// Editor fields are typically longer
 	if schema.MaxLength == nil {
-		maxLen := 10000 // Default max length for editor fields
+		maxLen := DefaultEditorMaxLength // Default max length for editor fields
 		schema.MaxLength = &maxLen
 	}
 }
@@ -351,7 +356,7 @@ func (fsm *FieldSchemaMapper) mapPasswordField(field FieldInfo, schema *FieldSch
 
 	// Password fields typically have minimum length requirements
 	if schema.MinLength == nil {
-		minLen := 8 // Default minimum length for passwords
+		minLen := DefaultPasswordMinLength // Default minimum length for passwords
 		schema.MinLength = &minLen
 	}
 }

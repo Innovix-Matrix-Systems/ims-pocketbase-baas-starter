@@ -3,12 +3,18 @@ package jobutils
 import (
 	"encoding/json"
 	"fmt"
+	"ims-pocketbase-baas-starter/pkg/common"
 	"ims-pocketbase-baas-starter/pkg/cronutils"
 	"sync"
 	"time"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
+)
+
+// Collection names constants
+const (
+	QueuesCollection = "queues"
 )
 
 // NewJobRegistry creates a new job registry
@@ -150,15 +156,18 @@ func ValidateJobPayload(payload map[string]any) error {
 	return nil
 }
 
-// NewJobProcessor creates a new job processor with initialized registry
+// NewJobProcessor creates a new job processor with initialized registry and worker pool
 func NewJobProcessor(app *pocketbase.PocketBase) *JobProcessor {
 	if app == nil {
 		panic("NewJobProcessor: app cannot be nil")
 	}
 
+	registry := NewJobRegistry()
+
 	return &JobProcessor{
-		app:      app,
-		registry: NewJobRegistry(),
+		app:        app,
+		registry:   registry,
+		workerPool: NewWorkerPool(app, registry, common.GetEnvInt("JOB_MAX_WORKERS", 5)), // Default 5 workers
 	}
 }
 
@@ -197,8 +206,8 @@ func (p *JobProcessor) validateJobRecord(record *core.Record) error {
 		return fmt.Errorf("job record must have a valid ID")
 	}
 
-	if record.Collection().Name != "queues" {
-		return fmt.Errorf("job record must be from the 'queues' collection")
+	if record.Collection().Name != QueuesCollection {
+		return fmt.Errorf("job record must be from the '%s' collection", QueuesCollection)
 	}
 
 	return nil
@@ -329,8 +338,23 @@ func (p *JobProcessor) ProcessJob(record *core.Record) error {
 	return p.completeJob(record)
 }
 
-// ProcessJobsConcurrently processes multiple jobs concurrently using a worker pool
+// ProcessJobsConcurrently processes multiple jobs concurrently using the persistent worker pool
 func (p *JobProcessor) ProcessJobsConcurrently(records []*core.Record, maxWorkers int) []error {
+	if len(records) == 0 {
+		return nil
+	}
+
+	// Use the persistent worker pool for better performance
+	if p.workerPool != nil {
+		return p.workerPool.ProcessJobs(records)
+	}
+
+	// Fallback to the old method if worker pool is not available
+	return p.processJobsConcurrentlyFallback(records, maxWorkers)
+}
+
+// processJobsConcurrentlyFallback is the original implementation as fallback
+func (p *JobProcessor) processJobsConcurrentlyFallback(records []*core.Record, maxWorkers int) []error {
 	if len(records) == 0 {
 		return nil
 	}

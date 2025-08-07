@@ -8,7 +8,7 @@ import (
 // Mock schema generator for testing
 type mockSchemaGen struct{}
 
-func (m *mockSchemaGen) GenerateCollectionSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error) {
+func (m *mockSchemaGen) GenerateCollectionSchema(collection CollectionInfo) (*CollectionSchema, error) {
 	return &CollectionSchema{
 		Type: "object",
 		Properties: map[string]*FieldSchema{
@@ -19,7 +19,7 @@ func (m *mockSchemaGen) GenerateCollectionSchema(collection EnhancedCollectionIn
 	}, nil
 }
 
-func (m *mockSchemaGen) GenerateCollectionSchemas(collections []EnhancedCollectionInfo) (map[string]*CollectionSchema, error) {
+func (m *mockSchemaGen) GenerateCollectionSchemas(collections []CollectionInfo) (map[string]*CollectionSchema, error) {
 	schemas := make(map[string]*CollectionSchema)
 	for _, collection := range collections {
 		schema, err := m.GenerateCollectionSchema(collection)
@@ -31,7 +31,7 @@ func (m *mockSchemaGen) GenerateCollectionSchemas(collections []EnhancedCollecti
 	return schemas, nil
 }
 
-func (m *mockSchemaGen) GenerateCreateSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error) {
+func (m *mockSchemaGen) GenerateCreateSchema(collection CollectionInfo) (*CollectionSchema, error) {
 	return &CollectionSchema{
 		Type: "object",
 		Properties: map[string]*FieldSchema{
@@ -41,7 +41,7 @@ func (m *mockSchemaGen) GenerateCreateSchema(collection EnhancedCollectionInfo) 
 	}, nil
 }
 
-func (m *mockSchemaGen) GenerateUpdateSchema(collection EnhancedCollectionInfo) (*CollectionSchema, error) {
+func (m *mockSchemaGen) GenerateUpdateSchema(collection CollectionInfo) (*CollectionSchema, error) {
 	return &CollectionSchema{
 		Type: "object",
 		Properties: map[string]*FieldSchema{
@@ -51,7 +51,7 @@ func (m *mockSchemaGen) GenerateUpdateSchema(collection EnhancedCollectionInfo) 
 	}, nil
 }
 
-func (m *mockSchemaGen) GenerateListResponseSchema(collection EnhancedCollectionInfo) (map[string]any, error) {
+func (m *mockSchemaGen) GenerateListResponseSchema(collection CollectionInfo) (map[string]any, error) {
 	return map[string]any{
 		"type": "object",
 		"properties": map[string]any{
@@ -73,19 +73,19 @@ func (m *mockSchemaGen) GenerateListResponseSchema(collection EnhancedCollection
 	}, nil
 }
 
-func (m *mockSchemaGen) GetSchemaName(collection EnhancedCollectionInfo) string {
+func (m *mockSchemaGen) GetSchemaName(collection CollectionInfo) string {
 	return collection.Name
 }
 
-func (m *mockSchemaGen) GetCreateSchemaName(collection EnhancedCollectionInfo) string {
+func (m *mockSchemaGen) GetCreateSchemaName(collection CollectionInfo) string {
 	return collection.Name + "Create"
 }
 
-func (m *mockSchemaGen) GetUpdateSchemaName(collection EnhancedCollectionInfo) string {
+func (m *mockSchemaGen) GetUpdateSchemaName(collection CollectionInfo) string {
 	return collection.Name + "Update"
 }
 
-func (m *mockSchemaGen) GetListResponseSchemaName(collection EnhancedCollectionInfo) string {
+func (m *mockSchemaGen) GetListResponseSchemaName(collection CollectionInfo) string {
 	return collection.Name + "ListResponse"
 }
 
@@ -114,7 +114,7 @@ func TestGenerateCollectionRoutes(t *testing.T) {
 	schemaGen := &mockSchemaGen{}
 	generator := NewRouteGenerator(schemaGen)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "users",
 		Type: "base",
 		Fields: []FieldInfo{
@@ -168,7 +168,7 @@ func TestGenerateCollectionRoutesEmptyName(t *testing.T) {
 	schemaGen := &mockSchemaGen{}
 	generator := NewRouteGenerator(schemaGen)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name: "",
 		Type: "base",
 	}
@@ -187,7 +187,7 @@ func TestGenerateListRoute(t *testing.T) {
 	schemaGen := &mockSchemaGen{}
 	generator := NewRouteGenerator(schemaGen)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name:     "posts",
 		Type:     "base",
 		ListRule: stringPtr("id != ''"),
@@ -237,7 +237,7 @@ func TestGenerateCreateRoute(t *testing.T) {
 	schemaGen := &mockSchemaGen{}
 	generator := NewRouteGenerator(schemaGen)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name:       "posts",
 		Type:       "base",
 		CreateRule: stringPtr("@request.auth.id != ''"),
@@ -279,7 +279,7 @@ func TestGenerateViewRoute(t *testing.T) {
 	schemaGen := &mockSchemaGen{}
 	generator := NewRouteGenerator(schemaGen)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name:     "posts",
 		Type:     "base",
 		ViewRule: stringPtr("id != ''"),
@@ -324,7 +324,7 @@ func TestGenerateUpdateRoute(t *testing.T) {
 	schemaGen := &mockSchemaGen{}
 	generator := NewRouteGenerator(schemaGen)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name:       "posts",
 		Type:       "base",
 		UpdateRule: stringPtr("@request.auth.id != ''"),
@@ -362,7 +362,7 @@ func TestGenerateDeleteRoute(t *testing.T) {
 	schemaGen := &mockSchemaGen{}
 	generator := NewRouteGenerator(schemaGen)
 
-	collection := EnhancedCollectionInfo{
+	collection := CollectionInfo{
 		Name:       "posts",
 		Type:       "base",
 		DeleteRule: stringPtr("@request.auth.id != ''"),
@@ -401,7 +401,7 @@ func TestGenerateAuthRoutes(t *testing.T) {
 	generator := NewRouteGenerator(schemaGen)
 
 	// Test with auth collection
-	authCollection := EnhancedCollectionInfo{
+	authCollection := CollectionInfo{
 		Name: "users",
 		Type: "auth",
 	}
@@ -437,7 +437,7 @@ func TestGenerateAuthRoutes(t *testing.T) {
 	}
 
 	// Test with non-auth collection
-	baseCollection := EnhancedCollectionInfo{
+	baseCollection := CollectionInfo{
 		Name: "posts",
 		Type: "base",
 	}
@@ -491,7 +491,7 @@ func TestGetAllRoutes(t *testing.T) {
 	}
 	generator.RegisterCustomRoute(customRoute)
 
-	collections := []EnhancedCollectionInfo{
+	collections := []CollectionInfo{
 		{
 			Name: "posts",
 			Type: "base",
