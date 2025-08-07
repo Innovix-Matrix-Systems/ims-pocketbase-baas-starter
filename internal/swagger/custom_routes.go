@@ -19,6 +19,14 @@ func defineCustomRoutes() []CustomRoute {
 			Tags:        []string{"System"},
 			Protected:   false,
 		},
+		{
+			Method:      "GET",
+			Path:        "/api/v1/cache-status",
+			Summary:     "Cache Status",
+			Description: "Get the current status of the global cache store including collection hash and cache statistics",
+			Tags:        []string{"System"},
+			Protected:   false,
+		},
 
 		// Custom API routes
 		{

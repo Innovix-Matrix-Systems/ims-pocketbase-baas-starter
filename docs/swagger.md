@@ -12,7 +12,7 @@ The Swagger documentation system automatically generates comprehensive API docum
 - **Swagger UI**: Interactive API explorer at `/api-docs`
 - **ReDoc**: Clean, responsive documentation at `/api-docs/redoc`
 - **Collection Stats**: API statistics at `/api-docs/stats`
-- **Cache Status**: Cache information at `/api-docs/cache-status`
+- **Cache Status**: Cache information at `/api/v1/cache-status`
 - **Cache Control**: Manual cache invalidation at `/api-docs/invalidate-cache`
 
 ## Key Features
@@ -201,7 +201,7 @@ if swagger.GetInstance().IsInitialized() {
 
 | Endpoint                      | Method | Description                           |
 | ----------------------------- | ------ | ------------------------------------- |
-| `/api-docs/cache-status`      | GET    | View cache status and collection hash |
+| `/api/v1/cache-status`        | GET    | View cache status and collection hash |
 | `/api-docs/invalidate-cache`  | POST   | Manually clear cache                  |
 | `/api-docs/check-collections` | POST   | Check for collection changes          |
 
@@ -209,7 +209,7 @@ if swagger.GetInstance().IsInitialized() {
 
 ```bash
 # View current cache status
-curl http://localhost:8090/api-docs/cache-status
+curl http://localhost:8090/api/v1/cache-status
 
 # Manually invalidate cache
 curl -X POST http://localhost:8090/api-docs/invalidate-cache
@@ -244,7 +244,7 @@ curl -X POST http://localhost:8090/api-docs/check-collections
 
 ```bash
 # 1. Check current cache status
-curl http://localhost:8090/api-docs/cache-status
+curl http://localhost:8090/api/v1/cache-status
 
 # 2. Add a new collection in PocketBase Admin UI
 
@@ -270,7 +270,7 @@ The caching system is fully thread-safe and supports:
 
 ```bash
 # Check cache status
-curl http://localhost:8090/api-docs/cache-status
+curl http://localhost:8090/api/v1/cache-status
 
 # Force cache refresh
 curl -X POST http://localhost:8090/api-docs/invalidate-cache
@@ -288,5 +288,5 @@ If collections aren't appearing:
 ### Performance Issues
 
 - **Slow first load**: Normal (100-500ms for generation)
-- **Slow subsequent loads**: Check if cache is working via `/api-docs/cache-status`
+- **Slow subsequent loads**: Check if cache is working via `/api/v1/cache-status`
 - **Frequent invalidation**: Collections may be changing frequently

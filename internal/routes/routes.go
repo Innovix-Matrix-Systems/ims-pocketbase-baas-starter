@@ -38,6 +38,11 @@ func RegisterCustom(e *core.ServeEvent) {
 		return request.JSON(200, map[string]string{"msg": "Hello from custom route"})
 	})
 
+	// Cache status route (public for monitoring)
+	g.GET("/cache-status", func(request *core.RequestEvent) error {
+		return route.HandleCacheStatus(request)
+	})
+
 	//auth protected route
 	g.GET("/protected", func(request *core.RequestEvent) error {
 		// Apply authentication middleware

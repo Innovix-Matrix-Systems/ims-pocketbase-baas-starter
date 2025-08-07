@@ -48,12 +48,6 @@ func RegisterEndpoints(se *core.ServeEvent, generator *Generator) {
 		return e.JSON(http.StatusOK, stats)
 	})
 
-	// Cache status endpoint
-	se.Router.GET("/api-docs/cache-status", func(e *core.RequestEvent) error {
-		status := cachedGenerator.GetCacheStatus()
-		return e.JSON(http.StatusOK, status)
-	})
-
 	// Cache invalidation endpoint (for development)
 	se.Router.POST("/api-docs/invalidate-cache", func(e *core.RequestEvent) error {
 		cachedGenerator.InvalidateCache()
