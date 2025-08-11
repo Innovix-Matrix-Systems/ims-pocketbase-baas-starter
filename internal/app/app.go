@@ -13,6 +13,7 @@ import (
 
 	"ims-pocketbase-baas-starter/internal/crons"
 	_ "ims-pocketbase-baas-starter/internal/database/migrations" //side effect migration load(from pocketbase)
+	"ims-pocketbase-baas-starter/internal/hooks"
 	"ims-pocketbase-baas-starter/internal/jobs"
 	"ims-pocketbase-baas-starter/internal/middlewares"
 	"ims-pocketbase-baas-starter/internal/routes"
@@ -42,6 +43,10 @@ func NewApp() *pocketbase.PocketBase {
 	// Register scheduled cron jobs during app initialization phase
 	// This must be called after job manager initialization
 	crons.RegisterCrons(app)
+
+	// Register custom event hooks
+	// This should be called after job manager and crons initialization
+	hooks.RegisterHooks(app)
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		middleware := middlewares.NewAuthMiddleware()

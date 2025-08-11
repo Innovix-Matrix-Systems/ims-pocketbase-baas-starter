@@ -37,6 +37,18 @@ Complete guide for background task processing and job queue management:
 - Performance optimization and monitoring
 - Environment configuration and troubleshooting
 
+### [Event Hooks System Guide](hooks.md)
+
+Complete guide for implementing and managing PocketBase event hooks:
+
+- Hook system architecture and organization
+- Record, collection, request, mailer, and realtime hooks
+- Creating custom hook handlers and registration
+- Collection-specific hooks and execution order
+- Best practices and common use cases
+- Error handling and testing strategies
+- Practical examples for audit logging, validation, and notifications
+
 ### [Swagger API Documentation Guide](swagger.md)
 
 Comprehensive guide for the automatic API documentation system:

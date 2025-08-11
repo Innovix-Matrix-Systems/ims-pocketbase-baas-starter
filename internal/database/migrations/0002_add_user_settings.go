@@ -3,6 +3,7 @@ package migrations
 import (
 	"encoding/json"
 	"fmt"
+	"ims-pocketbase-baas-starter/internal/database/seeders"
 	"os"
 	"path/filepath"
 
@@ -34,6 +35,9 @@ func init() {
 		}
 
 		// Optional: Add any data seeding specific to these collections
+		if err := seeders.SeedSettings(app); err != nil {
+			return fmt.Errorf("failed to seed settings: %w", err)
+		}
 
 		return nil
 	}, func(app core.App) error {
