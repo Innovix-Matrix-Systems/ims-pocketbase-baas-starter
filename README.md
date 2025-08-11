@@ -8,6 +8,8 @@ A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, en
 - 🔐 **RBAC System** - Role-based access control with permissions and roles
 - 🛠️ **Custom API Routes** - Add your own REST endpoints and business logic
 - 🔧 **Custom Middleware** - Implement Custom Middleware according to your needs
+- 🪝 **Event Hooks System** - Comprehensive event hook management with organized handlers for records, collections, requests, mailer, and realtime events
+- ⚡ **Go Cache with TTL** - High-performance in-memory caching with Time-To-Live support for improved application performance
 - ⏰ **Cron Jobs & Job Queue** - Scheduled tasks and dynamic job processing with concurrent workers
 - 📧 **Email Integration** - SMTP configuration with MailHog for development
 - 📚 **Auto API Documentation** - Swagger UI, ReDoc, OpenAPI JSON with Postman compatibility
@@ -160,6 +162,7 @@ The application automatically generates comprehensive API documentation for all 
 - **Postman Compatible** - Import OpenAPI JSON directly into Postman/Insomnia
 
 **Features:**
+
 - Auto-discovery of all PocketBase collections
 - Complete CRUD operation documentation
 - Authentication flow documentation
@@ -179,6 +182,44 @@ The application includes a comprehensive background task processing system with:
 - **Extensible Architecture** - Easy to add custom job types
 
 For detailed information about cron jobs, job queue system, and creating custom handlers, see the [Cron Jobs & Job Queue Guide](docs/cron-jobs.md).
+
+## Event Hooks System
+
+The application includes a comprehensive event hook system that allows you to extend PocketBase functionality through organized event handlers:
+
+- **Record Hooks** - Handle record creation, updates, and deletions
+- **Collection Hooks** - Manage collection lifecycle events
+- **Request Hooks** - Intercept API requests for custom logic
+- **Mailer Hooks** - Customize email sending behavior
+- **Realtime Hooks** - Handle WebSocket connections and messages
+- **Organized Structure** - Clean separation of concerns with dedicated handler files
+- **Example Implementations** - Ready-to-use examples for common use cases like audit logging, user settings creation, and data validation
+
+**Key Features:**
+
+- Collection-specific hooks for targeted functionality
+- Comprehensive error handling and logging
+- Easy registration and management
+- Extensible architecture for custom business logic
+
+For detailed information about the hooks system, available events, and creating custom handlers, see the [Event Hooks Guide](docs/hooks.md).
+
+## Caching System
+
+The application features a high-performance Go-based caching system with:
+
+- **TTL Support** - Automatic expiration of cached items
+- **Memory Efficient** - Optimized for performance and memory usage
+- **Thread Safe** - Concurrent access support
+- **Easy Integration** - Simple API for cache operations
+- **Configurable** - Customizable cache settings and cleanup intervals
+
+**Use Cases:**
+
+- API response caching
+- Database query result caching
+- Session data storage
+- Temporary data storage with automatic cleanup
 
 ### Migration CLI Generator
 
@@ -207,10 +248,13 @@ make migrate-gen name=add_user_profiles
 │   ├── database/
 │   │   ├── migrations/ # Database migrations
 │   │   ├── schema/     # PocketBase schema files
-│   │   └── seeders/    # Data seeders (RBAC, admin)
+│   │   └── seeders/    # Data seeders (RBAC, admin, settings)
 │   ├── handlers/
 │   │   ├── cron/       # Cron job handlers
-│   │   └── jobs/       # Job queue handlers
+│   │   ├── hook/       # Event hook handlers
+│   │   ├── jobs/       # Job queue handlers
+│   │   └── route/      # Custom route handlers
+│   ├── hooks/          # Event hook registration and management
 │   ├── jobs/           # Job processor management
 │   ├── middlewares/    # HTTP middlewares (auth, permissions)
 │   └── routes/         # Custom API route definitions
