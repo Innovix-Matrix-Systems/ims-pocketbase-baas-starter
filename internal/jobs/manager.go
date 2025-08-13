@@ -5,6 +5,7 @@ import (
 
 	"ims-pocketbase-baas-starter/internal/handlers/jobs"
 	"ims-pocketbase-baas-starter/pkg/jobutils"
+	"ims-pocketbase-baas-starter/pkg/logger"
 
 	"github.com/pocketbase/pocketbase"
 )
@@ -36,11 +37,13 @@ func (jm *JobManager) Initialize(app *pocketbase.PocketBase) error {
 	defer jm.mu.Unlock()
 
 	if jm.initialized {
-		app.Logger().Debug("Job manager already initialized, skipping")
+		logger := logger.GetLogger(app)
+		logger.Debug("Job manager already initialized, skipping")
 		return nil
 	}
 
-	app.Logger().Info("Initializing job manager and processors")
+	logger := logger.GetLogger(app)
+	logger.Info("Initializing job manager and processors")
 
 	// Create the job processor
 	jm.processor = jobutils.NewJobProcessor(app)
@@ -51,7 +54,7 @@ func (jm *JobManager) Initialize(app *pocketbase.PocketBase) error {
 	}
 
 	jm.initialized = true
-	app.Logger().Info("Job manager initialization completed - ready for job processing")
+	logger.Info("Job manager initialization completed - ready for job processing")
 
 	return nil
 }

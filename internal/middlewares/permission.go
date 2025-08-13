@@ -2,7 +2,7 @@ package middlewares
 
 import (
 	"ims-pocketbase-baas-starter/pkg/cache"
-	"log"
+	"ims-pocketbase-baas-starter/pkg/logger"
 	"time"
 
 	"github.com/pocketbase/pocketbase/apis"
@@ -66,7 +66,7 @@ func (m *PermissionMiddleware) fetchUserPermissions(app core.App, user *core.Rec
 	if len(roles) > 0 {
 		roleRecords, err := app.FindRecordsByIds(RolesCollection, roles)
 		if err != nil {
-			log.Printf("Error fetching roles: %v", err)
+			logger.FromAppOrDefault(app).Error("Error fetching roles", "error", err)
 		} else {
 			// Collect permissions from all roles
 			for _, role := range roleRecords {
@@ -97,7 +97,7 @@ func (m *PermissionMiddleware) fetchUserPermissions(app core.App, user *core.Rec
 
 	permissionsRecords, err := app.FindRecordsByIds(PermissionsCollection, permissionIDs)
 	if err != nil {
-		log.Printf("Error fetching permissions: %v", err)
+		logger.FromAppOrDefault(app).Error("Error fetching permissions", "error", err)
 		return []string{}
 	}
 

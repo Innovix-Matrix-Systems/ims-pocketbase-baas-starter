@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"ims-pocketbase-baas-starter/pkg/common"
 	"ims-pocketbase-baas-starter/pkg/cronutils"
+	"ims-pocketbase-baas-starter/pkg/logger"
 	"sync"
 	"time"
 
@@ -222,7 +223,8 @@ func (p *JobProcessor) reserveJob(record *core.Record) error {
 		return fmt.Errorf("failed to reserve job %s: %w", record.Id, err)
 	}
 
-	p.app.Logger().Debug("Job reserved", "job_id", record.Id, "reserved_at", now)
+	log := logger.GetLogger(p.app)
+	log.Debug("Job reserved", "job_id", record.Id, "reserved_at", now)
 	return nil
 }
 
@@ -232,7 +234,8 @@ func (p *JobProcessor) completeJob(record *core.Record) error {
 		return fmt.Errorf("failed to delete completed job %s: %w", record.Id, err)
 	}
 
-	p.app.Logger().Info("Job completed and removed from queue",
+	log := logger.GetLogger(p.app)
+	log.Info("Job completed and removed from queue",
 		"job_id", record.Id,
 		"job_name", record.GetString("name"))
 	return nil
@@ -247,14 +250,15 @@ func (p *JobProcessor) failJob(record *core.Record, jobErr error) error {
 	record.Set("attempts", newAttempts)
 	record.Set("reserved_at", "")
 
+	log := logger.GetLogger(p.app)
 	if err := p.app.Save(record); err != nil {
-		p.app.Logger().Error("Failed to update failed job record",
+		log.Error("Failed to update failed job record",
 			"job_id", record.Id,
 			"error", err)
 		return fmt.Errorf("failed to update failed job %s: %w", record.Id, err)
 	}
 
-	p.app.Logger().Error("Job failed",
+	log.Error("Job failed",
 		"job_id", record.Id,
 		"job_name", record.GetString("name"),
 		"attempts", newAttempts,
@@ -374,14 +378,15 @@ func (p *JobProcessor) processJobsConcurrentlyFallback(records []*core.Record, m
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			p.app.Logger().Debug("Job worker started", "worker_id", workerID)
+			log := logger.GetLogger(p.app)
+			log.Debug("Job worker started", "worker_id", workerID)
 
 			for record := range jobChan {
 				err := p.ProcessJob(record)
 				errorChan <- err // Send error (or nil) to error channel
 			}
 
-			p.app.Logger().Debug("Job worker finished", "worker_id", workerID)
+			log.Debug("Job worker finished", "worker_id", workerID)
 		}(i)
 	}
 
@@ -414,7 +419,8 @@ func (p *JobProcessor) processJobsConcurrentlyFallback(records []*core.Record, m
 		}
 	}
 
-	p.app.Logger().Info("Concurrent job processing completed",
+	log := logger.GetLogger(p.app)
+	log.Info("Concurrent job processing completed",
 		"total_jobs", len(records),
 		"successful", successCount,
 		"failed", failureCount,

@@ -2,7 +2,6 @@ package swagger
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -79,7 +78,8 @@ func (sg *SchemaGenerator) GenerateCollectionSchema(collection CollectionInfo) (
 	for _, field := range collection.Fields {
 		fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
 		if err != nil {
-			log.Printf("Warning: Failed to map field %s in collection %s: %v", field.Name, collection.Name, err)
+			// If we can't access the app instance, we'll just comment out the log for now
+			// log.Printf("Warning: Failed to map field %s in collection %s: %v", field.Name, collection.Name, err)
 			// Use fallback schema
 			fieldSchema = sg.fieldMapper.GetFallbackSchema(field.Type)
 		}
@@ -105,7 +105,8 @@ func (sg *SchemaGenerator) GenerateCollectionSchemas(collections []CollectionInf
 	for _, collection := range collections {
 		schema, err := sg.GenerateCollectionSchema(collection)
 		if err != nil {
-			log.Printf("Warning: Failed to generate schema for collection %s: %v", collection.Name, err)
+			// If we can't access the app instance, we'll just comment out the log for now
+			// log.Printf("Warning: Failed to generate schema for collection %s: %v", collection.Name, err)
 			continue
 		}
 		schemas[collection.Name] = schema
@@ -141,7 +142,8 @@ func (sg *SchemaGenerator) GenerateCreateSchema(collection CollectionInfo) (*Col
 
 		fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
 		if err != nil {
-			log.Printf("Warning: Failed to map field %s in collection %s: %v", field.Name, collection.Name, err)
+			// If we can't access the app instance, we'll just comment out the log for now
+			// log.Printf("Warning: Failed to map field %s in collection %s: %v", field.Name, collection.Name, err)
 			fieldSchema = sg.fieldMapper.GetFallbackSchema(field.Type)
 		}
 
@@ -171,7 +173,8 @@ func (sg *SchemaGenerator) GenerateCreateSchema(collection CollectionInfo) (*Col
 			if field.Type == "email" && field.Name == "email" {
 				fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
 				if err != nil {
-					log.Printf("Warning: Failed to map email field: %v", err)
+					// If we can't access the app instance, we'll just comment out the log for now
+					// log.Printf("Warning: Failed to map email field: %v", err)
 					fieldSchema = &FieldSchema{
 						Type:        "string",
 						Format:      "email",
@@ -225,7 +228,8 @@ func (sg *SchemaGenerator) GenerateUpdateSchema(collection CollectionInfo) (*Col
 
 		fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
 		if err != nil {
-			log.Printf("Warning: Failed to map field %s in collection %s: %v", field.Name, collection.Name, err)
+			// If we can't access the app instance, we'll just comment out the log for now
+			// log.Printf("Warning: Failed to map field %s in collection %s: %v", field.Name, collection.Name, err)
 			fieldSchema = sg.fieldMapper.GetFallbackSchema(field.Type)
 		}
 
@@ -240,7 +244,8 @@ func (sg *SchemaGenerator) GenerateUpdateSchema(collection CollectionInfo) (*Col
 			if field.Type == "email" && field.Name == "email" {
 				fieldSchema, err := sg.fieldMapper.MapFieldToSchema(field)
 				if err != nil {
-					log.Printf("Warning: Failed to map email field: %v", err)
+					// If we can't access the app instance, we'll just comment out the log for now
+					// log.Printf("Warning: Failed to map email field: %v", err)
 					fieldSchema = &FieldSchema{
 						Type:        "string",
 						Format:      "email",

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"ims-pocketbase-baas-starter/pkg/common"
+	"ims-pocketbase-baas-starter/pkg/logger"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -27,7 +28,8 @@ func SaveExportedJobFiles(app *pocketbase.PocketBase, jobId, filename string, fi
 	expirationDays := common.GetEnvInt("EXPORT_FILE_EXPIRATION_DAYS", 30)
 	expirationDate := time.Now().AddDate(0, 0, expirationDays)
 
-	app.Logger().Debug("Setting export file expiration",
+	log := logger.GetLogger(app)
+	log.Debug("Setting export file expiration",
 		"job_id", jobId,
 		"expiration_days", expirationDays,
 		"expires_at", expirationDate.Format(time.RFC3339))

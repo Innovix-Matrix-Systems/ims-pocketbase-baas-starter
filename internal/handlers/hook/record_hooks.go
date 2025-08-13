@@ -3,17 +3,21 @@ package hook
 import (
 	"fmt"
 
+	"ims-pocketbase-baas-starter/pkg/logger"
+
 	"github.com/pocketbase/pocketbase/core"
 )
 
 // HandleRecordCreate handles record creation events
 func HandleRecordCreate(e *core.RecordEvent) error {
 	// Log the record creation
-	e.App.Logger().Info("Record created",
-		"collection", e.Record.Collection().Name,
-		"id", e.Record.Id,
-		"created", e.Record.GetDateTime("created"),
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Info("Record created",
+			"collection", e.Record.Collection().Name,
+			"id", e.Record.Id,
+			"created", e.Record.GetDateTime("created"),
+		)
+	}
 
 	// Add your custom logic here
 	// For example: send notifications, update related records, etc.
@@ -25,11 +29,13 @@ func HandleRecordCreate(e *core.RecordEvent) error {
 // HandleRecordUpdate handles record update events
 func HandleRecordUpdate(e *core.RecordEvent) error {
 	// Log the record update
-	e.App.Logger().Info("Record updated",
-		"collection", e.Record.Collection().Name,
-		"id", e.Record.Id,
-		"updated", e.Record.GetDateTime("updated"),
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Info("Record updated",
+			"collection", e.Record.Collection().Name,
+			"id", e.Record.Id,
+			"updated", e.Record.GetDateTime("updated"),
+		)
+	}
 
 	// Add your custom logic here
 	// For example: track changes, send notifications, etc.
@@ -41,10 +47,12 @@ func HandleRecordUpdate(e *core.RecordEvent) error {
 // HandleRecordDelete handles record deletion events
 func HandleRecordDelete(e *core.RecordEvent) error {
 	// Log the record deletion
-	e.App.Logger().Info("Record deleted",
-		"collection", e.Record.Collection().Name,
-		"id", e.Record.Id,
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Info("Record deleted",
+			"collection", e.Record.Collection().Name,
+			"id", e.Record.Id,
+		)
+	}
 
 	// Add your custom logic here
 	// For example: cleanup related data, send notifications, etc.
@@ -56,10 +64,12 @@ func HandleRecordDelete(e *core.RecordEvent) error {
 // HandleRecordAfterCreateSuccess handles successful record creation
 func HandleRecordAfterCreateSuccess(e *core.RecordEvent) error {
 	// This hook is triggered after the record is successfully persisted
-	e.App.Logger().Debug("Record successfully persisted",
-		"collection", e.Record.Collection().Name,
-		"id", e.Record.Id,
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Debug("Record successfully persisted",
+			"collection", e.Record.Collection().Name,
+			"id", e.Record.Id,
+		)
+	}
 
 	// Add post-creation logic here
 	// For example: send confirmation emails, trigger webhooks, etc.
@@ -70,10 +80,12 @@ func HandleRecordAfterCreateSuccess(e *core.RecordEvent) error {
 // HandleRecordAfterCreateError handles failed record creation
 func HandleRecordAfterCreateError(e *core.RecordEvent) error {
 	// This hook is triggered when record creation fails
-	e.App.Logger().Error("Record creation failed",
-		"collection", e.Record.Collection().Name,
-		"error", fmt.Sprintf("%v", e),
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Error("Record creation failed",
+			"collection", e.Record.Collection().Name,
+			"error", fmt.Sprintf("%v", e),
+		)
+	}
 
 	// Add error handling logic here
 	// For example: cleanup, notifications, etc.
@@ -84,10 +96,12 @@ func HandleRecordAfterCreateError(e *core.RecordEvent) error {
 // HandleUserCreate handles user-specific record creation
 func HandleUserCreate(e *core.RecordEvent) error {
 	// This is an example of collection-specific hook
-	e.App.Logger().Info("New user created",
-		"user_id", e.Record.Id,
-		"email", e.Record.GetString("email"),
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Info("New user created",
+			"user_id", e.Record.Id,
+			"email", e.Record.GetString("email"),
+		)
+	}
 
 	// Add user-specific logic here
 	// For example: send welcome email, create user profile, etc.
@@ -97,15 +111,19 @@ func HandleUserCreate(e *core.RecordEvent) error {
 
 // HandleUserCreateSettings generate default user settings
 func HandleUserCreateSettings(e *core.RecordEvent) error {
-	e.App.Logger().Info("Creating default settings for new user",
-		"user_id", e.Record.Id,
-		"email", e.Record.GetString("email"),
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Info("Creating default settings for new user",
+			"user_id", e.Record.Id,
+			"email", e.Record.GetString("email"),
+		)
+	}
 
 	// Find the user_settings collection
 	userSettingsCollection, err := e.App.FindCollectionByNameOrId("user_settings")
 	if err != nil {
-		e.App.Logger().Error("user_settings collection not found", "error", err)
+		if log := logger.FromApp(e.App); log != nil {
+			log.Error("user_settings collection not found", "error", err)
+		}
 		// Continue without failing if settings collection doesn't exist
 		return e.Next()
 	}
@@ -126,9 +144,11 @@ func HandleUserCreateSettings(e *core.RecordEvent) error {
 			"slug": defaultSetting.SettingSlug,
 		})
 		if err != nil {
-			e.App.Logger().Warn("Setting not found, skipping",
-				"slug", defaultSetting.SettingSlug,
-				"error", err)
+			if log := logger.FromApp(e.App); log != nil {
+				log.Warn("Setting not found, skipping",
+					"slug", defaultSetting.SettingSlug,
+					"error", err)
+			}
 			continue
 		}
 
@@ -145,22 +165,28 @@ func HandleUserCreateSettings(e *core.RecordEvent) error {
 
 		// Save the user setting record
 		if err := e.App.Save(userSettingRecord); err != nil {
-			e.App.Logger().Error("Failed to create user setting",
-				"user_id", e.Record.Id,
-				"setting_slug", defaultSetting.SettingSlug,
-				"error", err)
+			if log := logger.FromApp(e.App); log != nil {
+				log.Error("Failed to create user setting",
+					"user_id", e.Record.Id,
+					"setting_slug", defaultSetting.SettingSlug,
+					"error", err)
+			}
 			continue
 		}
 
-		e.App.Logger().Debug("User setting created",
-			"user_id", e.Record.Id,
-			"setting_slug", defaultSetting.SettingSlug,
-			"value", defaultSetting.Value,
-			"user_setting_id", userSettingRecord.Id)
+		if log := logger.FromApp(e.App); log != nil {
+			log.Debug("User setting created",
+				"user_id", e.Record.Id,
+				"setting_slug", defaultSetting.SettingSlug,
+				"value", defaultSetting.Value,
+				"user_setting_id", userSettingRecord.Id)
+		}
 	}
 
-	e.App.Logger().Info("Default user settings creation completed",
-		"user_id", e.Record.Id)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Info("Default user settings creation completed",
+			"user_id", e.Record.Id)
+	}
 
 	return e.Next()
 }

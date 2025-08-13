@@ -3,7 +3,7 @@ package swagger
 import (
 	"fmt"
 	"ims-pocketbase-baas-starter/pkg/common"
-	"log"
+	"ims-pocketbase-baas-starter/pkg/logger"
 	"slices"
 	"strings"
 
@@ -127,28 +127,28 @@ func NewGenerator(app *pocketbase.PocketBase, config Config) *Generator {
 
 // GenerateSpec generates the unified OpenAPI specification
 func (g *Generator) GenerateSpec() (*CombinedOpenAPISpec, error) {
-	log.Printf("Starting OpenAPI specification generation...")
+	logger.FromAppOrDefault(g.app).Info("Starting OpenAPI specification generation...")
 
 	// Step 1: Discover collections
 	collections, err := g.discovery.DiscoverCollections()
 	if err != nil {
 		return nil, fmt.Errorf("failed to discover collections: %w", err)
 	}
-	log.Printf("Discovered %d collections", len(collections))
+	logger.FromAppOrDefault(g.app).Info("Discovered collections", "count", len(collections))
 
 	// Step 2: Generate schemas for all collections
 	schemas, err := g.generateAllSchemas(collections)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate schemas: %w", err)
 	}
-	log.Printf("Generated %d schemas", len(schemas))
+	logger.FromAppOrDefault(g.app).Info("Generated schemas", "count", len(schemas))
 
 	// Step 3: Generate all routes
 	routes, err := g.routeGen.GetAllRoutes(collections)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate routes: %w", err)
 	}
-	log.Printf("Generated %d routes", len(routes))
+	logger.FromAppOrDefault(g.app).Info("Generated routes", "count", len(routes))
 
 	// Build specification
 	spec := &CombinedOpenAPISpec{
@@ -169,7 +169,7 @@ func (g *Generator) GenerateSpec() (*CombinedOpenAPISpec, error) {
 		Tags:       g.buildTags(collections, routes),
 	}
 
-	log.Printf("OpenAPI specification generated successfully")
+	logger.FromAppOrDefault(g.app).Info("OpenAPI specification generated successfully")
 	return spec, nil
 }
 
@@ -197,7 +197,7 @@ func (g *Generator) generateAllSchemas(collections []CollectionInfo) (map[string
 		// Generate main collection schema
 		schema, err := g.schemaGen.GenerateCollectionSchema(collection)
 		if err != nil {
-			log.Printf("Warning: Failed to generate schema for collection %s: %v", collection.Name, err)
+			logger.FromAppOrDefault(g.app).Warn("Failed to generate schema for collection", "collection", collection.Name, "error", err)
 			continue
 		}
 		allSchemas[g.schemaGen.GetSchemaName(collection)] = schema
@@ -205,7 +205,7 @@ func (g *Generator) generateAllSchemas(collections []CollectionInfo) (map[string
 		// Generate create schema
 		createSchema, err := g.schemaGen.GenerateCreateSchema(collection)
 		if err != nil {
-			log.Printf("Warning: Failed to generate create schema for collection %s: %v", collection.Name, err)
+			logger.FromAppOrDefault(g.app).Warn("Failed to generate create schema for collection", "collection", collection.Name, "error", err)
 		} else {
 			allSchemas[g.schemaGen.GetCreateSchemaName(collection)] = createSchema
 		}
@@ -213,7 +213,7 @@ func (g *Generator) generateAllSchemas(collections []CollectionInfo) (map[string
 		// Generate update schema
 		updateSchema, err := g.schemaGen.GenerateUpdateSchema(collection)
 		if err != nil {
-			log.Printf("Warning: Failed to generate update schema for collection %s: %v", collection.Name, err)
+			logger.FromAppOrDefault(g.app).Warn("Failed to generate update schema for collection", "collection", collection.Name, "error", err)
 		} else {
 			allSchemas[g.schemaGen.GetUpdateSchemaName(collection)] = updateSchema
 		}
@@ -221,7 +221,7 @@ func (g *Generator) generateAllSchemas(collections []CollectionInfo) (map[string
 		// Generate list response schema
 		listResponseSchema, err := g.schemaGen.GenerateListResponseSchema(collection)
 		if err != nil {
-			log.Printf("Warning: Failed to generate list response schema for collection %s: %v", collection.Name, err)
+			logger.FromAppOrDefault(g.app).Warn("Failed to generate list response schema for collection", "collection", collection.Name, "error", err)
 		} else {
 			allSchemas[g.schemaGen.GetListResponseSchemaName(collection)] = listResponseSchema
 		}

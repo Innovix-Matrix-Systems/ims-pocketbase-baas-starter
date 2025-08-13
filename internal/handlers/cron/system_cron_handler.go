@@ -7,6 +7,7 @@ import (
 	"ims-pocketbase-baas-starter/internal/jobs"
 	"ims-pocketbase-baas-starter/pkg/common"
 	"ims-pocketbase-baas-starter/pkg/cronutils"
+	"ims-pocketbase-baas-starter/pkg/logger"
 
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
@@ -66,7 +67,8 @@ func HandleSystemQueue(app *pocketbase.PocketBase) {
 			}
 		}
 
-		app.Logger().Info("Job processing batch completed",
+		logger := logger.GetLogger(app)
+		logger.Info("Job processing batch completed",
 			"total_jobs", len(queues),
 			"successful", successCount,
 			"failed", failureCount,

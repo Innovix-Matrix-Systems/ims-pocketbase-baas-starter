@@ -6,6 +6,7 @@ import (
 
 	"ims-pocketbase-baas-starter/pkg/cronutils"
 	"ims-pocketbase-baas-starter/pkg/jobutils"
+	"ims-pocketbase-baas-starter/pkg/logger"
 	"ims-pocketbase-baas-starter/pkg/metrics"
 
 	"github.com/pocketbase/pocketbase"
@@ -44,7 +45,8 @@ func (h *EmailJobHandler) Handle(ctx *cronutils.CronExecutionContext, job *jobut
 		}
 
 		// Log email processing details
-		h.app.Logger().Info("Processing email job",
+		logger := logger.GetLogger(h.app)
+		logger.Info("Processing email job",
 			"job_id", job.ID,
 			"to", emailPayload.Data.To,
 			"subject", emailPayload.Data.Subject,
@@ -115,9 +117,8 @@ func (h *EmailJobHandler) processTemplateVariables(text string, variables map[st
 	// 3. Handle missing variables gracefully
 
 	// For now, just log the variables that would be processed
-	h.app.Logger().Debug("Template variables available for processing",
-		"text", text,
-		"variables", variables)
+	logger := logger.GetLogger(h.app)
+	logger.Debug("Template variables available for processing")
 
 	return text // Return unchanged for placeholder
 }

@@ -4,6 +4,8 @@ import (
 	"net/mail"
 	"strings"
 
+	"ims-pocketbase-baas-starter/pkg/logger"
+
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -19,11 +21,13 @@ func addressesToStrings(addresses []mail.Address) []string {
 // HandleMailerSend handles email send events
 func HandleMailerSend(e *core.MailerEvent) error {
 	// Log the email send attempt
-	e.App.Logger().Info("Email being sent",
-		"to", strings.Join(addressesToStrings(e.Message.To), ", "),
-		"subject", e.Message.Subject,
-		"from", e.Message.From.String(),
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Info("Email being sent",
+			"to", strings.Join(addressesToStrings(e.Message.To), ", "),
+			"subject", e.Message.Subject,
+			"from", e.Message.From.String(),
+		)
+	}
 
 	// Add your custom logic here
 	// For example: email tracking, custom headers, content modification, etc.
@@ -42,10 +46,12 @@ func HandleMailerSend(e *core.MailerEvent) error {
 // HandleMailerBeforeSend handles pre-send email events
 func HandleMailerBeforeSend(e *core.MailerEvent) error {
 	// This would be called before the email is actually sent
-	e.App.Logger().Debug("Preparing to send email",
-		"to", strings.Join(addressesToStrings(e.Message.To), ", "),
-		"subject", e.Message.Subject,
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Debug("Preparing to send email",
+			"to", strings.Join(addressesToStrings(e.Message.To), ", "),
+			"subject", e.Message.Subject,
+		)
+	}
 
 	// Add pre-send logic here
 	// For example: spam filtering, content validation, etc.
@@ -56,10 +62,12 @@ func HandleMailerBeforeSend(e *core.MailerEvent) error {
 // HandleMailerAfterSend handles post-send email events
 func HandleMailerAfterSend(e *core.MailerEvent) error {
 	// This would be called after the email is sent
-	e.App.Logger().Info("Email sent successfully",
-		"to", strings.Join(addressesToStrings(e.Message.To), ", "),
-		"subject", e.Message.Subject,
-	)
+	if log := logger.FromApp(e.App); log != nil {
+		log.Info("Email sent successfully",
+			"to", strings.Join(addressesToStrings(e.Message.To), ", "),
+			"subject", e.Message.Subject,
+		)
+	}
 
 	// Add post-send logic here
 	// For example: delivery tracking, analytics, etc.

@@ -20,6 +20,7 @@ import (
 	"ims-pocketbase-baas-starter/internal/routes"
 	"ims-pocketbase-baas-starter/internal/swagger"
 	"ims-pocketbase-baas-starter/pkg/common"
+	"ims-pocketbase-baas-starter/pkg/logger"
 	"ims-pocketbase-baas-starter/pkg/metrics"
 )
 
@@ -38,29 +39,35 @@ func NewApp() *pocketbase.PocketBase {
 	// Initialize metrics provider early in startup sequence
 	// This must be called before hooks and middleware registration
 	metricsProvider := metrics.GetInstance()
-	app.Logger().Info("Metrics provider initialized", "provider", metricsProvider != nil)
+
+	// Initialize our logger
+	logger := logger.GetLogger(app)
+	logger.Info("Metrics provider initialized", "provider", metricsProvider != nil)
 
 	// Initialize job manager and processors during app startup
 	// This must be called after app creation but before OnServe setup
 	jobManager := jobs.GetJobManager()
 	if err := jobManager.Initialize(app); err != nil {
+		logger.Error("Failed to initialize job manager", "error", err)
 		log.Fatalf("Failed to initialize job manager: %v", err)
 	}
 
 	// Register scheduled cron jobs during app initialization phase
 	// This must be called after job manager initialization
+	logger.Info("Registering scheduled cron jobs")
 	crons.RegisterCrons(app)
 
 	// Register custom event hooks
 	// This should be called after job manager and crons initialization
+	logger.Info("Registering custom event hooks")
 	hooks.RegisterHooks(app)
 
 	// Register shutdown hook for metrics provider cleanup
 	app.OnTerminate().BindFunc(func(te *core.TerminateEvent) error {
 		if metricsProvider != nil {
-			app.Logger().Info("Shutting down metrics provider")
+			logger.Info("Shutting down metrics provider")
 			if err := metricsProvider.Shutdown(context.Background()); err != nil {
-				app.Logger().Error("Failed to shutdown metrics provider", "error", err)
+				logger.Error("Failed to shutdown metrics provider", "error", err)
 			}
 		}
 		return te.Next()
@@ -85,7 +92,7 @@ func NewApp() *pocketbase.PocketBase {
 				handler.ServeHTTP(e.Response, e.Request)
 				return nil
 			})
-			app.Logger().Info("Metrics endpoint registered", "path", "/metrics")
+			logger.Info("Metrics endpoint registered", "path", "/metrics")
 		}
 
 		// Apply auth to specific PocketBase API endpoints

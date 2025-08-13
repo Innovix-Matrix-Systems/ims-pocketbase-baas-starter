@@ -5,6 +5,7 @@ import (
 
 	"ims-pocketbase-baas-starter/internal/handlers/cron"
 	"ims-pocketbase-baas-starter/pkg/cronutils"
+	"ims-pocketbase-baas-starter/pkg/logger"
 
 	"github.com/pocketbase/pocketbase"
 )
@@ -25,7 +26,8 @@ func RegisterCrons(app *pocketbase.PocketBase) {
 		panic("RegisterCrons: app cannot be nil")
 	}
 
-	app.Logger().Info("Starting cron job registration process")
+	log := logger.GetLogger(app)
+	log.Info("Starting cron job registration process")
 
 	// Define all cron jobs
 	crons := []Cron{
@@ -45,32 +47,30 @@ func RegisterCrons(app *pocketbase.PocketBase) {
 		},
 	}
 
-	app.Logger().Info("Registering cron jobs", "total_cron_jobs", len(crons))
+	log.Info("Registering cron jobs", "total_cron_jobs", len(crons))
 
 	// Register enabled cron jobs with PocketBase cron scheduler
-	registeredCount := 0
-	for _, cron := range crons {
-		if cron.Enabled {
-			// Validate cron expression before registration
-			if err := cronutils.ValidateCronExpression(cron.CronExpr); err != nil {
-				app.Logger().Error("Invalid cron expression for cron job", "cron_id", cron.ID, "cron", cron.CronExpr, "error", err)
-				continue
-			}
-
-			app.Cron().MustAdd(cron.ID, cron.CronExpr, cron.Handler)
-			app.Logger().Info("Registered cron job",
-				"id", cron.ID,
-				"schedule", cron.CronExpr,
-				"description", cron.Description)
-			registeredCount++
-		} else {
-			app.Logger().Info("Skipped disabled cron job",
-				"id", cron.ID,
-				"description", cron.Description)
+	for _, cronJob := range crons {
+		if !cronJob.Enabled {
+			log.Info("Skipped disabled cron job", "cron_id", cronJob.ID, "description", cronJob.Description)
+			continue
 		}
+
+		// Validate cron expression before registering
+		if err := cronutils.ValidateCronExpression(cronJob.CronExpr); err != nil {
+			log.Error("Invalid cron expression for cron job", "cron_id", cronJob.ID, "cron", cronJob.CronExpr, "error", err)
+			continue
+		}
+
+		// Register the cron job with PocketBase scheduler
+		app.Cron().MustAdd(cronJob.ID, cronJob.CronExpr, cronJob.Handler)
+
+		log.Info("Registered cron job",
+			"cron_id", cronJob.ID,
+			"cron_expr", cronJob.CronExpr,
+			"description", cronJob.Description,
+		)
 	}
 
-	app.Logger().Info("Cron job registration completed",
-		"registered", registeredCount,
-		"total", len(crons))
+	log.Info("Cron job registration completed", "enabled_cron_jobs", len(crons))
 }

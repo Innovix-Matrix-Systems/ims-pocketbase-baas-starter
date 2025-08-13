@@ -2,7 +2,6 @@ package swagger
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 
@@ -102,7 +101,8 @@ func (fsm *FieldSchemaMapper) MapFieldToSchema(field FieldInfo) (*FieldSchema, e
 	case "password":
 		fsm.mapPasswordField(field, schema)
 	default:
-		log.Printf("Warning: Unknown field type '%s' for field '%s', using fallback", field.Type, field.Name)
+		// If we can't access the app instance, we'll just comment out the log for now
+		// log.Printf("Warning: Unknown field type '%s' for field '%s', using fallback", field.Type, field.Name)
 		fsm.mapUnknownField(field, schema)
 	}
 
@@ -404,7 +404,8 @@ func (fsm *FieldSchemaMapper) addRelationFieldExample(field FieldInfo, schema *F
 		schema.Example = []any{"RELATION_RECORD_ID"}
 	default:
 		// Fallback to generic example for unexpected schema types
-		log.Printf("Warning: Unexpected schema type %s for relation field %s, using fallback", schema.Type, field.Name)
+		// If we can't access the app instance, we'll just comment out the log for now
+		// log.Printf("Warning: Unexpected schema type %s for relation field %s, using fallback", schema.Type, field.Name)
 		fsm.addGenericFieldExample(field, schema)
 	}
 }

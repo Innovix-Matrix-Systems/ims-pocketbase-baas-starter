@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"ims-pocketbase-baas-starter/pkg/jobutils"
+	applogger "ims-pocketbase-baas-starter/pkg/logger"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -19,52 +20,49 @@ func HandleUserExport(app *pocketbase.PocketBase, jobId string, payload *jobutil
 	// Record start time for timeout checking
 	startTime := time.Now()
 
+	// Get logger instance
+	logger := applogger.GetLogger(app)
+
 	// Fetch all users from the database
 	users, err := fetchAllUsers(app)
 	if err != nil {
-		app.Logger().Error("Failed to fetch users", "job_id", jobId, "error", err)
+		logger.Error("Failed to fetch users", "job_id", jobId, "error", err)
 		return fmt.Errorf("failed to fetch users: %w", err)
 	}
 
-	app.Logger().Info("Fetched users for export", "job_id", jobId, "user_count", len(users))
+	logger.Info("Fetched users for export", "job_id", jobId, "user_count", len(users))
 
 	// Check if we have users to export
 	if len(users) == 0 {
-		app.Logger().Warn("No users found to export", "job_id", jobId)
+		logger.Warn("No users found to export", "job_id", jobId)
 		return fmt.Errorf("no users found to export")
 	}
 
 	// Check timeout before CSV conversion
 	if payload.Options.Timeout > 0 && time.Since(startTime).Seconds() > float64(payload.Options.Timeout) {
-		app.Logger().Warn("User export timeout during CSV conversion", "job_id", jobId, "elapsed", time.Since(startTime))
+		logger.Warn("User export timeout during CSV conversion", "job_id", jobId, "elapsed", time.Since(startTime))
 		return fmt.Errorf("export operation timed out")
 	}
 
 	// Convert users to CSV
 	csvData, err := convertUsersToCSV(app, users)
 	if err != nil {
-		app.Logger().Error("Failed to convert users to CSV", "job_id", jobId, "error", err)
+		logger.Error("Failed to convert users to CSV", "job_id", jobId, "error", err)
 		return fmt.Errorf("failed to convert users to CSV: %w", err)
 	}
 
 	// Generate filename with timestamp
 	filename := fmt.Sprintf("users_export_%s.csv", time.Now().Format("20060102_150405"))
 
-	app.Logger().Info("Generated CSV data", "job_id", jobId, "filename", filename, "file_size", len(csvData))
+	logger.Info("Generated CSV data", "job_id", jobId, "filename", filename, "file_size", len(csvData))
 
-	// Save to export_files collection
-	exportRecord, err := jobutils.SaveExportedJobFiles(app, jobId, filename, csvData, len(users))
-	if err != nil {
-		app.Logger().Error("Failed to save export file", "job_id", jobId, "error", err)
+	// Save the export file
+	if _, err := jobutils.SaveExportedJobFiles(app, jobId, filename, csvData, len(users)); err != nil {
+		logger.Error("Failed to save export file", "job_id", jobId, "error", err)
 		return fmt.Errorf("failed to save export file: %w", err)
 	}
 
-	app.Logger().Info("User export completed successfully",
-		"job_id", jobId,
-		"export_record_id", exportRecord.Id,
-		"filename", filename,
-		"user_count", len(users),
-		"file_size", len(csvData))
+	logger.Info("User export completed successfully", "job_id", jobId, "filename", filename, "user_count", len(users))
 
 	return nil
 }

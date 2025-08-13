@@ -3,7 +3,7 @@ package swagger
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"ims-pocketbase-baas-starter/pkg/logger"
 	"strings"
 
 	"github.com/pocketbase/pocketbase"
@@ -99,16 +99,20 @@ func (cd *CollectionDiscovery) DiscoverCollections() ([]CollectionInfo, error) {
 		// Extract collection metadata from PocketBase collection
 		collectionInfo, err := cd.extractCollectionInfoFromPB(collection)
 		if err != nil {
-			log.Printf("Warning: Failed to extract metadata for collection %s: %v", collection.Name, err)
+			logger.FromAppOrDefault(cd.app).Warn("Failed to extract metadata for collection", "collection", collection.Name, "error", err)
 			continue
 		}
 
 		collectionInfos = append(collectionInfos, *collectionInfo)
 	}
 
-	log.Printf("Discovered %d collections, skipped %d collections", len(collectionInfos), len(skippedCollections))
+	logger.FromAppOrDefault(cd.app).Info("Discovered collections",
+		"count", len(collectionInfos),
+		"skipped", len(skippedCollections))
+
 	if len(skippedCollections) > 0 {
-		log.Printf("Skipped collections: %s", strings.Join(skippedCollections, ", "))
+		logger.FromAppOrDefault(cd.app).Debug("Skipped collections",
+			"collections", strings.Join(skippedCollections, ", "))
 	}
 
 	return collectionInfos, nil
@@ -196,7 +200,7 @@ func (cd *CollectionDiscovery) extractCollectionInfo(dbCol databaseCollection) (
 	if dbCol.Schema != "" {
 		fields, err := cd.parseSchemaFields(dbCol.Schema)
 		if err != nil {
-			log.Printf("Warning: Failed to parse schema for collection %s: %v", dbCol.Name, err)
+			logger.FromAppOrDefault(cd.app).Warn("Failed to parse schema for collection", "collection", dbCol.Name, "error", err)
 		} else {
 			collectionInfo.Fields = fields
 		}
@@ -206,7 +210,7 @@ func (cd *CollectionDiscovery) extractCollectionInfo(dbCol databaseCollection) (
 	if dbCol.Options != "" {
 		options, err := cd.parseOptionsJSON(dbCol.Options)
 		if err != nil {
-			log.Printf("Warning: Failed to parse options for collection %s: %v", dbCol.Name, err)
+			logger.FromAppOrDefault(cd.app).Warn("Failed to parse options for collection", "collection", dbCol.Name, "error", err)
 		} else {
 			collectionInfo.Options = options
 		}
@@ -231,7 +235,7 @@ func (cd *CollectionDiscovery) parseSchemaFields(schemaJSON string) ([]FieldInfo
 	for _, fieldData := range schemaData {
 		field, err := cd.parseFieldInfo(fieldData)
 		if err != nil {
-			log.Printf("Warning: Failed to parse field %v: %v", fieldData, err)
+			logger.FromAppOrDefault(cd.app).Warn("Failed to parse field", "fieldData", fieldData, "error", err)
 			continue
 		}
 		fields = append(fields, *field)
@@ -363,7 +367,7 @@ func (cd *CollectionDiscovery) ValidateCollectionAccess() error {
 		return fmt.Errorf("failed to access collections table: %w", err)
 	}
 
-	log.Printf("Collection access validated: found %d total collections", count)
+	logger.FromAppOrDefault(cd.app).Info("Collection access validated", "count", count)
 	return nil
 }
 
@@ -425,7 +429,7 @@ func (cd *CollectionDiscovery) GetCollectionStats() (map[string]int, error) {
 func (cd *CollectionDiscovery) RefreshCollectionCache() {
 	// Currently, we don't maintain a cache, but this method is here for future use
 	// In the future, we could implement caching to improve performance
-	log.Printf("Collection cache refresh requested (no-op - caching not implemented)")
+	logger.FromAppOrDefault(cd.app).Debug("Collection cache refresh requested (no-op - caching not implemented)")
 }
 
 // GetSystemFields returns the standard system fields that are present in all collections
