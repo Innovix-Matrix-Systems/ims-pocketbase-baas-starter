@@ -6,6 +6,7 @@ import (
 
 	"ims-pocketbase-baas-starter/pkg/cronutils"
 	"ims-pocketbase-baas-starter/pkg/jobutils"
+	"ims-pocketbase-baas-starter/pkg/metrics"
 
 	"github.com/pocketbase/pocketbase"
 )
@@ -22,60 +23,66 @@ func NewEmailJobHandler(app *pocketbase.PocketBase) *EmailJobHandler {
 	}
 }
 
-// Handle processes an email job using typed payload structures
+// Handle processes an email job using typed payload structures (with metrics instrumentation)
 func (h *EmailJobHandler) Handle(ctx *cronutils.CronExecutionContext, job *jobutils.JobData) error {
 	ctx.LogStart(fmt.Sprintf("Processing email job: %s", job.ID))
 
-	// Parse payload using centralized utility function
-	emailPayload, err := jobutils.ParseEmailJobPayload(job)
-	if err != nil {
-		return fmt.Errorf("failed to parse email job payload: %w", err)
-	}
+	// Get the metrics provider instance
+	metricsProvider := metrics.GetInstance()
 
-	// Additional validation specific to this handler
-	if err := h.validateEmailPayload(emailPayload); err != nil {
-		return fmt.Errorf("invalid email job payload: %w", err)
-	}
+	// Instrument the job handler execution with metrics collection
+	return metrics.InstrumentJobHandler(metricsProvider, "email_job", func() error {
+		// Parse payload using centralized utility function
+		emailPayload, err := jobutils.ParseEmailJobPayload(job)
+		if err != nil {
+			return fmt.Errorf("failed to parse email job payload: %w", err)
+		}
 
-	// Log email processing details
-	h.app.Logger().Info("Processing email job",
-		"job_id", job.ID,
-		"to", emailPayload.Data.To,
-		"subject", emailPayload.Data.Subject,
-		"template", emailPayload.Data.Template,
-		"attempts", job.Attempts,
-		"retry_count", emailPayload.Options.RetryCount)
+		// Additional validation specific to this handler
+		if err := h.validateEmailPayload(emailPayload); err != nil {
+			return fmt.Errorf("invalid email job payload: %w", err)
+		}
 
-	// Process template variables
-	processedSubject := h.processTemplateVariables(emailPayload.Data.Subject, emailPayload.Data.Variables)
-	ctx.LogDebug(processedSubject, "Processed email subject with variables")
+		// Log email processing details
+		h.app.Logger().Info("Processing email job",
+			"job_id", job.ID,
+			"to", emailPayload.Data.To,
+			"subject", emailPayload.Data.Subject,
+			"template", emailPayload.Data.Template,
+			"attempts", job.Attempts,
+			"retry_count", emailPayload.Options.RetryCount)
 
-	// Simulate processing
-	time.Sleep(100 * time.Millisecond)
+		// Process template variables
+		processedSubject := h.processTemplateVariables(emailPayload.Data.Subject, emailPayload.Data.Variables)
+		ctx.LogDebug(processedSubject, "Processed email subject with variables")
 
-	// Create result data
-	result := &jobutils.EmailResult{
-		BaseJobResultData: jobutils.BaseJobResultData{
-			Message:   "Email sent successfully (placeholder)",
-			Timestamp: time.Now(),
-		},
-		MessageId:   fmt.Sprintf("msg_%s_%d", job.ID, time.Now().Unix()),
-		DeliveredAt: func() *time.Time { t := time.Now(); return &t }(),
-		Recipients:  []string{emailPayload.Data.To},
-	}
+		// Simulate processing
+		time.Sleep(100 * time.Millisecond)
 
-	// Log result for debugging
-	ctx.LogDebug(result, "Email job result")
+		// Create result data
+		result := &jobutils.EmailResult{
+			BaseJobResultData: jobutils.BaseJobResultData{
+				Message:   "Email sent successfully (placeholder)",
+				Timestamp: time.Now(),
+			},
+			MessageId:   fmt.Sprintf("msg_%s_%d", job.ID, time.Now().Unix()),
+			DeliveredAt: func() *time.Time { t := time.Now(); return &t }(),
+			Recipients:  []string{emailPayload.Data.To},
+		}
 
-	// Placeholder: In a real implementation, this would:
-	// 1. Load email template
-	// 2. Replace template variables
-	// 3. Send email via SMTP or email service
-	// 4. Handle email sending errors
-	// 5. Store result in job_results table
+		// Log result for debugging
+		ctx.LogDebug(result, "Email job result")
 
-	ctx.LogEnd("Email job processed successfully")
-	return nil
+		// Placeholder: In a real implementation, this would:
+		// 1. Load email template
+		// 2. Replace template variables
+		// 3. Send email via SMTP or email service
+		// 4. Handle email sending errors
+		// 5. Store result in job_results table
+
+		ctx.LogEnd("Email job processed successfully")
+		return nil
+	})
 }
 
 // GetJobType returns the job type this handler processes

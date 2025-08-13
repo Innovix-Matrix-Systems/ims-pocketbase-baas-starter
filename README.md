@@ -11,6 +11,7 @@ A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, en
 - 🪝 **Event Hooks System** - Comprehensive event hook management with organized handlers for records, collections, requests, mailer, and realtime events
 - ⚡ **Go Cache with TTL** - High-performance in-memory caching with Time-To-Live support for improved application performance
 - ⏰ **Cron Jobs & Job Queue** - Scheduled tasks and dynamic job processing with concurrent workers
+- 📈 **Metrics & Observability** - Comprehensive monitoring with Prometheus metrics and OpenTelemetry support for performance tracking and system insights
 - 📧 **Email Integration** - SMTP configuration with MailHog for development
 - 📚 **Auto API Documentation** - Swagger UI, ReDoc, OpenAPI JSON with Postman compatibility
 - 🐳 **Docker Support** - Production and development environments
@@ -74,11 +75,11 @@ A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, en
 | `dev` - Start dev environment            | `build` - Build production image              | `help` - Show all commands               |
 | `dev-build` - Build dev image            | `start` - Start containers                    | `generate-key` - Generate encryption key |
 | `dev-logs` - Show dev logs               | `stop` - Stop containers                      | `setup-env` - Setup environment file     |
-| `dev-clean` - Clean dev env              | `restart` - Restart containers                | `test` - Run tests                       |
-| `dev-data-clean` - Clean dev data        | `down` - Stop and remove containers           | `lint` - Run linter                      |
-| `dev-start` - Alias for dev              | `logs` - Show container logs                  | `format` - Format Go code                |
-| `dev-status` - Show dev container status | `clean` - Remove containers, networks, images | `status` - Show container status         |
-|                                          | `clean-data` - Remove only volumes            | `prod-start` - Alias for start           |
+| `dev-stop` - Stop dev containers         | `restart` - Restart containers                | `test` - Run tests                       |
+| `dev-clean` - Clean dev env              | `down` - Stop and remove containers           | `lint` - Run linter                      |
+| `dev-data-clean` - Clean dev data        | `logs` - Show container logs                  | `format` - Format Go code                |
+| `dev-start` - Alias for dev              | `clean` - Remove containers, networks, images | `status` - Show container status         |
+| `dev-status` - Show dev container status | `clean-data` - Remove only volumes            | `prod-start` - Alias for start           |
 
 ## Environment Configuration
 

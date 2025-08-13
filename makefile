@@ -1,5 +1,5 @@
 # Makefile for IMS PocketBase BaaS Starter
-.PHONY: help build start stop restart down logs clean clean-data dev dev-build dev-logs dev-clean test lint format migrate-gen migrate-gen-build
+.PHONY: help build start stop restart down logs clean clean-data dev dev-build dev-logs dev-stop dev-clean test lint format migrate-gen migrate-gen-build
 
 # Default target
 help:
@@ -17,6 +17,7 @@ help:
 	@echo "  dev          - Start development environment with hot reload"
 	@echo "  dev-build    - Build development image"
 	@echo "  dev-logs     - Show development container logs"
+	@echo "  dev-stop     - Stop development containers"
 	@echo "  dev-clean    - Clean development environment"
 	@echo "  dev-data-clean - Clean development data"
 	@echo ""
@@ -76,6 +77,10 @@ dev-build:
 dev-logs:
 	@echo "Showing development container logs..."
 	docker-compose -f docker-compose.dev.yml logs -f
+
+dev-stop:
+	@echo "Stopping development containers..."
+	docker-compose -f docker-compose.dev.yml stop
 
 dev-clean:
 	@echo "Cleaning development environment..."

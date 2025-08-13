@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"log"
 	"os"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	"ims-pocketbase-baas-starter/internal/routes"
 	"ims-pocketbase-baas-starter/internal/swagger"
 	"ims-pocketbase-baas-starter/pkg/common"
+	"ims-pocketbase-baas-starter/pkg/metrics"
 )
 
 // NewApp creates and configures a new PocketBase app instance
@@ -32,6 +34,11 @@ func NewApp() *pocketbase.PocketBase {
 		Automigrate:  isGoRun, // auto-create migration files only in dev
 		TemplateLang: migratecmd.TemplateLangGo,
 	})
+
+	// Initialize metrics provider early in startup sequence
+	// This must be called before hooks and middleware registration
+	metricsProvider := metrics.GetInstance()
+	app.Logger().Info("Metrics provider initialized", "provider", metricsProvider != nil)
 
 	// Initialize job manager and processors during app startup
 	// This must be called after app creation but before OnServe setup
@@ -48,11 +55,38 @@ func NewApp() *pocketbase.PocketBase {
 	// This should be called after job manager and crons initialization
 	hooks.RegisterHooks(app)
 
+	// Register shutdown hook for metrics provider cleanup
+	app.OnTerminate().BindFunc(func(te *core.TerminateEvent) error {
+		if metricsProvider != nil {
+			app.Logger().Info("Shutting down metrics provider")
+			if err := metricsProvider.Shutdown(context.Background()); err != nil {
+				app.Logger().Error("Failed to shutdown metrics provider", "error", err)
+			}
+		}
+		return te.Next()
+	})
+
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
 		middleware := middlewares.NewAuthMiddleware()
+		metricsMiddleware := middlewares.NewMetricsMiddleware(metricsProvider)
 
 		// Initialize Swagger generator using singleton pattern
 		generator := swagger.InitializeGenerator(app)
+
+		// Register metrics middleware first to capture all requests
+		se.Router.Bind(&hook.Handler[*core.RequestEvent]{
+			Id:   "metricsCollection",
+			Func: metricsMiddleware.RequireMetricsFunc(),
+		})
+
+		// Register Prometheus metrics endpoint if provider supports it
+		if handler := metricsProvider.GetHandler(); handler != nil {
+			se.Router.GET("/metrics", func(e *core.RequestEvent) error {
+				handler.ServeHTTP(e.Response, e.Request)
+				return nil
+			})
+			app.Logger().Info("Metrics endpoint registered", "path", "/metrics")
+		}
 
 		// Apply auth to specific PocketBase API endpoints
 		se.Router.Bind(&hook.Handler[*core.RequestEvent]{

@@ -1,6 +1,7 @@
 package hooks
 
 import (
+	"ims-pocketbase-baas-starter/pkg/metrics"
 	"testing"
 
 	"github.com/pocketbase/pocketbase"
@@ -58,4 +59,28 @@ func TestHookRegistrationFunctions(t *testing.T) {
 			tt.fn(app)
 		})
 	}
+}
+
+func TestHooksWithMetricsInstrumentation(t *testing.T) {
+	app := pocketbase.New()
+
+	// Initialize metrics with no-op provider for testing
+	metrics.InitializeProvider(metrics.Config{
+		Provider: metrics.ProviderDisabled,
+		Enabled:  false,
+	})
+
+	// Test that hooks with metrics instrumentation don't panic during registration
+	defer func() {
+		if r := recover(); r != nil {
+			t.Fatalf("Hooks with metrics instrumentation panicked: %v", r)
+		}
+	}()
+
+	// Test the instrumented hooks specifically
+	registerRecordHooks(app) // Contains user_create_settings instrumentation
+	registerMailerHooks(app) // Contains email operation instrumentation
+
+	// Reset metrics for cleanup
+	metrics.Reset()
 }
