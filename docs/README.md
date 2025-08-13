@@ -61,6 +61,17 @@ Comprehensive guide for the automatic API documentation system:
 - Postman/Insomnia integration and client SDK generation
 - Architecture overview and troubleshooting
 
+### [Docker Metrics Setup Guide](docker-metrics.md)
+
+Complete guide for development environment with integrated metrics monitoring:
+
+- Docker Compose setup with Prometheus and Grafana
+- Metrics collection and visualization configuration
+- Pre-built dashboards for HTTP, hooks, jobs, and business metrics
+- Development workflow with metrics monitoring
+- Troubleshooting metrics collection and visualization
+- Performance monitoring and optimization strategies
+
 ## Quick Links
 
 - **[Project README](../README.md)** - Main project documentation

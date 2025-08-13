@@ -2,6 +2,7 @@ package hooks
 
 import (
 	"ims-pocketbase-baas-starter/internal/handlers/hook"
+	"ims-pocketbase-baas-starter/pkg/metrics"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -71,9 +72,15 @@ func registerRecordHooks(app *pocketbase.PocketBase) {
 	//     return hook.HandleCacheInvalidation(e)
 	// })
 
-	//create user default settings
+	//create user default settings (with metrics instrumentation)
 	app.OnRecordAfterCreateSuccess("users").BindFunc(func(e *core.RecordEvent) error {
-		return hook.HandleUserCreateSettings(e)
+		// Get the metrics provider instance
+		metricsProvider := metrics.GetInstance()
+
+		// Instrument the hook execution with metrics collection
+		return metrics.InstrumentHook(metricsProvider, "user_create_settings", func() error {
+			return hook.HandleUserCreateSettings(e)
+		})
 	})
 
 	app.Logger().Debug("Record hooks registered")
@@ -116,9 +123,15 @@ func registerRequestHooks(app *pocketbase.PocketBase) {
 
 // registerMailerHooks registers all mailer-related event hooks
 func registerMailerHooks(app *pocketbase.PocketBase) {
-	// Example: Log all email sends
+	// Example: Log all email sends (with metrics instrumentation)
 	app.OnMailerSend().BindFunc(func(e *core.MailerEvent) error {
-		return hook.HandleMailerSend(e)
+		// Get the metrics provider instance
+		metricsProvider := metrics.GetInstance()
+
+		// Instrument the email operation with metrics collection
+		return metrics.InstrumentEmailOperation(metricsProvider, func() error {
+			return hook.HandleMailerSend(e)
+		})
 	})
 
 	app.Logger().Debug("Mailer hooks registered")
