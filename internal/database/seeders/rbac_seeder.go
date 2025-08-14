@@ -157,7 +157,7 @@ func createSuperAdminUser(app core.App) error {
 	// Get Super Admin role
 	superAdminRole, err := app.FindFirstRecordByFilter("roles", "name = {:name}", dbx.Params{"name": "Super Admin"})
 	if err != nil {
-		return fmt.Errorf("Super Admin role not found: %w", err)
+		return fmt.Errorf("super admin role not found: %w", err)
 	}
 
 	// Create super admin user

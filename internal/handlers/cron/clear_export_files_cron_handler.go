@@ -6,6 +6,7 @@ import (
 
 	"ims-pocketbase-baas-starter/pkg/common"
 	"ims-pocketbase-baas-starter/pkg/cronutils"
+	"ims-pocketbase-baas-starter/pkg/logger"
 
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
@@ -48,7 +49,8 @@ func HandleClearExportFiles(app *pocketbase.PocketBase) {
 	}
 
 	// Log final results
-	app.Logger().Info("Export files cleanup batch completed",
+	logger := logger.GetLogger(app)
+	logger.Info("Export files cleanup batch completed",
 		"total_expired", len(expiredRecords),
 		"deleted", deletedCount,
 		"errors", errorCount,
@@ -101,7 +103,8 @@ func deleteExportFileRecord(ctx *cronutils.CronExecutionContext, app *pocketbase
 		return fmt.Errorf("failed to delete export file record %s: %w", recordId, err)
 	}
 
-	app.Logger().Info("Deleted expired export file",
+	logger := logger.GetLogger(app)
+	logger.Info("Deleted expired export file",
 		"record_id", recordId,
 		"job_id", jobId,
 		"filename", filename,

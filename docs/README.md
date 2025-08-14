@@ -4,6 +4,17 @@ This directory contains comprehensive documentation for the IMS PocketBase BaaS 
 
 ## Available Documentation
 
+### [Centralized Logger System Guide](logger.md)
+
+Complete guide for the unified logging system with singleton pattern:
+
+- Logger architecture and singleton implementation
+- Multiple log levels (DEBUG, INFO, WARN, ERROR)
+- Database storage integration with PocketBase logger
+- Structured logging with key-value pairs
+- Configuration options and usage examples
+- Best practices for application logging
+
 ### [Database Migrations Guide](migrations.md)
 
 Complete guide for managing database schema changes and migrations:
