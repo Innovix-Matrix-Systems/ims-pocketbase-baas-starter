@@ -68,57 +68,32 @@ A Backend-as-a-Service (BaaS) starter kit built with PocketBase Go framework, en
 - Email: `superadmin@ims.com`
 - Password: `superadmin123456`
 
-## Makefile Commands
+## Configuration
 
-| Development                              | Production                                    | Utility                                  |
-| ---------------------------------------- | --------------------------------------------- | ---------------------------------------- |
-| `dev` - Start dev environment            | `build` - Build production image              | `help` - Show all commands               |
-| `dev-build` - Build dev image            | `start` - Start containers                    | `generate-key` - Generate encryption key |
-| `dev-logs` - Show dev logs               | `stop` - Stop containers                      | `setup-env` - Setup environment file     |
-| `dev-stop` - Stop dev containers         | `restart` - Restart containers                | `test` - Run tests                       |
-| `dev-clean` - Clean dev env              | `down` - Stop and remove containers           | `lint` - Run linter                      |
-| `dev-data-clean` - Clean dev data        | `logs` - Show container logs                  | `format` - Format Go code                |
-| `dev-start` - Alias for dev              | `clean` - Remove containers, networks, images | `status` - Show container status         |
-| `dev-status` - Show dev container status | `clean-data` - Remove only volumes            | `prod-start` - Alias for start           |
+The application uses environment variables for configuration. Copy `env.example` to `.env` and update the values:
 
-## Environment Configuration
+```bash
+make setup-env
+make generate-key  # Generate encryption key
+# Edit .env file with your configuration
+```
 
-Copy `env.example` to `.env` and configure the following:
+Key configuration areas include app settings, SMTP/email, S3 storage, job processing, rate limiting, and security. For complete configuration details, see the [Environment Configuration Guide](docs/environment-configuration.md).
 
-### App Configuration
+## Available Commands
 
-- `APP_NAME` - Application name
-- `APP_URL` - Application URL
+The project includes comprehensive Makefile commands for development and production:
 
-### Job processing settings
+```bash
+make dev          # Start development environment
+make dev-logs     # View development logs
+make build        # Build production image
+make start        # Start production containers
+make test         # Run tests
+make help         # Show all commands
+```
 
-- `JOB_MAX_WORKERS` - Concurrent workers (default: 5)
-- `JOB_BATCH_SIZE` - Jobs per cron run (default: 50)
-- `JOB_MAX_RETRIES` - Maximum retry attempts (default: 3)
-- `ENABLE_SYSTEM_QUEUE_CRON` - Enable queue processing (default: true)
-
-### SMTP Configuration (for email)
-
-- `SMTP_ENABLED` - Enable/disable SMTP
-- `SMTP_HOST` - SMTP server host
-- `SMTP_PORT` - SMTP server port
-- `SMTP_USERNAME` - SMTP username
-- `SMTP_PASSWORD` - SMTP password
-- `SMTP_AUTH_METHOD` - Authentication method
-- `SMTP_TLS` - Enable TLS
-
-### S3 Configuration (for file storage)
-
-- `S3_ENABLED` - Enable/disable S3
-- `S3_BUCKET` - S3 bucket name
-- `S3_REGION` - S3 region
-- `S3_ENDPOINT` - S3 endpoint
-- `S3_ACCESS_KEY` - S3 access key
-- `S3_SECRET` - S3 secret key
-
-### Security
-
-- `PB_ENCRYPTION_KEY` - PocketBase encryption key (32 characters)
+For a complete list of commands and usage examples, see the [Makefile Commands Guide](docs/makefile-commands.md).
 
 ## Development Workflow
 
@@ -142,137 +117,30 @@ Copy `env.example` to `.env` and configure the following:
    - API Documentation (ReDoc): http://localhost:8090/api-docs/redoc
    - OpenAPI JSON: http://localhost:8090/api-docs/openapi.json
    - MailHog Web UI: http://localhost:8025
+   - Grafana Dashboard: http://localhost:3000 (admin/admin)
+   - Prometheus Metrics: http://localhost:9090
 
-## Database
+## Key Features
 
-The application includes:
-
-- **Migrations** - Database schema setup
-- **Seeders** - Initial data seeding (RBAC, super admin)
-- **Collections** - User management, roles, permissions
-
-For detailed information about database migrations and schema management, see the [Database Migrations Guide](docs/migrations.md).
-
-## API Documentation
-
-The application automatically generates comprehensive API documentation for all collections and custom routes:
-
-- **Swagger UI** - Interactive API explorer at `http://localhost:8090/api-docs`
-- **ReDoc** - Clean documentation interface at `http://localhost:8090/api-docs/redoc`
-- **OpenAPI JSON** - Machine-readable spec at `http://localhost:8090/api-docs/openapi.json`
-- **Postman Compatible** - Import OpenAPI JSON directly into Postman/Insomnia
-
-**Features:**
-
-- Auto-discovery of all PocketBase collections
-- Complete CRUD operation documentation
-- Authentication flow documentation
-- File upload support with multipart forms
-- Custom route integration
-- Example data generation
-
-For detailed information about the Swagger system, configuration, and usage, see the [Swagger Documentation Guide](docs/swagger.md).
-
-## Cron Jobs & Job Queue System
-
-The application includes a comprehensive background task processing system with:
-
-- **Cron Jobs** - Scheduled tasks with environment-based control
-- **Job Queue** - Dynamic job processing with concurrent workers
-- **Built-in Handlers** - Email jobs, data processing jobs
-- **Extensible Architecture** - Easy to add custom job types
-
-For detailed information about cron jobs, job queue system, and creating custom handlers, see the [Cron Jobs & Job Queue Guide](docs/cron-jobs.md).
-
-## Event Hooks System
-
-The application includes a comprehensive event hook system that allows you to extend PocketBase functionality through organized event handlers:
-
-- **Record Hooks** - Handle record creation, updates, and deletions
-- **Collection Hooks** - Manage collection lifecycle events
-- **Request Hooks** - Intercept API requests for custom logic
-- **Mailer Hooks** - Customize email sending behavior
-- **Realtime Hooks** - Handle WebSocket connections and messages
-- **Organized Structure** - Clean separation of concerns with dedicated handler files
-- **Example Implementations** - Ready-to-use examples for common use cases like audit logging, user settings creation, and data validation
-
-**Key Features:**
-
-- Collection-specific hooks for targeted functionality
-- Comprehensive error handling and logging
-- Easy registration and management
-- Extensible architecture for custom business logic
-
-For detailed information about the hooks system, available events, and creating custom handlers, see the [Event Hooks Guide](docs/hooks.md).
-
-## Caching System
-
-The application features a high-performance Go-based caching system with:
-
-- **TTL Support** - Automatic expiration of cached items
-- **Memory Efficient** - Optimized for performance and memory usage
-- **Thread Safe** - Concurrent access support
-- **Easy Integration** - Simple API for cache operations
-- **Configurable** - Customizable cache settings and cleanup intervals
-
-**Use Cases:**
-
-- API response caching
-- Database query result caching
-- Session data storage
-- Temporary data storage with automatic cleanup
-
-### Migration CLI Generator
-
-The project includes a CLI tool to generate migration files automatically:
-
-```bash
-make migrate-gen name=add_user_profiles
-```
-
-**Features:** Automatic sequential numbering, name sanitization, input validation, and helpful next-step guidance.
+- **Database** - Migrations, seeders, and RBAC collections. See [Database Guide](docs/migrations.md)
+- **API Documentation** - Auto-generated Swagger UI, ReDoc, and OpenAPI JSON. See [Swagger Guide](docs/swagger.md)
+- **Background Jobs** - Cron jobs and job queue system. See [Jobs Guide](docs/cron-jobs.md)
+- **Event Hooks** - Comprehensive hook system for extending functionality. See [Hooks Guide](docs/hooks.md)
+- **Caching** - High-performance TTL cache system. See [Caching Guide](docs/caching.md)
+- **Metrics & Observability** - Prometheus metrics and OpenTelemetry support. See [Metrics Guide](docs/metrics.md)
+- **Migration CLI** - Generate migrations with `make migrate-gen name=your_migration`
 
 ## Project Structure
 
-```
-├── cmd/
-│   ├── migrate-gen/     # Migration CLI generator
-│   └── server/          # Application entry point
-├── docs/                # Project documentation
-│   ├── README.md       # Documentation index
-│   ├── cron-jobs.md    # Cron jobs & job queue guide
-│   ├── middleware.md   # Custom middleware guide
-│   └── migrations.md   # Database migration guide
-├── internal/
-│   ├── app/            # Application setup and configuration
-│   ├── crons/          # Cron job definitions and registration
-│   ├── database/
-│   │   ├── migrations/ # Database migrations
-│   │   ├── schema/     # PocketBase schema files
-│   │   └── seeders/    # Data seeders (RBAC, admin, settings)
-│   ├── handlers/
-│   │   ├── cron/       # Cron job handlers
-│   │   ├── hook/       # Event hook handlers
-│   │   ├── jobs/       # Job queue handlers
-│   │   └── route/      # Custom route handlers
-│   ├── hooks/          # Event hook registration and management
-│   ├── jobs/           # Job processor management
-│   ├── middlewares/    # HTTP middlewares (auth, permissions)
-│   └── routes/         # Custom API route definitions
-├── pkg/
-│   ├── cronutils/      # Cron execution utilities
-│   ├── jobutils/       # Job processing utilities
-│   └── migration/      # Migration utilities and scanner
-├── pb_data/            # PocketBase data directory
-├── pb_public/          # PocketBase public assets
-├── .github/            # GitHub workflows and templates
-├── Dockerfile          # Production Dockerfile
-├── Dockerfile.dev      # Development Dockerfile
-├── docker-compose.yml  # Production compose
-├── docker-compose.dev.yml # Development compose
-├── Makefile           # Development commands
-└── .env.example       # Environment template
-```
+This project follows Go project layout standards with clean architecture and modular design. The codebase is organized into:
+
+- **`cmd/`** - Application entry points (server, CLI tools)
+- **`internal/`** - Private application code (handlers, hooks, middleware)
+- **`pkg/`** - Reusable packages (cache, logger, metrics, utilities)
+- **`docs/`** - Comprehensive project documentation
+- **`docker/`** - Development and monitoring configurations
+
+For detailed information about the complete project structure, package organization, architectural decisions, and navigation guidance, see the **[📁 docs/](docs/)** folder which contains comprehensive guides for all aspects of the project.
 
 ## Contributing
 

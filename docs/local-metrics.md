@@ -1,4 +1,4 @@
-# Docker Development Setup with Metrics
+# Local Development Setup with Metrics
 
 This guide covers setting up the development environment with integrated metrics monitoring using Docker Compose.
 
@@ -44,95 +44,108 @@ The PocketBase application exposes comprehensive metrics:
 
 - `ims_pocketbase_http_requests_total` - Total HTTP requests by method/path
 - `ims_pocketbase_http_request_duration_seconds` - Request duration histogram
+- `ims_pocketbase_http_errors_total` - HTTP errors by status code
 
 ### Hook Metrics
 
-- `ims_pocketbase_hook_execution_total` - Hook executions by type
 - `ims_pocketbase_hook_execution_duration_seconds` - Hook execution time
+- `ims_pocketbase_hook_execution_total` - Total hook executions
 - `ims_pocketbase_hook_errors_total` - Hook execution errors
 
 ### Job Metrics
 
-- `ims_pocketbase_job_execution_total` - Job executions by type
-- `ims_pocketbase_job_execution_duration_seconds` - Job execution time
-- `ims_pocketbase_job_errors_total` - Job execution errors
+- `ims_pocketbase_job_execution_duration_seconds` - Job processing time
+- `ims_pocketbase_job_execution_total` - Total jobs processed
+- `ims_pocketbase_job_errors_total` - Job processing errors
 - `ims_pocketbase_job_queue_size` - Current job queue size
 
 ### Business Metrics
 
-- `ims_pocketbase_record_operations_total` - Database record operations
-- `ims_pocketbase_emails_sent_total` - Email delivery tracking
-- `ims_pocketbase_cache_hits_total` / `ims_pocketbase_cache_misses_total` - Cache performance
+- `ims_pocketbase_record_operations_total` - Record CRUD operations
+- `ims_pocketbase_emails_sent_total` - Emails sent successfully
+- `ims_pocketbase_cache_hits_total` - Cache hit count
+- `ims_pocketbase_cache_misses_total` - Cache miss count
+
+## Grafana Dashboards
+
+Pre-built dashboards are automatically provisioned:
+
+### PocketBase Overview Dashboard
+
+- HTTP request rates and response times
+- Error rates and status code distribution
+- Hook execution metrics
+- Job processing statistics
+- Cache performance metrics
+
+### System Metrics Dashboard
+
+- Application performance metrics
+- Resource utilization
+- Queue sizes and processing rates
 
 ## Configuration
 
-### Metrics Configuration
-
-The application loads metrics configuration from environment variables. Add to your `.env` file:
-
-```bash
-METRICS_PROVIDER=prometheus
-METRICS_ENABLED=true
-METRICS_NAMESPACE=ims_pocketbase
-```
-
 ### Prometheus Configuration
 
-Edit `docker/prometheus/prometheus.yml` to customize:
+The Prometheus configuration (`docker/prometheus/prometheus.yml`) includes:
 
-- Scrape intervals (default: 5s for PocketBase)
-- Additional targets
-- Alerting rules
+```yaml
+scrape_configs:
+  - job_name: 'pocketbase-app'
+    static_configs:
+      - targets: ['pocketbase:8090']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+```
 
-### Grafana Dashboards
+### Grafana Configuration
 
-- Pre-configured dashboard: http://localhost:3000/d/pocketbase-metrics
-- Custom dashboards: Add JSON files to `docker/grafana/dashboards/`
-- Data sources: Automatically configured via `docker/grafana/provisioning/`
+Grafana is automatically configured with:
+
+- Prometheus as the default data source
+- Pre-built dashboards for PocketBase metrics
+- Admin credentials: `admin/admin`
 
 ## Development Workflow
 
-1. **Start environment**: `make dev`
-2. **Generate traffic**: Make API calls, trigger hooks, process jobs
-3. **View metrics**:
-   - Raw: http://localhost:8090/metrics
-   - Prometheus: http://localhost:9090
-   - Grafana: http://localhost:3000/d/pocketbase-metrics
-4. **Monitor and optimize** based on metrics data
+1. **Start Environment**
+   ```bash
+   make dev
+   ```
+
+2. **Access Services**
+   - Develop your application normally
+   - View metrics in Grafana: http://localhost:3000
+   - Query metrics directly in Prometheus: http://localhost:9090
+
+3. **Monitor Performance**
+   - Watch request rates and response times
+   - Monitor error rates and investigate issues
+   - Track business metrics and user behavior
+
+4. **Debug Issues**
+   - Use metrics to identify performance bottlenecks
+   - Correlate errors with specific operations
+   - Monitor resource usage and scaling needs
 
 ## Troubleshooting
 
-### Metrics Not Appearing
+### Common Issues
 
-1. **Check metrics endpoint**:
+1. **Metrics Not Appearing**
+   - Check if `METRICS_ENABLED=true` in `.env`
+   - Verify `METRICS_PROVIDER=prometheus`
+   - Ensure `/metrics` endpoint is accessible
 
-   ```bash
-   curl http://localhost:8090/metrics
-   ```
+2. **Grafana Connection Issues**
+   - Wait for all services to start completely
+   - Check container logs: `make dev-logs`
+   - Verify Prometheus is scraping metrics
 
-2. **Verify Prometheus targets**:
-
-   - Go to http://localhost:9090/targets
-   - Ensure `pocketbase-app` shows as UP
-
-3. **Check service logs**:
-   ```bash
-   make dev-logs
-   # or specific service
-   docker-compose -f docker-compose.dev.yml logs prometheus
-   ```
-
-### Grafana Issues
-
-1. **Verify data source**: http://localhost:3000/datasources
-2. **Test queries**: http://localhost:3000/explore
-3. **Check dashboard**: http://localhost:3000/d/pocketbase-metrics
-
-### Performance Considerations
-
-- Metrics collection has minimal overhead
-- Adjust scrape intervals in `prometheus.yml` if needed
-- Monitor resource usage with `make dev-status`
+3. **Performance Issues**
+   - Adjust scrape intervals in `prometheus.yml` if needed
+   - Monitor resource usage with `make dev-status`
 
 ## File Structure
 
