@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to {{.AppName}}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .button:hover {
+            background-color: #2980b9;
+        }
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to {{.AppName}}!</h1>
+        </div>
+        <div class="content">
+            <p>Hi {{.Name}},</p>
+            <p>Welcome to {{.AppName}}! We're excited to have you on board.</p>
+            <p>Your account has been successfully created with the email: <strong>{{.Email}}</strong></p>
+            <p>Get started by exploring our features and making the most of your experience.</p>
+            <p>If you have any questions, feel free to reach out to our support team.</p>
+            <p>Best regards,<br>The {{.AppName}} Team</p>
+        </div>
+        <div class="footer">
+            <p>&copy; {{.Year}} {{.AppName}}. All rights reserved.</p>
+            <p>{{.AppURL}}</p>
+        </div>
+    </div>
+</body>
+</html>

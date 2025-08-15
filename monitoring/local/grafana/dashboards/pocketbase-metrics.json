@@ -260,9 +260,15 @@
           "interval": "",
           "legendFormat": "{{hook_type}}",
           "refId": "A"
+        },
+        {
+          "expr": "rate(ims_pocketbase_job_execution_total[5m])",
+          "interval": "",
+          "legendFormat": "job: {{job_type}}",
+          "refId": "B"
         }
       ],
-      "title": "Hook Execution Rate",
+      "title": "Hook & Job Execution Rate",
       "type": "timeseries"
     },
     {
@@ -343,6 +349,179 @@
         }
       ],
       "title": "Job Queue Size",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "ims_pocketbase_hook_execution_total{hook_type=\"user_create_settings\"}",
+          "interval": "",
+          "legendFormat": "User Create Settings Hook",
+          "refId": "A"
+        },
+        {
+          "expr": "ims_pocketbase_job_execution_total{job_type=\"email_job\"}",
+          "interval": "",
+          "legendFormat": "Email Job",
+          "refId": "B"
+        }
+      ],
+      "title": "Specific Metrics: Email Job & User Create Settings",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(ims_pocketbase_hook_execution_duration_seconds_bucket{hook_type=\"user_create_settings\"}[5m]))",
+          "interval": "",
+          "legendFormat": "User Create Settings (95th percentile)",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(ims_pocketbase_job_execution_duration_seconds_bucket{job_type=\"email_job\"}[5m]))",
+          "interval": "",
+          "legendFormat": "Email Job (95th percentile)",
+          "refId": "B"
+        }
+      ],
+      "title": "Execution Duration: Email Job & User Create Settings",
       "type": "timeseries"
     }
   ],

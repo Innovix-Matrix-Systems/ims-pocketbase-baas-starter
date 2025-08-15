@@ -34,19 +34,19 @@ func FromAppOrDefault(app core.App) Logger {
 // noopLogger is a no-op logger that only logs to stdout
 type noopLogger struct{}
 
-func (n *noopLogger) Debug(msg string, keysAndValues ...interface{}) {
+func (n *noopLogger) Debug(msg string, keysAndValues ...any) {
 	logWithLevel(DEBUG, msg, keysAndValues...)
 }
 
-func (n *noopLogger) Info(msg string, keysAndValues ...interface{}) {
+func (n *noopLogger) Info(msg string, keysAndValues ...any) {
 	logWithLevel(INFO, msg, keysAndValues...)
 }
 
-func (n *noopLogger) Warn(msg string, keysAndValues ...interface{}) {
+func (n *noopLogger) Warn(msg string, keysAndValues ...any) {
 	logWithLevel(WARN, msg, keysAndValues...)
 }
 
-func (n *noopLogger) Error(msg string, keysAndValues ...interface{}) {
+func (n *noopLogger) Error(msg string, keysAndValues ...any) {
 	logWithLevel(ERROR, msg, keysAndValues...)
 }
 
@@ -59,7 +59,7 @@ func (n *noopLogger) IsStoringLogs() bool {
 }
 
 // logWithLevel is a helper function that logs to stdout only
-func logWithLevel(level LogLevel, msg string, keysAndValues ...interface{}) {
+func logWithLevel(level LogLevel, msg string, keysAndValues ...any) {
 	// Format the message with key-value pairs
 	formattedMsg := formatMessage(msg, keysAndValues...)
 
@@ -68,7 +68,7 @@ func logWithLevel(level LogLevel, msg string, keysAndValues ...interface{}) {
 }
 
 // formatMessage formats the log message with key-value pairs for stdout
-func formatMessage(msg string, keysAndValues ...interface{}) string {
+func formatMessage(msg string, keysAndValues ...any) string {
 	if len(keysAndValues) == 0 {
 		return msg
 	}
@@ -85,16 +85,16 @@ func formatMessage(msg string, keysAndValues ...interface{}) string {
 }
 
 // formatAppend appends a key-value pair to a message
-func formatAppend(msg string, key, value interface{}) string {
+func formatAppend(msg string, key, value any) string {
 	return msg + " " + formatKey(key) + "=" + formatValue(value)
 }
 
 // formatKey formats a key for logging
-func formatKey(key interface{}) string {
+func formatKey(key any) string {
 	return formatValue(key)
 }
 
 // formatValue formats a value for logging
-func formatValue(value interface{}) string {
+func formatValue(value any) string {
 	return fmt.Sprintf("%v", value)
 }

@@ -1,0 +1,59 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'production'
+    cluster: 'main'
+
+# Load alerting rules
+rule_files:
+  - "alerts/*.yml"
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    scrape_interval: 30s
+
+  # PocketBase application (remote server)
+  - job_name: 'pocketbase-app'
+    static_configs:
+      # Replace with your actual PocketBase server IP/domain
+      - targets: ['YOUR_POCKETBASE_SERVER_IP:8090']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    scheme: http
+    # Optional: Add basic auth if you secure the metrics endpoint
+    # basic_auth:
+    #   username: 'metrics_user'
+    #   password: 'metrics_password'
+    
+    # Optional: Add custom labels
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'pocketbase-production'
+      - source_labels: [__address__]
+        target_label: server
+        replacement: 'app-server-1'
+
+  # Optional: Monitor the monitoring server itself
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+# Optional: Add node exporter for system metrics
+  # - job_name: 'pocketbase-node'
+  #   static_configs:
+  #     - targets: ['YOUR_POCKETBASE_SERVER_IP:9100']
+  #   scrape_interval: 30s

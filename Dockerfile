@@ -20,7 +20,7 @@ RUN mkdir -p pb_public
 RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o main ./cmd/server
 
 # Final stage
-FROM alpine:latest
+FROM alpine:latest AS production
 
 # Install ca-certificates for HTTPS requests
 RUN apk --no-cache add ca-certificates tzdata
@@ -38,6 +38,12 @@ RUN if [ -d /app/pb_public ] && [ "$(ls -A /app/pb_public 2>/dev/null)" ]; then 
 
 # Copy schema files for migrations
 COPY --from=builder /app/internal ./internal
+
+# Copy monitoring configurations
+COPY --from=builder /app/monitoring ./monitoring
+
+# Copy email templates
+COPY --from=builder /app/templates ./templates
 
 # Create pb_data directory
 RUN mkdir -p pb_data

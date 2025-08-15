@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"ims-pocketbase-baas-starter/pkg/cronutils"
 	"ims-pocketbase-baas-starter/pkg/logger"
+	"ims-pocketbase-baas-starter/pkg/metrics"
 	"sync"
 	"time"
 
@@ -80,6 +81,12 @@ func NewWorkerPool(app *pocketbase.PocketBase, registry *JobRegistry, maxWorkers
 func (wp *WorkerPool) ProcessJobs(jobs []*core.Record) []error {
 	if len(jobs) == 0 {
 		return nil
+	}
+
+	// Record queue size metrics before processing
+	metricsProvider := metrics.GetInstance()
+	if metricsProvider != nil {
+		metrics.RecordQueueSize(metricsProvider, "worker_pool", len(wp.jobQueue))
 	}
 
 	// Send jobs to workers
