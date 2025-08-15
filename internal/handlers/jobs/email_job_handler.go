@@ -1,7 +1,12 @@
 package jobs
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
+	"net/mail"
+	"os"
+	"path/filepath"
 	"time"
 
 	"ims-pocketbase-baas-starter/pkg/cronutils"
@@ -10,9 +15,10 @@ import (
 	"ims-pocketbase-baas-starter/pkg/metrics"
 
 	"github.com/pocketbase/pocketbase"
+	"github.com/pocketbase/pocketbase/tools/mailer"
 )
 
-// EmailJobHandler handles email job processing (placeholder implementation)
+// EmailJobHandler handles email job processing
 type EmailJobHandler struct {
 	app *pocketbase.PocketBase
 }
@@ -54,17 +60,21 @@ func (h *EmailJobHandler) Handle(ctx *cronutils.CronExecutionContext, job *jobut
 			"attempts", job.Attempts,
 			"retry_count", emailPayload.Options.RetryCount)
 
-		// Process template variables
-		processedSubject := h.processTemplateVariables(emailPayload.Data.Subject, emailPayload.Data.Variables)
-		ctx.LogDebug(processedSubject, "Processed email subject with variables")
+		// Process email templates
+		htmlContent, textContent, err := h.processEmailTemplates(emailPayload)
+		if err != nil {
+			return fmt.Errorf("failed to process email templates: %w", err)
+		}
 
-		// Simulate processing
-		time.Sleep(100 * time.Millisecond)
+		// Send email using PocketBase mailer
+		if err := h.sendEmail(emailPayload, htmlContent, textContent); err != nil {
+			return fmt.Errorf("failed to send email: %w", err)
+		}
 
 		// Create result data
 		result := &jobutils.EmailResult{
 			BaseJobResultData: jobutils.BaseJobResultData{
-				Message:   "Email sent successfully (placeholder)",
+				Message:   "Email sent successfully",
 				Timestamp: time.Now(),
 			},
 			MessageId:   fmt.Sprintf("msg_%s_%d", job.ID, time.Now().Unix()),
@@ -74,13 +84,6 @@ func (h *EmailJobHandler) Handle(ctx *cronutils.CronExecutionContext, job *jobut
 
 		// Log result for debugging
 		ctx.LogDebug(result, "Email job result")
-
-		// Placeholder: In a real implementation, this would:
-		// 1. Load email template
-		// 2. Replace template variables
-		// 3. Send email via SMTP or email service
-		// 4. Handle email sending errors
-		// 5. Store result in job_results table
 
 		ctx.LogEnd("Email job processed successfully")
 		return nil
@@ -105,20 +108,115 @@ func (h *EmailJobHandler) validateEmailPayload(payload *jobutils.EmailJobPayload
 	return nil
 }
 
-// processTemplateVariables replaces template variables in text (placeholder implementation)
-func (h *EmailJobHandler) processTemplateVariables(text string, variables map[string]any) string {
-	if len(variables) == 0 {
-		return text
+// processEmailTemplates processes both HTML and text email templates with variables
+func (h *EmailJobHandler) processEmailTemplates(payload *jobutils.EmailJobPayload) (string, string, error) {
+	logger := logger.GetLogger(h.app)
+
+	// If no template is specified, return empty content
+	if payload.Data.Template == "" {
+		logger.Debug("No template specified, using empty content")
+		return "", "", nil
 	}
 
-	// Placeholder: In a real implementation, this would:
-	// 1. Parse template syntax (e.g., {{variable_name}})
-	// 2. Replace variables with actual values
-	// 3. Handle missing variables gracefully
+	// Try to process HTML template
+	htmlContent, err := h.processSingleTemplate(payload, ".html")
+	if err != nil {
+		logger.Warn("Failed to process HTML template", "error", err)
+	}
 
-	// For now, just log the variables that would be processed
+	// Try to process text template
+	textContent, err := h.processSingleTemplate(payload, ".txt")
+	if err != nil {
+		logger.Warn("Failed to process text template", "error", err)
+	}
+
+	logger.Debug("Email templates processed successfully", "template", payload.Data.Template)
+	return htmlContent, textContent, nil
+}
+
+// processSingleTemplate processes a single email template with variables
+func (h *EmailJobHandler) processSingleTemplate(payload *jobutils.EmailJobPayload, extension string) (string, error) {
+	// Construct template path
+	templatePath := filepath.Join("templates", "emails", payload.Data.Template+extension)
+
+	// Check if template file exists
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		return "", fmt.Errorf("template file not found: %s", templatePath)
+	}
+
+	// Parse template
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse template: %w", err)
+	}
+
+	// Execute template with variables
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, payload.Data.Variables); err != nil {
+		return "", fmt.Errorf("failed to execute template: %w", err)
+	}
+
+	return buf.String(), nil
+}
+
+// sendEmail sends the email using PocketBase mailer
+func (h *EmailJobHandler) sendEmail(payload *jobutils.EmailJobPayload, htmlContent, textContent string) error {
 	logger := logger.GetLogger(h.app)
-	logger.Debug("Template variables available for processing")
 
-	return text // Return unchanged for placeholder
+	// Get sender settings from PocketBase admin UI configuration
+	settings := h.app.Settings()
+
+	// Use the configured sender name and address from admin UI
+	fromEmail := settings.Meta.SenderAddress
+	fromName := settings.Meta.SenderName
+
+	// Fallback to environment variables if admin UI settings are empty
+	if fromEmail == "" {
+		fromEmail = os.Getenv("SMTP_FROM_EMAIL")
+		if fromEmail == "" {
+			fromEmail = "noreply@ims-app.local"
+		}
+	}
+
+	if fromName == "" {
+		fromName = os.Getenv("SMTP_FROM_NAME")
+		if fromName == "" {
+			fromName = "IMS PocketBase App"
+		}
+	}
+
+	// Create new mailer message
+	message := &mailer.Message{
+		From:    mail.Address{Name: fromName, Address: fromEmail},
+		To:      []mail.Address{{Address: payload.Data.To}},
+		Subject: payload.Data.Subject,
+	}
+
+	// Set HTML content if available
+	if htmlContent != "" {
+		message.HTML = htmlContent
+	}
+
+	// Set text content if available
+	if textContent != "" {
+		message.Text = textContent
+	} else if htmlContent != "" {
+		// If only HTML content is available, use it as text as fallback
+		message.Text = htmlContent
+	}
+
+	// Send email
+	if err := h.app.NewMailClient().Send(message); err != nil {
+		logger.Error("Failed to send email",
+			"to", payload.Data.To,
+			"subject", payload.Data.Subject,
+			"error", err)
+		return fmt.Errorf("failed to send email: %w", err)
+	}
+
+	logger.Info("Email sent successfully",
+		"to", payload.Data.To,
+		"subject", payload.Data.Subject)
+
+	return nil
 }

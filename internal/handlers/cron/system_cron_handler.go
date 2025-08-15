@@ -8,6 +8,7 @@ import (
 	"ims-pocketbase-baas-starter/pkg/common"
 	"ims-pocketbase-baas-starter/pkg/cronutils"
 	"ims-pocketbase-baas-starter/pkg/logger"
+	"ims-pocketbase-baas-starter/pkg/metrics"
 
 	"github.com/pocketbase/dbx"
 	"github.com/pocketbase/pocketbase"
@@ -47,6 +48,12 @@ func HandleSystemQueue(app *pocketbase.PocketBase) {
 	if err != nil {
 		ctx.LogError(err, "Error fetching queues data")
 		return
+	}
+
+	// Record queue size metrics
+	metricsProvider := metrics.GetInstance()
+	if metricsProvider != nil {
+		metrics.RecordQueueSize(metricsProvider, "system", len(queues))
 	}
 
 	// Process jobs concurrently if any are available

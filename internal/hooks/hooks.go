@@ -61,10 +61,6 @@ func registerRecordHooks(app *pocketbase.PocketBase) {
 	//     return hook.HandleAuditLog(e)
 	// })
 
-	// app.OnRecordCreate("users").BindFunc(func(e *core.RecordEvent) error {
-	//     return hook.HandleUserWelcomeEmail(e)
-	// })
-
 	// app.OnRecordCreateRequest().BindFunc(func(e *core.RecordCreateRequestEvent) error {
 	//     return hook.HandleDataValidation(&core.RecordEvent{
 	//         App:    e.App,
@@ -76,7 +72,12 @@ func registerRecordHooks(app *pocketbase.PocketBase) {
 	//     return hook.HandleCacheInvalidation(e)
 	// })
 
-	//create user default settings (with metrics instrumentation)
+	// Send welcome email to new users
+	app.OnRecordAfterCreateSuccess("users").BindFunc(func(e *core.RecordEvent) error {
+		return hook.HandleUserWelcomeEmail(e)
+	})
+
+	// Create user default settings (with metrics instrumentation)
 	app.OnRecordAfterCreateSuccess("users").BindFunc(func(e *core.RecordEvent) error {
 		// Get the metrics provider instance
 		metricsProvider := metrics.GetInstance()

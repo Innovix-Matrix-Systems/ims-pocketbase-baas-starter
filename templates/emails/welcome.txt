@@ -1,0 +1,17 @@
+Welcome to {{.AppName}}!
+
+Hi {{.Name}},
+
+Welcome to {{.AppName}}! We're excited to have you on board.
+
+Your account has been successfully created with the email: {{.Email}}
+
+Get started by exploring our features and making the most of your experience.
+
+If you have any questions, feel free to reach out to our support team.
+
+Best regards,
+The {{.AppName}} Team
+
+© {{.Year}} {{.AppName}}. All rights reserved.
+{{.AppURL}}

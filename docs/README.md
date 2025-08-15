@@ -96,6 +96,18 @@ Complete guide for background task processing and job queue management:
 - Performance optimization and monitoring
 - Environment configuration and troubleshooting
 
+### [Custom Email System Guide](custom-emails.md)
+
+Complete guide for sending custom emails using the job queue system with template support:
+
+- Email system architecture and SMTP configuration
+- Creating HTML and text email templates with variables
+- Sending emails via API, programmatically, and in event hooks
+- Email job processing and payload structure
+- Common email templates (welcome, password reset, verification)
+- Testing with MailHog and troubleshooting
+- Best practices and integration examples
+
 ## Performance & Monitoring
 
 ### [Caching System Guide](caching.md)
