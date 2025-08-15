@@ -138,7 +138,7 @@ This project follows Go project layout standards with clean architecture and mod
 - **`internal/`** - Private application code (handlers, hooks, middleware)
 - **`pkg/`** - Reusable packages (cache, logger, metrics, utilities)
 - **`docs/`** - Comprehensive project documentation
-- **`docker/`** - Development and monitoring configurations
+- **`monitoring/`** - Development and production monitoring configurations
 
 For detailed information about the complete project structure, package organization, architectural decisions, and navigation guidance, see the **[📁 docs/](docs/)** folder which contains comprehensive guides for all aspects of the project.
 

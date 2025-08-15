@@ -4,13 +4,15 @@ This document explains how to use the `pkg/metrics` package to collect metrics a
 
 ## Configuration
 
-Enable metrics in your `.env` file:
+Metrics are configured entirely through environment variables. Enable metrics in your `.env` file:
 
 ```bash
 METRICS_ENABLED=true
 METRICS_PROVIDER=prometheus          # or opentelemetry, disabled
 METRICS_NAMESPACE=ims_pocketbase
 ```
+
+**Note**: All metrics configuration is loaded from environment variables - no JSON config files are used. This follows the [12-factor app](https://12factor.net/config) methodology for configuration management.
 
 ## Basic Usage
 

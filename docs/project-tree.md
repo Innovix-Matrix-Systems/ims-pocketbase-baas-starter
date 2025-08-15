@@ -7,8 +7,7 @@ This document provides a comprehensive overview of the IMS PocketBase BaaS Start
 ```
 ims-pocketbase-baas-starter/
 ├── 📁 cmd/                     # Application entry points
-├── 📁 config/                  # Configuration files
-├── 📁 docker/                  # Docker-related configurations
+├── 📁 monitoring/              # Monitoring configurations (Prometheus, Grafana)
 ├── 📁 docs/                    # Project documentation
 ├── 📁 internal/                # Private application code
 ├── 📁 pb_data/                 # PocketBase data directory
@@ -124,17 +123,22 @@ pkg/
     └── permissions_test.go # Permission tests
 ```
 
-### � `docker/e` - Docker Configurations
+### 📊 `monitoring/` - Monitoring Configurations
 
-Contains Docker-related configuration files for development and monitoring.
+Contains monitoring infrastructure configurations for both development and production environments.
 
 ```
-docker/
-├── grafana/           # Grafana configuration
-│   ├── dashboards/    # Pre-built dashboards
-│   └── provisioning/ # Grafana provisioning config
-└── prometheus/        # Prometheus configuration
-    └── prometheus.yml # Metrics scraping configuration
+monitoring/
+├── local/             # Development monitoring setup
+│   ├── grafana/       # Grafana configuration
+│   │   ├── dashboards/    # Pre-built dashboards
+│   │   └── provisioning/ # Grafana provisioning config
+│   └── prometheus/    # Prometheus configuration
+│       └── prometheus.yml # Local metrics scraping
+└── production/        # Production monitoring setup
+    ├── grafana/       # Production Grafana config
+    ├── prometheus/    # Production Prometheus config
+    └── alertmanager/  # Alert management configuration
 ```
 
 ### 📁 `docs/` - Project Documentation
@@ -198,10 +202,17 @@ docs/
 ### Configuration Files
 - `.env` - Environment variables (not in version control)
 - `.env.example` - Environment template
+- `.env.production` - Production environment template
 - `docker-compose.yml` - Production container configuration
 - `docker-compose.dev.yml` - Development container configuration
 - `Dockerfile` - Production container definition
 - `makefile` - Development commands
+
+### Monitoring Files
+- `monitoring/local/` - Development monitoring setup
+- `monitoring/production/` - Production monitoring deployment
+- `monitoring/*/prometheus/` - Prometheus configurations
+- `monitoring/*/grafana/` - Grafana dashboards and provisioning
 
 ## Package Dependencies
 
@@ -251,10 +262,12 @@ pkg/ (utilities and services)
 - Health checks and monitoring endpoints
 
 ### Monitoring and Observability
-- Prometheus metrics collection
-- Grafana dashboards for visualization
-- Structured logging with multiple levels
-- Performance monitoring and alerting
+- **Local Development**: `monitoring/local/` - Prometheus + Grafana for development
+- **Production Deployment**: `monitoring/production/` - Scalable monitoring infrastructure
+- **Metrics Collection**: Prometheus scraping with configurable intervals
+- **Visualization**: Grafana dashboards with pre-built PocketBase metrics
+- **Alerting**: Alertmanager integration for production notifications
+- **Structured Logging**: Multiple log levels with centralized collection
 
 ## Best Practices Demonstrated
 

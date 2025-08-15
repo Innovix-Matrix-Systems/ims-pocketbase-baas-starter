@@ -88,7 +88,7 @@ Pre-built dashboards are automatically provisioned:
 
 ### Prometheus Configuration
 
-The Prometheus configuration (`docker/prometheus/prometheus.yml`) includes:
+The Prometheus configuration (`monitoring/local/prometheus/prometheus.yml`) includes:
 
 ```yaml
 scrape_configs:
@@ -150,9 +150,10 @@ Grafana is automatically configured with:
 ## File Structure
 
 ```
-docker/
-├── prometheus/
-│   └── prometheus.yml          # Prometheus configuration
+monitoring/
+├── local/
+│   ├── prometheus/
+│   │   └── prometheus.yml      # Local Prometheus configuration
 ├── grafana/
 │   ├── provisioning/
 │   │   ├── datasources/        # Auto-configured data sources
