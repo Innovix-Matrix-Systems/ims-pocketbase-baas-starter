@@ -36,6 +36,11 @@ func RegisterEndpoints(se *core.ServeEvent, generator *Generator) {
 		return e.HTML(http.StatusOK, html)
 	})
 
+	se.Router.GET("/api-docs/scalar", func(e *core.RequestEvent) error {
+		html := GetScalarHTML()
+		return e.HTML(http.StatusOK, html)
+	})
+
 	// Collection stats endpoint
 	se.Router.GET("/api-docs/stats", func(e *core.RequestEvent) error {
 		stats, err := generator.GetCollectionStats()
