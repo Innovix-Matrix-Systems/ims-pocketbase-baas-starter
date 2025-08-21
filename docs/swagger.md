@@ -1,6 +1,6 @@
 # Swagger API Documentation
 
-This document explains how the automatic API documentation system works in the IMS PocketBase BaaS Starter, including Swagger UI, ReDoc, and OpenAPI JSON generation with intelligent caching.
+This document explains how the automatic API documentation system works in the IMS PocketBase BaaS Starter, including Swagger UI, Scalar ReDoc, and OpenAPI JSON generation with intelligent caching.
 
 ## Overview
 
@@ -10,6 +10,7 @@ The Swagger documentation system automatically generates comprehensive API docum
 
 - **OpenAPI JSON**: Machine-readable API specification at `/api-docs/openapi.json`
 - **Swagger UI**: Interactive API explorer at `/api-docs`
+- **Scalar**: Sleek, responsive, Postman Alternative documentation at `/api-docs/scalar`
 - **ReDoc**: Clean, responsive documentation at `/api-docs/redoc`
 - **Collection Stats**: API statistics at `/api-docs/stats`
 - **Cache Status**: Cache information at `/api/v1/cache-status`
@@ -194,6 +195,7 @@ if swagger.GetInstance().IsInitialized() {
 | Endpoint                 | Description                |
 | ------------------------ | -------------------------- |
 | `/api-docs`              | Interactive Swagger UI     |
+| `/api-docs/scalar`       | Awesome Scalar interface      |
 | `/api-docs/redoc`        | Clean ReDoc interface      |
 | `/api-docs/openapi.json` | OpenAPI JSON specification |
 

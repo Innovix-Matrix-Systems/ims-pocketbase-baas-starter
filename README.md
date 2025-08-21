@@ -13,7 +13,7 @@ A production-ready Backend-as-a-Service (BaaS) starter kit that extends PocketBa
 - ⏰ **Cron Jobs & Job Queue** - Scheduled tasks and dynamic job processing with concurrent workers
 - 📈 **Metrics & Observability** - Comprehensive monitoring with Prometheus metrics and OpenTelemetry support for performance tracking and system insights
 - 📧 **Email Integration** - SMTP configuration with MailHog for development
-- 📚 **Auto API Documentation** - Swagger UI, ReDoc, OpenAPI JSON with Postman compatibility
+- 📚 **Auto API Documentation** - Swagger UI, Scalar, ReDoc, OpenAPI JSON with Postman compatibility
 - 🐳 **Docker Support** - Production and development environments
 - 🔄 **Hot Reload** - Development environment with automatic code reloading
 - ⚙️ **Environment Configuration** - Flexible configuration via environment variables
