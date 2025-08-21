@@ -87,6 +87,14 @@ func GetScalarHTML() string {
         hideDownloadButton: false,
         searchHotKey: "k",
         persistAuth: true,
+        authentication: {
+          preferredSecurityScheme: 'BearerAuth',
+          securitySchemes: {
+            BearerAuth: {
+              token: ''
+            }
+          }
+        }
       })
     </script>
   </body>

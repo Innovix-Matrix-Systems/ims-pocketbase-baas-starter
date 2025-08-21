@@ -1,7 +1,5 @@
 package common
 
-var ProtectedCollections = []string{"users", "roles", "permissions"}
-
 var ExcludedPaths = []string{
 	"/api/collections/users/auth-with-password",
 	"/api/collections/users/auth-refresh",

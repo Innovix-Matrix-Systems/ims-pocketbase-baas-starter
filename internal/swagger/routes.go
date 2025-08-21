@@ -146,6 +146,24 @@ func (rg *RouteGenerator) GenerateCollectionRoutes(collection CollectionInfo) ([
 	return routes, nil
 }
 
+// requiresAuthentication checks if a rule requires authentication
+// Returns true if the rule contains @request.auth.id != ” or is not public
+func (rg *RouteGenerator) requiresAuthentication(rule *string) bool {
+	// If rule is nil, it's locked and requires auth
+	if rule == nil {
+		return true
+	}
+
+	// If rule is empty string, it's public and doesn't require auth
+	if *rule == "" {
+		return false
+	}
+
+	// Check if the rule contains the auth pattern with single or double quotes
+	return strings.Contains(*rule, "@request.auth.id != ''") ||
+		strings.Contains(*rule, "@request.auth.id != \"\"")
+}
+
 // generateListRoute generates a list/search route for a collection
 func (rg *RouteGenerator) generateListRoute(collection CollectionInfo) (*GeneratedRoute, error) {
 	// Generate list response schema
@@ -180,8 +198,8 @@ func (rg *RouteGenerator) generateListRoute(collection CollectionInfo) (*Generat
 		},
 	}
 
-	// Add security if collection has list rule
-	if collection.ListRule != nil && *collection.ListRule != "" {
+	// Add security if collection requires authentication for list operations
+	if rg.requiresAuthentication(collection.ListRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}
@@ -237,8 +255,8 @@ func (rg *RouteGenerator) generateCreateRoute(collection CollectionInfo) (*Gener
 		},
 	}
 
-	// Add security if collection has create rule
-	if collection.CreateRule != nil && *collection.CreateRule != "" {
+	// Add security if collection requires authentication for create operations
+	if rg.requiresAuthentication(collection.CreateRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}
@@ -291,8 +309,8 @@ func (rg *RouteGenerator) generateViewRoute(collection CollectionInfo) (*Generat
 		},
 	}
 
-	// Add security if collection has view rule
-	if collection.ViewRule != nil && *collection.ViewRule != "" {
+	// Add security if collection requires authentication for view operations
+	if rg.requiresAuthentication(collection.ViewRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}
@@ -359,8 +377,8 @@ func (rg *RouteGenerator) generateUpdateRoute(collection CollectionInfo) (*Gener
 		},
 	}
 
-	// Add security if collection has update rule
-	if collection.UpdateRule != nil && *collection.UpdateRule != "" {
+	// Add security if collection requires authentication for update operations
+	if rg.requiresAuthentication(collection.UpdateRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}
@@ -402,8 +420,8 @@ func (rg *RouteGenerator) generateDeleteRoute(collection CollectionInfo) (*Gener
 		},
 	}
 
-	// Add security if collection has delete rule
-	if collection.DeleteRule != nil && *collection.DeleteRule != "" {
+	// Add security if collection requires authentication for delete operations
+	if rg.requiresAuthentication(collection.DeleteRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}

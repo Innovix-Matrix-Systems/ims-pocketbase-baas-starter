@@ -190,7 +190,7 @@ func TestGenerateListRoute(t *testing.T) {
 	collection := CollectionInfo{
 		Name:     "posts",
 		Type:     "base",
-		ListRule: stringPtr("id != ''"),
+		ListRule: stringPtr("@request.auth.id != ''"),
 	}
 
 	route, err := generator.generateListRoute(collection)
@@ -214,9 +214,9 @@ func TestGenerateListRoute(t *testing.T) {
 		t.Error("Expected list parameters to be set")
 	}
 
-	// Check that security is added when list rule exists
+	// Check that security is added when list rule requires authentication
 	if len(route.Security) == 0 {
-		t.Error("Expected security to be set when list rule exists")
+		t.Error("Expected security to be set when list rule requires authentication")
 	}
 
 	// Check for pagination parameters
@@ -230,6 +230,23 @@ func TestGenerateListRoute(t *testing.T) {
 		if !paramNames[expectedParam] {
 			t.Errorf("Expected parameter %s to be present", expectedParam)
 		}
+	}
+
+	// Test with non-auth rule (should not require security)
+	collectionNoAuth := CollectionInfo{
+		Name:     "posts",
+		Type:     "base",
+		ListRule: stringPtr("id != ''"),
+	}
+
+	routeNoAuth, err := generator.generateListRoute(collectionNoAuth)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	// Check that security is NOT added when list rule doesn't require authentication
+	if len(routeNoAuth.Security) != 0 {
+		t.Error("Expected no security when list rule doesn't require authentication")
 	}
 }
 
@@ -282,7 +299,7 @@ func TestGenerateViewRoute(t *testing.T) {
 	collection := CollectionInfo{
 		Name:     "posts",
 		Type:     "base",
-		ViewRule: stringPtr("id != ''"),
+		ViewRule: stringPtr("@request.auth.id != ''"),
 	}
 
 	route, err := generator.generateViewRoute(collection)
@@ -314,9 +331,26 @@ func TestGenerateViewRoute(t *testing.T) {
 		t.Error("Expected path parameter to be required")
 	}
 
-	// Check that security is added when view rule exists
+	// Check that security is added when view rule requires authentication
 	if len(route.Security) == 0 {
-		t.Error("Expected security to be set when view rule exists")
+		t.Error("Expected security to be set when view rule requires authentication")
+	}
+
+	// Test with non-auth rule (should not require security)
+	collectionNoAuth := CollectionInfo{
+		Name:     "posts",
+		Type:     "base",
+		ViewRule: stringPtr("id != ''"),
+	}
+
+	routeNoAuth, err := generator.generateViewRoute(collectionNoAuth)
+	if err != nil {
+		t.Errorf("Expected no error, got %v", err)
+	}
+
+	// Check that security is NOT added when view rule doesn't require authentication
+	if len(routeNoAuth.Security) != 0 {
+		t.Error("Expected no security when view rule doesn't require authentication")
 	}
 }
 
