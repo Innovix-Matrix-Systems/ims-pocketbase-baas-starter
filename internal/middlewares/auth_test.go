@@ -59,13 +59,3 @@ func TestRequireAuthFunc(t *testing.T) {
 		t.Fatal("RequireAuthFunc() with collections returned nil function")
 	}
 }
-
-func TestBindToRouter(t *testing.T) {
-	middleware := NewAuthMiddleware()
-
-	// Test BindToRouter method exists and doesn't error
-	err := middleware.BindToRouter(nil)
-	if err != nil {
-		t.Fatalf("BindToRouter() returned error: %v", err)
-	}
-}

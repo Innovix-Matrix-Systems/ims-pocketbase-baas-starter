@@ -10,7 +10,6 @@ import (
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
-	"github.com/pocketbase/pocketbase/tools/hook"
 
 	"ims-pocketbase-baas-starter/internal/crons"
 	_ "ims-pocketbase-baas-starter/internal/database/migrations" //side effect migration load(from pocketbase)
@@ -19,7 +18,6 @@ import (
 	"ims-pocketbase-baas-starter/internal/middlewares"
 	"ims-pocketbase-baas-starter/internal/routes"
 	"ims-pocketbase-baas-starter/internal/swagger"
-	"ims-pocketbase-baas-starter/pkg/common"
 	"ims-pocketbase-baas-starter/pkg/logger"
 	"ims-pocketbase-baas-starter/pkg/metrics"
 )
@@ -74,19 +72,8 @@ func NewApp() *pocketbase.PocketBase {
 	})
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		middleware := middlewares.NewAuthMiddleware()
-		metricsMiddleware := middlewares.NewMetricsMiddleware(metricsProvider)
-
-		// Initialize Swagger generator using singleton pattern
-		generator := swagger.InitializeGenerator(app)
-
-		// Register metrics middleware first to capture all requests
-		se.Router.Bind(&hook.Handler[*core.RequestEvent]{
-			Id:   "metricsCollection",
-			Func: metricsMiddleware.RequireMetricsFunc(),
-		})
-
 		// Register Prometheus metrics endpoint if provider supports it
+		metricsProvider := metrics.GetInstance()
 		if handler := metricsProvider.GetHandler(); handler != nil {
 			se.Router.GET("/metrics", func(e *core.RequestEvent) error {
 				handler.ServeHTTP(e.Response, e.Request)
@@ -95,34 +82,12 @@ func NewApp() *pocketbase.PocketBase {
 			logger.Info("Metrics endpoint registered", "path", "/metrics")
 		}
 
-		// Apply auth to specific PocketBase API endpoints
-		se.Router.Bind(&hook.Handler[*core.RequestEvent]{
-			Id: "jwtAuth",
-			Func: func(e *core.RequestEvent) error {
-				path := e.Request.URL.Path
+		// Initialize Swagger generator using singleton pattern
+		generator := swagger.InitializeGenerator(app)
 
-				// Check if path should be excluded
-				for _, excludedPath := range common.ExcludedPaths {
-					if strings.HasPrefix(path, excludedPath) {
-						return e.Next() // Skip auth for excluded paths
-					}
-				}
-
-				// Check if it's a protected collection endpoint
-				for _, collection := range common.ProtectedCollections {
-					collectionPath := "/api/collections/" + collection
-					if strings.HasPrefix(path, collectionPath) {
-						authFunc := middleware.RequireAuthFunc()
-						if err := authFunc(e); err != nil {
-							return err
-						}
-						break
-					}
-				}
-
-				return e.Next()
-			},
-		})
+		// Register all application middlewares
+		logger.Info("Registering middlewares")
+		middlewares.RegisterMiddlewares(se)
 
 		// static files
 		se.Router.GET("/{path...}", apis.Static(os.DirFS("./pb_public"), false))
