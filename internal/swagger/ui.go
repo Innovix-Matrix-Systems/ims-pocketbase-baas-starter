@@ -58,3 +58,31 @@ func GetRedocHTML() string {
 </body>
 </html>`
 }
+
+func GetScalarHTML() string {
+	return `<!doctype html>
+<html>
+  <head>
+    <title>IMS PocketBase API Reference</title>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1" />
+  </head>
+
+  <body>
+    <div id="app"></div>
+
+    <!-- Load the Script -->
+    <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+
+    <!-- Initialize the Scalar API Reference -->
+    <script>
+      Scalar.createApiReference('#app', {
+        // The URL of the OpenAPI/Swagger document
+        url: '/api-docs/openapi.json',
+      })
+    </script>
+  </body>
+</html>`
+}
