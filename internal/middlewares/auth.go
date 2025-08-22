@@ -1,12 +1,15 @@
 package middlewares
 
 import (
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/hook"
 
+	"ims-pocketbase-baas-starter/pkg/cache"
 	"ims-pocketbase-baas-starter/pkg/common"
 )
 
@@ -15,6 +18,16 @@ import (
 // a clean interface for applying authentication to routes
 type AuthMiddleware struct {
 	app core.App
+}
+
+// CollectionAuthInfo holds cached information about collection authentication requirements
+type CollectionAuthInfo struct {
+	ListRequiresAuth   bool
+	ViewRequiresAuth   bool
+	CreateRequiresAuth bool
+	UpdateRequiresAuth bool
+	DeleteRequiresAuth bool
+	LastChecked        time.Time
 }
 
 // NewAuthMiddleware creates a new instance of AuthMiddleware
@@ -43,7 +56,7 @@ func (m *AuthMiddleware) RequireAuthFunc(optCollectionNames ...string) func(*cor
 }
 
 // requiresAuthentication checks if a rule requires authentication
-// Returns true if the rule contains @request.auth.id != ” or is not public
+// Returns true if the rule contains @request.auth.id != "" or is not public
 func (m *AuthMiddleware) requiresAuthentication(rule *string) bool {
 	// If rule is nil, it's locked and requires auth
 	if rule == nil {
@@ -58,6 +71,44 @@ func (m *AuthMiddleware) requiresAuthentication(rule *string) bool {
 	// Check if the rule contains the auth pattern with single or double quotes
 	return strings.Contains(*rule, "@request.auth.id != ''") ||
 		strings.Contains(*rule, "@request.auth.id != \"\"")
+}
+
+// getCachedCollectionAuthInfo retrieves or computes collection authentication info with caching
+func (m *AuthMiddleware) getCachedCollectionAuthInfo(collectionName string) (*CollectionAuthInfo, error) {
+	// Get cache instance
+	cacheService := cache.GetInstance()
+	cacheKey := fmt.Sprintf("collection_auth_info_%s", collectionName)
+
+	// Try to get from cache first
+	if cachedData, found := cacheService.Get(cacheKey); found {
+		if authInfo, ok := cachedData.(*CollectionAuthInfo); ok {
+			// Check if cache is still valid (within 1 minute)
+			if time.Since(authInfo.LastChecked) < 1*time.Minute {
+				return authInfo, nil
+			}
+		}
+	}
+
+	// Cache miss or expired - fetch collection data
+	collection, err := m.app.FindCollectionByNameOrId(collectionName)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create new auth info
+	authInfo := &CollectionAuthInfo{
+		ListRequiresAuth:   m.requiresAuthentication(collection.ListRule),
+		ViewRequiresAuth:   m.requiresAuthentication(collection.ViewRule),
+		CreateRequiresAuth: m.requiresAuthentication(collection.CreateRule),
+		UpdateRequiresAuth: m.requiresAuthentication(collection.UpdateRule),
+		DeleteRequiresAuth: m.requiresAuthentication(collection.DeleteRule),
+		LastChecked:        time.Now(),
+	}
+
+	// Cache for 1 minute
+	cacheService.SetWithExpiration(cacheKey, authInfo, 1*time.Minute)
+
+	return authInfo, nil
 }
 
 // getOperationFromPath determines the operation type based on path and HTTP method
@@ -144,34 +195,34 @@ func (m *AuthMiddleware) RequireAuthWithExclusionsFunc(e *core.RequestEvent) err
 		return e.Next()
 	}
 
-	// Find the collection
-	collection, err := m.app.FindCollectionByNameOrId(collectionName)
+	// Get cached collection authentication info
+	authInfo, err := m.getCachedCollectionAuthInfo(collectionName)
 	if err != nil {
-		// Collection not found, let PocketBase handle the error
+		// Collection not found or error, let PocketBase handle the error
 		return e.Next()
 	}
 
-	// Check if the specific operation requires authentication based on the rule
+	// Check if the specific operation requires authentication based on the cached info
 	requiresAuth := false
 
 	switch operation {
 	case "list":
-		requiresAuth = m.requiresAuthentication(collection.ListRule)
+		requiresAuth = authInfo.ListRequiresAuth
 	case "view":
-		requiresAuth = m.requiresAuthentication(collection.ViewRule)
+		requiresAuth = authInfo.ViewRequiresAuth
 	case "create":
-		requiresAuth = m.requiresAuthentication(collection.CreateRule)
+		requiresAuth = authInfo.CreateRequiresAuth
 	case "update":
-		requiresAuth = m.requiresAuthentication(collection.UpdateRule)
+		requiresAuth = authInfo.UpdateRequiresAuth
 	case "delete":
-		requiresAuth = m.requiresAuthentication(collection.DeleteRule)
+		requiresAuth = authInfo.DeleteRequiresAuth
 	default:
 		// For unknown operations, check if any rule requires auth
-		requiresAuth = m.requiresAuthentication(collection.ListRule) ||
-			m.requiresAuthentication(collection.ViewRule) ||
-			m.requiresAuthentication(collection.CreateRule) ||
-			m.requiresAuthentication(collection.UpdateRule) ||
-			m.requiresAuthentication(collection.DeleteRule)
+		requiresAuth = authInfo.ListRequiresAuth ||
+			authInfo.ViewRequiresAuth ||
+			authInfo.CreateRequiresAuth ||
+			authInfo.UpdateRequiresAuth ||
+			authInfo.DeleteRequiresAuth
 	}
 
 	// If the operation requires authentication, enforce it
