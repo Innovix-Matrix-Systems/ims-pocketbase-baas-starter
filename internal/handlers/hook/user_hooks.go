@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"ims-pocketbase-baas-starter/pkg/cache"
 	"ims-pocketbase-baas-starter/pkg/common"
 	"ims-pocketbase-baas-starter/pkg/jobutils"
 	"ims-pocketbase-baas-starter/pkg/logger"
@@ -178,6 +179,28 @@ func HandleUserCreateSettings(e *core.RecordEvent) error {
 	if log := logger.FromApp(e.App); log != nil {
 		log.Info("Default user settings creation completed",
 			"user_id", e.Record.Id)
+	}
+
+	return e.Next()
+}
+
+// HandleUserCacheClear handles clearing user-related cache when a user is updated
+func HandleUserCacheClear(e *core.RecordEvent) error {
+	// Get the cache service instance
+	cacheService := cache.GetInstance()
+
+	// Generate the cache key for this user's permissions
+	cacheKey := cache.CacheKey{}.UserPermissions(e.Record.Id)
+
+	// Delete the user's permission cache entry
+	cacheService.Delete(cacheKey)
+
+	// Log the cache invalidation
+	if log := logger.FromApp(e.App); log != nil {
+		log.Debug("Cleared user permission cache",
+			"user_id", e.Record.Id,
+			"email", e.Record.GetString("email"),
+			"cache_key", cacheKey)
 	}
 
 	return e.Next()

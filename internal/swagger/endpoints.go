@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"ims-pocketbase-baas-starter/pkg/common"
+
 	"github.com/pocketbase/pocketbase/core"
 )
 
@@ -16,8 +18,7 @@ func RegisterEndpoints(se *core.ServeEvent, generator *Generator) {
 	se.Router.GET("/api-docs/openapi.json", func(e *core.RequestEvent) error {
 		spec, err := cachedGenerator.GenerateSpec()
 		if err != nil {
-			return e.JSON(http.StatusInternalServerError, map[string]string{
-				"error":   "Failed to generate OpenAPI specification",
+			return common.Response.InternalServerError(e, "Failed to generate OpenAPI specification", map[string]any{
 				"details": err.Error(),
 			})
 		}
@@ -45,8 +46,7 @@ func RegisterEndpoints(se *core.ServeEvent, generator *Generator) {
 	se.Router.GET("/api-docs/stats", func(e *core.RequestEvent) error {
 		stats, err := generator.GetCollectionStats()
 		if err != nil {
-			return e.JSON(http.StatusInternalServerError, map[string]string{
-				"error":   "Failed to get collection statistics",
+			return common.Response.InternalServerError(e, "Failed to get collection statistics", map[string]any{
 				"details": err.Error(),
 			})
 		}
@@ -56,9 +56,7 @@ func RegisterEndpoints(se *core.ServeEvent, generator *Generator) {
 	// Cache invalidation endpoint (for development)
 	se.Router.POST("/api-docs/invalidate-cache", func(e *core.RequestEvent) error {
 		cachedGenerator.InvalidateCache()
-		return e.JSON(http.StatusOK, map[string]string{
-			"message": "Cache invalidated successfully",
-		})
+		return common.Response.OK(e, "Cache invalidated successfully", nil)
 	})
 
 	// Check for collection changes endpoint
@@ -71,11 +69,9 @@ func RegisterEndpoints(se *core.ServeEvent, generator *Generator) {
 		}
 
 		if invalidated {
-			response["message"] = "Collections changed, cache invalidated"
+			return common.Response.OK(e, "Collections changed, cache invalidated", response)
 		} else {
-			response["message"] = "No collection changes detected"
+			return common.Response.OK(e, "No collection changes detected", response)
 		}
-
-		return e.JSON(http.StatusOK, response)
 	})
 }

@@ -27,6 +27,14 @@ func defineCustomRoutes() []CustomRoute {
 			Tags:        []string{"System"},
 			Protected:   false,
 		},
+		{
+			Method:      "DELETE",
+			Path:        "/api/v1/cache",
+			Summary:     "Clear Cache",
+			Description: "Clear all cache entries in the system",
+			Tags:        []string{"System"},
+			Protected:   true,
+		},
 
 		// Custom API routes
 		{

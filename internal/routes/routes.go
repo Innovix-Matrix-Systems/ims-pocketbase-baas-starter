@@ -47,6 +47,17 @@ func RegisterCustom(e *core.ServeEvent) {
 			Description: "Cache status route (public for monitoring)",
 		},
 		{
+			Method:  "DELETE",
+			Path:    "/cache",
+			Handler: route.HandleCacheClear,
+			Middlewares: []func(*core.RequestEvent) error{
+				authMiddleware.RequireAuthFunc(),
+				permissionMiddleware.RequirePermission(permission.CacheClear),
+			},
+			Enabled:     true,
+			Description: "Clear all system cache (requires auth and cache.clear permission)",
+		},
+		{
 			Method: "GET",
 			Path:   "/protected",
 			Handler: func(request *core.RequestEvent) error {

@@ -88,6 +88,11 @@ func registerRecordHooks(app *pocketbase.PocketBase) {
 		})
 	})
 
+	// Invalidate user permission cache when user is updated
+	app.OnRecordUpdate("users").BindFunc(func(e *core.RecordEvent) error {
+		return hook.HandleUserCacheClear(e)
+	})
+
 	log.Debug("Record hooks registered")
 }
 

@@ -85,7 +85,7 @@ func seedRoles(app core.App) error {
 			Name:        "Super Admin",
 			Description: "Full system access with all permissions",
 			Permissions: []string{
-				permission.UserCreate, permission.UserView, permission.UserViewAll, permission.UserUpdate, permission.UserDelete,
+				permission.CacheClear, permission.UserCreate, permission.UserView, permission.UserViewAll, permission.UserUpdate, permission.UserDelete,
 				permission.UserRoleAssign, permission.UserPermissionAssign, permission.UserExport,
 				permission.RoleCreate, permission.RoleView, permission.RoleViewAll, permission.RoleUpdate, permission.RoleDelete,
 			},
