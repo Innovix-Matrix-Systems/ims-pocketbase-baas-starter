@@ -42,12 +42,20 @@ func NewApp() *pocketbase.PocketBase {
 	logger := logger.GetLogger(app)
 	logger.Info("Metrics provider initialized", "provider", metricsProvider != nil)
 
-	// Initialize job manager and processors during app startup
+	// Initialize job manager during app startup
 	// This must be called after app creation but before OnServe setup
 	jobManager := jobs.GetJobManager()
 	if err := jobManager.Initialize(app); err != nil {
 		logger.Error("Failed to initialize job manager", "error", err)
 		log.Fatalf("Failed to initialize job manager: %v", err)
+	}
+
+	// Register job handlers during app initialization phase
+	// This must be called after job manager initialization
+	logger.Info("Registering job handlers")
+	if err := jobs.RegisterJobs(app); err != nil {
+		logger.Error("Failed to register job handlers", "error", err)
+		log.Fatalf("Failed to register job handlers: %v", err)
 	}
 
 	// Register scheduled cron jobs during app initialization phase

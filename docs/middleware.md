@@ -22,13 +22,60 @@ For complete documentation on PocketBase routing and middleware, see: [Extend wi
 
 ## Middleware Structure
 
-The middleware is located in `internal/middlewares/auth.go` and provides:
+The middleware system is located in `internal/middlewares/` and follows a consistent pattern similar to routes and cron jobs:
 
-- `AuthMiddleware` struct for organizing middleware functionality
-- `NewAuthMiddleware()` constructor function
-- `RequireAuth()` method that returns a PocketBase hook handler
-- `RequireAuthFunc()` method that returns a middleware function
-- `BindToRouter()` method for future router integration
+- `middlewares.go` - Main middleware registration following the same pattern as routes/crons
+- `auth.go` - Authentication middleware implementation
+- `metrics.go` - Metrics collection middleware implementation
+- `permission.go` - Permission-based access control middleware implementation
+
+### Middleware Registration Pattern
+
+The middleware system uses a consistent array-based structure:
+
+```go
+// Middleware represents an application middleware with its configuration
+type Middleware struct {
+    ID          string                         // Unique identifier for the middleware
+    Handler     func(*core.RequestEvent) error // Handler function to execute
+    Enabled     bool                           // Whether the middleware should be registered
+    Description string                         // Human-readable description of what the middleware does
+    Order       int                            // Order of execution (lower numbers execute first)
+}
+
+// RegisterMiddlewares registers all application middlewares with the PocketBase router
+func RegisterMiddlewares(e *core.ServeEvent) {
+    // Define all middlewares in a consistent array structure
+    middlewares := []Middleware{
+        {
+            ID:          "metricsCollection",
+            Handler:     getMetricsMiddlewareHandler(),
+            Enabled:     true,
+            Description: "Collect HTTP request metrics",
+            Order:       1,
+        },
+        {
+            ID:          "jwtAuth",
+            Handler:     getAuthMiddlewareHandler(e),
+            Enabled:     true,
+            Description: "JWT authentication with exclusions",
+            Order:       2,
+        },
+    }
+
+    // Register enabled middlewares
+    for _, middleware := range middlewares {
+        if !middleware.Enabled {
+            continue
+        }
+
+        e.Router.Bind(&hook.Handler[*core.RequestEvent]{
+            Id:   middleware.ID,
+            Func: middleware.Handler,
+        })
+    }
+}
+```
 
 ## Basic Usage
 

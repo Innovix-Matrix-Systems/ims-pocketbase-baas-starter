@@ -215,20 +215,16 @@ func (h *MyJobHandler) GetJobType() string {
 }
 ```
 
-2. **Register the handler** in `internal/handlers/jobs/registry.go`:
+2. **Register the handler** in `internal/jobs/jobs.go`:
 
 ```go
-func InitializeJobHandlers(app *pocketbase.PocketBase, processor *jobutils.JobProcessor) error {
-    // ... existing handlers ...
-    
-    // Register your new handler
-    myHandler := NewMyJobHandler(app)
-    if err := registry.Register(myHandler); err != nil {
-        return err
-    }
-    
-    return nil
-}
+// In the jobHandlers slice in RegisterJobs function
+{
+    Type:        "my_job_type",
+    Handler:     jobs.NewMyJobHandler(app),
+    Enabled:     true,
+    Description: "Process my custom jobs",
+},
 ```
 
 ### Job Queue Configuration
@@ -323,7 +319,7 @@ Both cron jobs and job queue processing include comprehensive logging:
 
 #### Job Handler Not Found
 
-1. Ensure handler is registered in `InitializeJobHandlers`
+1. Ensure handler is registered in `internal/jobs/jobs.go`
 2. Verify job `type` matches handler's `GetJobType()`
 3. Check for handler registration errors in logs
 

@@ -65,13 +65,15 @@ internal/
 │   ├── hooks.go       # Hook registration orchestration
 │   └── hooks_test.go  # Hook system tests
 ├── jobs/              # Job management
+│   ├── jobs.go        # Job handler registration (new pattern)
 │   └── manager.go     # Job manager singleton
 ├── middlewares/       # HTTP middlewares
+│   ├── middlewares.go # Middleware registration (new pattern)
 │   ├── auth.go        # Authentication middleware
 │   ├── metrics.go     # Metrics collection middleware
 │   └── permission.go  # Permission-based access control
 ├── routes/            # Custom API routes
-│   └── routes.go      # Route registration
+│   └── routes.go      # Route registration (new pattern)
 └── swagger/           # API documentation generation
     ├── generator.go   # OpenAPI spec generation
     ├── discovery.go   # Collection discovery

@@ -53,8 +53,8 @@ Complete guide for managing database schema changes and migrations:
 
 Comprehensive guide for creating custom API routes and endpoints:
 
-- Creating custom route handlers and registration
-- Route organization and file structure
+- Creating custom route handlers and registration following the new consistent pattern
+- Route organization and file structure with array-based configuration
 - Integration with Swagger documentation
 - Authentication and middleware integration
 - Request/response handling and validation
@@ -77,8 +77,8 @@ Complete guide for implementing and managing PocketBase event hooks:
 
 Comprehensive guide for implementing and using authentication middleware:
 
-- Middleware architecture and structure
-- Protecting custom API routes
+- Middleware architecture and structure following the new consistent pattern
+- Protecting custom API routes with array-based middleware configuration
 - Applying middleware to default PocketBase routes
 - Collection-specific authentication
 - Testing and troubleshooting middleware
