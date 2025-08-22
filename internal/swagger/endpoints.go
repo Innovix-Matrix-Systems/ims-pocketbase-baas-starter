@@ -2,7 +2,6 @@ package swagger
 
 import (
 	"net/http"
-	"time"
 
 	"ims-pocketbase-baas-starter/pkg/common"
 
@@ -11,12 +10,9 @@ import (
 
 // RegisterEndpoints registers Swagger documentation endpoints
 func RegisterEndpoints(se *core.ServeEvent, generator *Generator) {
-	// Create cached generator with 5-minute TTL
-	cachedGenerator := NewCachedGenerator(generator, 5*time.Minute)
-
 	// OpenAPI JSON endpoint
 	se.Router.GET("/api-docs/openapi.json", func(e *core.RequestEvent) error {
-		spec, err := cachedGenerator.GenerateSpec()
+		spec, err := GenerateSpecWithCache(generator)
 		if err != nil {
 			return common.Response.InternalServerError(e, "Failed to generate OpenAPI specification", map[string]any{
 				"details": err.Error(),
@@ -55,13 +51,13 @@ func RegisterEndpoints(se *core.ServeEvent, generator *Generator) {
 
 	// Cache invalidation endpoint (for development)
 	se.Router.POST("/api-docs/invalidate-cache", func(e *core.RequestEvent) error {
-		cachedGenerator.InvalidateCache()
+		InvalidateCache()
 		return common.Response.OK(e, "Cache invalidated successfully", nil)
 	})
 
 	// Check for collection changes endpoint
 	se.Router.POST("/api-docs/check-collections", func(e *core.RequestEvent) error {
-		invalidated := cachedGenerator.CheckAndInvalidateIfChanged()
+		invalidated := CheckAndInvalidateIfChanged(generator)
 
 		response := map[string]any{
 			"collections_changed": invalidated,

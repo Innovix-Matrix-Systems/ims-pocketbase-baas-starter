@@ -14,6 +14,7 @@ type RouteGenerator struct {
 	schemaGen                 SchemaGen
 	customRoutes              []CustomRoute
 	enableDynamicContentTypes bool
+	excludeSuperuserRoutes    bool // New field to control superuser route exclusion
 }
 
 // GeneratedRoute represents a complete OpenAPI route definition
@@ -87,16 +88,18 @@ func NewRouteGenerator(schemaGen SchemaGen) *RouteGenerator {
 		schemaGen:                 schemaGen,
 		customRoutes:              []CustomRoute{},
 		enableDynamicContentTypes: true, // Default to enabled for backward compatibility
+		excludeSuperuserRoutes:    true, // Default to excluding superuser routes
 	}
 }
 
-// NewRouteGeneratorWithConfig creates a new route generator with configuration
-func NewRouteGeneratorWithConfig(schemaGen SchemaGen, enableDynamicContentTypes bool) *RouteGenerator {
+// NewRouteGeneratorWithFullConfig creates a new route generator with full configuration
+func NewRouteGeneratorWithFullConfig(schemaGen SchemaGen, enableDynamicContentTypes, excludeSuperuserRoutes bool) *RouteGenerator {
 
 	return &RouteGenerator{
 		schemaGen:                 schemaGen,
 		customRoutes:              []CustomRoute{},
 		enableDynamicContentTypes: enableDynamicContentTypes,
+		excludeSuperuserRoutes:    excludeSuperuserRoutes,
 	}
 }
 
@@ -113,35 +116,50 @@ func (rg *RouteGenerator) GenerateCollectionRoutes(collection CollectionInfo) ([
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate list route: %w", err)
 	}
-	routes = append(routes, *listRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if listRoute != nil {
+		routes = append(routes, *listRoute)
+	}
 
 	// Generate create route
 	createRoute, err := rg.generateCreateRoute(collection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate create route: %w", err)
 	}
-	routes = append(routes, *createRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if createRoute != nil {
+		routes = append(routes, *createRoute)
+	}
 
 	// Generate view route
 	viewRoute, err := rg.generateViewRoute(collection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate view route: %w", err)
 	}
-	routes = append(routes, *viewRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if viewRoute != nil {
+		routes = append(routes, *viewRoute)
+	}
 
 	// Generate update route
 	updateRoute, err := rg.generateUpdateRoute(collection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate update route: %w", err)
 	}
-	routes = append(routes, *updateRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if updateRoute != nil {
+		routes = append(routes, *updateRoute)
+	}
 
 	// Generate delete route
 	deleteRoute, err := rg.generateDeleteRoute(collection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate delete route: %w", err)
 	}
-	routes = append(routes, *deleteRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if deleteRoute != nil {
+		routes = append(routes, *deleteRoute)
+	}
 
 	return routes, nil
 }
@@ -164,8 +182,25 @@ func (rg *RouteGenerator) requiresAuthentication(rule *string) bool {
 		strings.Contains(*rule, "@request.auth.id != \"\"")
 }
 
+// isSuperuserOnly checks if a rule is superuser-only (nil rule)
+// Returns true if the rule is nil, meaning only superusers can access
+func (rg *RouteGenerator) isSuperuserOnly(rule *string) bool {
+	// If excluding superuser routes is disabled, never consider a route superuser-only
+	if !rg.excludeSuperuserRoutes {
+		return false
+	}
+
+	// If rule is nil, it's superuser-only
+	return rule == nil
+}
+
 // generateListRoute generates a list/search route for a collection
 func (rg *RouteGenerator) generateListRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.ListRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	// Generate list response schema
 	listResponseSchema, err := rg.schemaGen.GenerateListResponseSchema(collection)
 	if err != nil {
@@ -210,6 +245,11 @@ func (rg *RouteGenerator) generateListRoute(collection CollectionInfo) (*Generat
 
 // generateCreateRoute generates a create route for a collection
 func (rg *RouteGenerator) generateCreateRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.CreateRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	// Generate create schema
 	createSchema, err := rg.schemaGen.GenerateCreateSchema(collection)
 	if err != nil {
@@ -267,6 +307,11 @@ func (rg *RouteGenerator) generateCreateRoute(collection CollectionInfo) (*Gener
 
 // generateViewRoute generates a view route for a single record
 func (rg *RouteGenerator) generateViewRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.ViewRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	// Generate response schema
 	responseSchema, err := rg.schemaGen.GenerateCollectionSchema(collection)
 	if err != nil {
@@ -321,6 +366,11 @@ func (rg *RouteGenerator) generateViewRoute(collection CollectionInfo) (*Generat
 
 // generateUpdateRoute generates an update route for a record
 func (rg *RouteGenerator) generateUpdateRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.UpdateRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	// Generate update schema
 	updateSchema, err := rg.schemaGen.GenerateUpdateSchema(collection)
 	if err != nil {
@@ -389,6 +439,11 @@ func (rg *RouteGenerator) generateUpdateRoute(collection CollectionInfo) (*Gener
 
 // generateDeleteRoute generates a delete route for a record
 func (rg *RouteGenerator) generateDeleteRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.DeleteRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "DELETE",
@@ -493,25 +548,34 @@ func (rg *RouteGenerator) GenerateAuthRoutes(collection CollectionInfo) ([]Gener
 	var routes []GeneratedRoute
 
 	// Generate auth-with-password route
-	authRoute, err := rg.generateAuthWithPasswordRoute(collection)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate auth-with-password route: %w", err)
+	// Skip if ListRule is superuser-only (unusual for auth collections, but possible)
+	if !rg.isSuperuserOnly(collection.ListRule) {
+		authRoute, err := rg.generateAuthWithPasswordRoute(collection)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate auth-with-password route: %w", err)
+		}
+		routes = append(routes, *authRoute)
 	}
-	routes = append(routes, *authRoute)
 
 	// Generate auth-refresh route
-	refreshRoute, err := rg.generateAuthRefreshRoute(collection)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate auth-refresh route: %w", err)
+	// Skip if ViewRule is superuser-only (unusual for auth collections, but possible)
+	if !rg.isSuperuserOnly(collection.ViewRule) {
+		refreshRoute, err := rg.generateAuthRefreshRoute(collection)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate auth-refresh route: %w", err)
+		}
+		routes = append(routes, *refreshRoute)
 	}
-	routes = append(routes, *refreshRoute)
 
 	// Generate request-password-reset route
-	resetRoute, err := rg.generateRequestPasswordResetRoute(collection)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate request-password-reset route: %w", err)
+	// Skip if CreateRule is superuser-only (unusual for auth collections, but possible)
+	if !rg.isSuperuserOnly(collection.CreateRule) {
+		resetRoute, err := rg.generateRequestPasswordResetRoute(collection)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate request-password-reset route: %w", err)
+		}
+		routes = append(routes, *resetRoute)
 	}
-	routes = append(routes, *resetRoute)
 
 	return routes, nil
 }

@@ -149,10 +149,10 @@ The system uses sensible defaults and requires minimal configuration:
 
 ```go
 // Singleton pattern - automatically uses default configuration
-generator := swagger.InitializeGenerator(app)
+generator := swagger.Initialize(app)
 
 // Get the global generator instance
-generator := swagger.GetGlobalGenerator()
+generator := swagger.GetInstance()
 
 // Cached generator with 5-minute TTL (used in endpoints)
 cachedGenerator := NewCachedGenerator(generator, 5*time.Minute)
@@ -169,13 +169,13 @@ The swagger package implements a thread-safe singleton pattern to ensure consist
 
 ```go
 // Initialize the singleton (called once during app startup)
-generator := swagger.InitializeGenerator(app)
+generator := swagger.Initialize(app)
 
 // Get the singleton instance anywhere in the application
-generator := swagger.GetGlobalGenerator()
+generator := swagger.GetInstance()
 
 // Check if singleton is initialized
-if swagger.GetInstance().IsInitialized() {
+if swagger.IsInitialized() {
     // Use the generator
 }
 ```

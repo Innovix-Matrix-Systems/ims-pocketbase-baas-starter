@@ -36,32 +36,6 @@ func defineCustomRoutes() []CustomRoute {
 			Protected:   true,
 		},
 
-		// Custom API routes
-		{
-			Method:      "GET",
-			Path:        "/api/v1/hello",
-			Summary:     "Hello Endpoint",
-			Description: "Returns a hello message from custom route",
-			Tags:        []string{"Custom"},
-			Protected:   false,
-		},
-		{
-			Method:      "GET",
-			Path:        "/api/v1/protected",
-			Summary:     "Protected Endpoint",
-			Description: "Returns a message for authenticated users",
-			Tags:        []string{"Custom"},
-			Protected:   true,
-		},
-		{
-			Method:      "GET",
-			Path:        "/api/v1/permission-test",
-			Summary:     "Permission Test Endpoint",
-			Description: "Tests user creation permission",
-			Tags:        []string{"Custom"},
-			Protected:   true,
-		},
-
 		// User management routes
 		{
 			Method:      "POST",

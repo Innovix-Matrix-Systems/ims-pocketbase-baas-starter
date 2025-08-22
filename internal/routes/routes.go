@@ -29,16 +29,6 @@ func RegisterCustom(e *core.ServeEvent) {
 	// Define all custom routes
 	routes := []Route{
 		{
-			Method: "GET",
-			Path:   "/hello",
-			Handler: func(request *core.RequestEvent) error {
-				return request.JSON(200, map[string]string{"msg": "Hello from custom route"})
-			},
-			Middlewares: []func(*core.RequestEvent) error{},
-			Enabled:     true,
-			Description: "Public hello world route",
-		},
-		{
 			Method:      "GET",
 			Path:        "/cache-status",
 			Handler:     route.HandleCacheStatus,
@@ -56,31 +46,6 @@ func RegisterCustom(e *core.ServeEvent) {
 			},
 			Enabled:     true,
 			Description: "Clear all system cache (requires auth and cache.clear permission)",
-		},
-		{
-			Method: "GET",
-			Path:   "/protected",
-			Handler: func(request *core.RequestEvent) error {
-				return request.JSON(200, map[string]string{"msg": "You are authenticated!"})
-			},
-			Middlewares: []func(*core.RequestEvent) error{
-				authMiddleware.RequireAuthFunc(),
-			},
-			Enabled:     true,
-			Description: "Auth protected route",
-		},
-		{
-			Method: "GET",
-			Path:   "/permission-test",
-			Handler: func(request *core.RequestEvent) error {
-				return request.JSON(200, map[string]string{"msg": "You have the User create permission!"})
-			},
-			Middlewares: []func(*core.RequestEvent) error{
-				authMiddleware.RequireAuthFunc(),
-				permissionMiddleware.RequirePermission(permission.UserCreate),
-			},
-			Enabled:     true,
-			Description: "Permission protected route",
 		},
 		{
 			Method:  "POST",
@@ -114,16 +79,6 @@ func RegisterCustom(e *core.ServeEvent) {
 			Description: "Download job file route",
 		},
 		// Add more routes here as needed:
-		// {
-		//     Method:  "GET",
-		//     Path:    "/example",
-		//     Handler: route.HandleExample,
-		//     Middlewares: []func(*core.RequestEvent) error{
-		//         authMiddleware.RequireAuthFunc(),
-		//     },
-		//     Enabled:     true,
-		//     Description: "Example route description",
-		// },
 	}
 
 	// Register enabled routes
