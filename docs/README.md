@@ -55,7 +55,7 @@ Comprehensive guide for creating custom API routes and endpoints:
 
 - Creating custom route handlers and registration following the new consistent pattern
 - Route organization and file structure with array-based configuration
-- Integration with Swagger documentation
+- Integration with API documentation
 - Authentication and middleware integration
 - Request/response handling and validation
 - Testing custom routes and error handling
@@ -145,11 +145,11 @@ Complete guide for the unified logging system with singleton pattern:
 
 ## Documentation & Development
 
-### [Swagger API Documentation Guide](swagger.md)
+### [API Docs Guide](apidoc.md)
 
 Comprehensive guide for the automatic API documentation system:
 
-- Swagger UI, ReDoc, and OpenAPI JSON generation
+- Interactive API documentation, ReDoc, and OpenAPI JSON generation
 - Collection discovery and schema generation
 - Route generation for CRUD and authentication
 - Custom route integration and configuration

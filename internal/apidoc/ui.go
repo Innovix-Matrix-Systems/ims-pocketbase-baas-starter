@@ -1,4 +1,4 @@
-package swagger
+package apidoc
 
 // GetSwaggerUIHTML returns the HTML for Swagger UI
 func GetSwaggerUIHTML() string {

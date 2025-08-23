@@ -13,7 +13,7 @@ A production-ready Backend-as-a-Service (BaaS) starter kit that extends PocketBa
 - ⏰ **Cron Jobs & Job Queue** - Scheduled tasks and dynamic job processing with concurrent workers
 - 📈 **Metrics & Observability** - Comprehensive monitoring with Prometheus metrics and OpenTelemetry support for performance tracking and system insights
 - 📧 **Email Integration** - SMTP configuration with MailHog for development
-- 📚 **Auto API Documentation** - Swagger UI, Scalar, ReDoc, OpenAPI JSON with Postman compatibility
+- 📚 **Auto API Documentation** - Interactive API Docs, Scalar, ReDoc, OpenAPI JSON with Postman compatibility
 - 🐳 **Docker Support** - Production and development environments
 - 🔄 **Hot Reload** - Development environment with automatic code reloading
 - ⚙️ **Environment Configuration** - Flexible configuration via environment variables
@@ -113,7 +113,7 @@ For a complete list of commands and usage examples, see the [Makefile Commands G
 
 4. **Access services**
    - PocketBase Admin: http://localhost:8090/\_/
-   - API Documentation (Swagger): http://localhost:8090/api-docs
+   - API Documentation (API Docs): http://localhost:8090/api-docs
    - API Documentation (ReDoc): http://localhost:8090/api-docs/redoc
    - OpenAPI JSON: http://localhost:8090/api-docs/openapi.json
    - MailHog Web UI: http://localhost:8025
@@ -123,7 +123,7 @@ For a complete list of commands and usage examples, see the [Makefile Commands G
 ## Key Features
 
 - **Database** - Migrations, seeders, and RBAC collections. See [Database Guide](docs/migrations.md)
-- **API Documentation** - Auto-generated Swagger UI, ReDoc, and OpenAPI JSON. See [Swagger Guide](docs/swagger.md)
+- **API Documentation** - Auto-generated API Documentation, ReDoc, and OpenAPI JSON. See [API Docs Guide](docs/apidocs.md)
 - **Background Jobs** - Cron jobs and job queue system. See [Jobs Guide](docs/cron-jobs.md)
 - **Event Hooks** - Comprehensive hook system for extending functionality. See [Hooks Guide](docs/hooks.md)
 - **Caching** - High-performance TTL cache system. See [Caching Guide](docs/caching.md)

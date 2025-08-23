@@ -1,4 +1,4 @@
-package swagger
+package apidoc
 
 // GetCustomRoutes returns all predefined custom routes
 // These routes are automatically registered when creating a new generator

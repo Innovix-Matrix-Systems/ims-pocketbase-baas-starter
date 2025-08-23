@@ -74,11 +74,11 @@ internal/
 │   └── permission.go  # Permission-based access control
 ├── routes/            # Custom API routes
 │   └── routes.go      # Route registration (new pattern)
-└── swagger/           # API documentation generation
+└── apidoc/           # API documentation generation
     ├── generator.go   # OpenAPI spec generation
     ├── discovery.go   # Collection discovery
     ├── schema.go      # Schema generation
-    └── endpoints.go   # Swagger UI endpoints
+    └── endpoints.go   # API docs endpoints
 ```
 
 ### 📁 `pkg/` - Reusable Packages
@@ -156,7 +156,7 @@ docs/
 ├── logger.md             # Logging system
 ├── middleware.md         # Custom middleware
 ├── migrations.md         # Database migrations
-├── swagger.md            # API documentation
+├── apidoc.md            # API documentation
 ├── docker-metrics.md     # Metrics monitoring setup
 ├── git-hooks.md          # Git hooks setup
 └── project-tree.md       # This file - project structure

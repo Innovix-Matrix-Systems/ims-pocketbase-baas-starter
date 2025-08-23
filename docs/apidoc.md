@@ -1,15 +1,15 @@
-# Swagger API Documentation
+# API Documentation
 
-This document explains how the automatic API documentation system works in the IMS PocketBase BaaS Starter, including Swagger UI, Scalar ReDoc, and OpenAPI JSON generation with intelligent caching.
+This document explains how the automatic API documentation system works in the IMS PocketBase BaaS Starter, including interactive API documentation, Scalar ReDoc, and OpenAPI JSON generation with intelligent caching.
 
 ## Overview
 
-The Swagger documentation system automatically generates comprehensive API documentation for all your PocketBase collections and custom routes. It features intelligent caching with automatic invalidation when collections change.
+The API documentation system automatically generates comprehensive API documentation for all your PocketBase collections and custom routes. It features intelligent caching with automatic invalidation when collections change.
 
 ### Available Endpoints
 
 - **OpenAPI JSON**: Machine-readable API specification at `/api-docs/openapi.json`
-- **Swagger UI**: Interactive API explorer at `/api-docs`
+- **Interactive API Docs**: Interactive API explorer at `/api-docs`
 - **Scalar**: Sleek, responsive, Postman Alternative documentation at `/api-docs/scalar`
 - **ReDoc**: Clean, responsive documentation at `/api-docs/redoc`
 - **Collection Stats**: API statistics at `/api-docs/stats`
@@ -149,10 +149,10 @@ The system uses sensible defaults and requires minimal configuration:
 
 ```go
 // Singleton pattern - automatically uses default configuration
-generator := swagger.Initialize(app)
+generator := apidoc.Initialize(app)
 
 // Get the global generator instance
-generator := swagger.GetInstance()
+generator := apidoc.GetInstance()
 
 // Cached generator with 5-minute TTL (used in endpoints)
 cachedGenerator := NewCachedGenerator(generator, 5*time.Minute)
@@ -165,17 +165,17 @@ cachedGenerator := NewCachedGenerator(generator, 5*time.Minute)
 
 ## Singleton Pattern
 
-The swagger package implements a thread-safe singleton pattern to ensure consistent behavior and resource efficiency:
+The apidoc package implements a thread-safe singleton pattern to ensure consistent behavior and resource efficiency:
 
 ```go
 // Initialize the singleton (called once during app startup)
-generator := swagger.Initialize(app)
+generator := apidoc.Initialize(app)
 
 // Get the singleton instance anywhere in the application
-generator := swagger.GetInstance()
+generator := apidoc.GetInstance()
 
 // Check if singleton is initialized
-if swagger.IsInitialized() {
+if apidoc.IsInitialized() {
     // Use the generator
 }
 ```
@@ -194,7 +194,7 @@ if swagger.IsInitialized() {
 
 | Endpoint                 | Description                |
 | ------------------------ | -------------------------- |
-| `/api-docs`              | Interactive Swagger UI     |
+| `/api-docs`              | Interactive API Documentation     |
 | `/api-docs/scalar`       | Awesome Scalar interface      |
 | `/api-docs/redoc`        | Clean ReDoc interface      |
 | `/api-docs/openapi.json` | OpenAPI JSON specification |

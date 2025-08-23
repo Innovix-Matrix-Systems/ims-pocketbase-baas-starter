@@ -592,8 +592,8 @@ func NewApp() *pocketbase.PocketBase {
         middleware := middlewares.NewAuthMiddleware()
         metricsMiddleware := middlewares.NewMetricsMiddleware(metricsProvider)
 
-        // 6. Initialize swagger generator (singleton)
-        generator := swagger.InitializeGenerator(app)
+        // 6. Initialize API docs generator (singleton)
+        generator := apidoc.InitializeGenerator(app)
 
         // 7. Register middleware with dependency injection
         se.Router.Bind(&hook.Handler[*core.RequestEvent]{
@@ -628,11 +628,11 @@ flowchart TD
     
     SERVE --> MW_AUTH[Create Auth Middleware]
     SERVE --> MW_METRICS[Create Metrics Middleware]
-    SERVE --> SWAGGER[Initialize Swagger Generator]
+    SERVE --> APIDOC[Initialize API Docs Generator]
     
     MW_METRICS --> BIND_MW[Bind Middlewares to Router]
     MW_AUTH --> BIND_MW
-    SWAGGER --> BIND_MW
+    APIDOC --> BIND_MW
     
     BIND_MW --> ENDPOINT[Register Metrics Endpoint]
     ENDPOINT --> READY[Application Ready]
@@ -652,12 +652,12 @@ flowchart TD
     subgraph "Constructor Injected"
         MW_AUTH_INST[Auth Middleware]
         MW_METRICS_INST[Metrics Middleware]
-        SWAGGER_INST[Swagger Generator]
+        APIDOC_INST[API Docs Generator]
     end
     
     MW_AUTH --> MW_AUTH_INST
     MW_METRICS --> MW_METRICS_INST
-    SWAGGER --> SWAGGER_INST
+    APIDOC --> APIDOC_INST
     
     style START fill:#e1f5fe
     style READY fill:#e8f5e8

@@ -11,13 +11,13 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
+	"ims-pocketbase-baas-starter/internal/apidoc"
 	"ims-pocketbase-baas-starter/internal/crons"
 	_ "ims-pocketbase-baas-starter/internal/database/migrations" //side effect migration load(from pocketbase)
 	"ims-pocketbase-baas-starter/internal/hooks"
 	"ims-pocketbase-baas-starter/internal/jobs"
 	"ims-pocketbase-baas-starter/internal/middlewares"
 	"ims-pocketbase-baas-starter/internal/routes"
-	"ims-pocketbase-baas-starter/internal/swagger"
 	"ims-pocketbase-baas-starter/pkg/logger"
 	"ims-pocketbase-baas-starter/pkg/metrics"
 )
@@ -90,8 +90,8 @@ func NewApp() *pocketbase.PocketBase {
 			logger.Info("Metrics endpoint registered", "path", "/metrics")
 		}
 
-		// Initialize Swagger generator using singleton pattern
-		generator := swagger.InitializeGenerator(app)
+		// Initialize API docs generator using singleton pattern
+		generator := apidoc.InitializeGenerator(app)
 
 		// Register all application middlewares
 		logger.Info("Registering middlewares")
@@ -103,8 +103,8 @@ func NewApp() *pocketbase.PocketBase {
 		// custom business routes
 		routes.RegisterCustom(se)
 
-		// Register Swagger endpoints
-		swagger.RegisterEndpoints(se, generator)
+		// Register API docs endpoints
+		apidoc.RegisterEndpoints(se, generator)
 
 		return se.Next()
 	})
