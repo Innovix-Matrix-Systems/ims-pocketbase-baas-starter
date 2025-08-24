@@ -15,10 +15,10 @@ ims-pocketbase-baas-starter/
 ├── 📁 pkg/                     # Reusable packages
 ├── 📁 scripts/                 # Build and setup scripts
 ├── 🐳 Dockerfile               # Production container definition
-├── � doocker-compose.yml       # Production container orchestration
+├── 🐳 docker-compose.yml       # Production container orchestration
 ├── 🐹 go.mod                   # Go module definition
 ├── ⚙️ makefile                 # Development commands
-└── � REA DME.md                # Main project documentation
+└── 📄 README.md                # Main project documentation
 ```
 
 ## Detailed Directory Breakdown
