@@ -11,6 +11,7 @@ A production-ready Backend-as-a-Service (BaaS) starter kit that extends PocketBa
 - 🪝 **Event Hooks System** - Comprehensive event hook management with organized handlers for records, collections, requests, mailer, and realtime events
 - ⚡ **Go Cache with TTL** - High-performance in-memory caching with Time-To-Live support for improved application performance
 - ⏰ **Cron Jobs & Job Queue** - Scheduled tasks and dynamic job processing with concurrent workers
+- 💻 **CLI Command Support** - Command-line interface support for custom scripts and tasks
 - 📈 **Metrics & Observability** - Comprehensive monitoring with Prometheus metrics and OpenTelemetry support for performance tracking and system insights
 - 📧 **Email Integration** - SMTP configuration with MailHog for development
 - 📚 **Auto API Documentation** - Interactive API Docs, Scalar, ReDoc, OpenAPI JSON with Postman compatibility
@@ -128,7 +129,7 @@ For a complete list of commands and usage examples, see the [Makefile Commands G
 - **Event Hooks** - Comprehensive hook system for extending functionality. See [Hooks Guide](docs/hooks.md)
 - **Caching** - High-performance TTL cache system. See [Caching Guide](docs/caching.md)
 - **Metrics & Observability** - Prometheus metrics and OpenTelemetry support. See [Metrics Guide](docs/metrics.md)
-- **CLI Commands** - Command-line interface for administrative tasks. See [CLI Commands Guide](docs/cli-commands.md)
+- **CLI Commands** - Command-line interface for administrative tasks including permission sync and health checks. See [CLI Commands Guide](docs/cli-commands.md)
 - **Migration CLI** - Generate migrations with `make migrate-gen name=your_migration`
 
 ## Project Structure
