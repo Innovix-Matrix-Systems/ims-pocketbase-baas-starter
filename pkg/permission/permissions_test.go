@@ -38,7 +38,7 @@ func TestGetAllPermissions(t *testing.T) {
 	permissions := GetAllPermissions()
 
 	// Test that we get the expected number of permissions
-	expectedCount := 13
+	expectedCount := 14 // Updated to include CacheClear permission
 	if len(permissions) != expectedCount {
 		t.Errorf("Expected %d permissions, got %d", expectedCount, len(permissions))
 	}
@@ -61,6 +61,7 @@ func TestGetAllPermissions(t *testing.T) {
 		name        string
 		description string
 	}{
+		CacheClear:           {"Clear Cache", "Can clear the system cache"},
 		UserCreate:           {"Create User", "Can create new users"},
 		UserView:             {"View User", "Can view user details"},
 		UserViewAll:          {"View All Users", "Can view all users"},

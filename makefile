@@ -18,6 +18,7 @@ help:
 	@echo "  dev-build    - Build development image"
 	@echo "  dev-logs     - Show development container logs"
 	@echo "  dev-stop     - Stop development containers"
+	@echo "  dev-down     - Stop and remove the dev containers"
 	@echo "  dev-clean    - Clean development environment"
 	@echo "  dev-data-clean - Clean development data"
 	@echo ""
@@ -81,6 +82,10 @@ dev-logs:
 dev-stop:
 	@echo "Stopping development containers..."
 	docker-compose -f docker-compose.dev.yml stop
+
+dev-down:
+	@echo "Stopping development containers..."
+	docker-compose -f docker-compose.dev.yml down
 
 dev-clean:
 	@echo "Cleaning development environment..."

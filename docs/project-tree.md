@@ -15,10 +15,10 @@ ims-pocketbase-baas-starter/
 ├── 📁 pkg/                     # Reusable packages
 ├── 📁 scripts/                 # Build and setup scripts
 ├── 🐳 Dockerfile               # Production container definition
-├── � doocker-compose.yml       # Production container orchestration
+├── 🐳 docker-compose.yml       # Production container orchestration
 ├── 🐹 go.mod                   # Go module definition
 ├── ⚙️ makefile                 # Development commands
-└── � REA DME.md                # Main project documentation
+└── 📄 README.md                # Main project documentation
 ```
 
 ## Detailed Directory Breakdown
@@ -65,18 +65,20 @@ internal/
 │   ├── hooks.go       # Hook registration orchestration
 │   └── hooks_test.go  # Hook system tests
 ├── jobs/              # Job management
+│   ├── jobs.go        # Job handler registration (new pattern)
 │   └── manager.go     # Job manager singleton
 ├── middlewares/       # HTTP middlewares
+│   ├── middlewares.go # Middleware registration (new pattern)
 │   ├── auth.go        # Authentication middleware
 │   ├── metrics.go     # Metrics collection middleware
 │   └── permission.go  # Permission-based access control
 ├── routes/            # Custom API routes
-│   └── routes.go      # Route registration
-└── swagger/           # API documentation generation
+│   └── routes.go      # Route registration (new pattern)
+└── apidoc/           # API documentation generation
     ├── generator.go   # OpenAPI spec generation
     ├── discovery.go   # Collection discovery
     ├── schema.go      # Schema generation
-    └── endpoints.go   # Swagger UI endpoints
+    └── endpoints.go   # API docs endpoints
 ```
 
 ### 📁 `pkg/` - Reusable Packages
@@ -154,7 +156,7 @@ docs/
 ├── logger.md             # Logging system
 ├── middleware.md         # Custom middleware
 ├── migrations.md         # Database migrations
-├── swagger.md            # API documentation
+├── apidoc.md            # API documentation
 ├── docker-metrics.md     # Metrics monitoring setup
 ├── git-hooks.md          # Git hooks setup
 └── project-tree.md       # This file - project structure

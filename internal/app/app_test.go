@@ -1,7 +1,6 @@
 package app
 
 import (
-	"ims-pocketbase-baas-starter/pkg/common"
 	"testing"
 )
 
@@ -19,29 +18,6 @@ func TestAppCreation(t *testing.T) {
 
 	if pbApp.OnServe() == nil {
 		t.Fatal("Expected OnServe hook to be registered")
-	}
-}
-
-// TestProtectedCollectionsConfiguration tests the protected collections are correctly defined
-func TestProtectedCollectionsConfiguration(t *testing.T) {
-	expectedCollections := []string{"users", "roles", "permissions"}
-
-	if len(common.ProtectedCollections) != len(expectedCollections) {
-		t.Errorf("Expected %d protected collections, got %d",
-			len(expectedCollections), len(common.ProtectedCollections))
-	}
-
-	// Verify each expected collection is present
-	collectionMap := make(map[string]bool)
-	for _, collection := range common.ProtectedCollections {
-		collectionMap[collection] = true
-	}
-
-	for _, expected := range expectedCollections {
-		if !collectionMap[expected] {
-			t.Errorf("Expected protected collection '%s' not found in %v",
-				expected, common.ProtectedCollections)
-		}
 	}
 }
 

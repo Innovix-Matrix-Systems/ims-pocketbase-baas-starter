@@ -10,16 +10,15 @@ import (
 	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
-	"github.com/pocketbase/pocketbase/tools/hook"
 
+	"ims-pocketbase-baas-starter/internal/apidoc"
+	"ims-pocketbase-baas-starter/internal/commands"
 	"ims-pocketbase-baas-starter/internal/crons"
 	_ "ims-pocketbase-baas-starter/internal/database/migrations" //side effect migration load(from pocketbase)
 	"ims-pocketbase-baas-starter/internal/hooks"
 	"ims-pocketbase-baas-starter/internal/jobs"
 	"ims-pocketbase-baas-starter/internal/middlewares"
 	"ims-pocketbase-baas-starter/internal/routes"
-	"ims-pocketbase-baas-starter/internal/swagger"
-	"ims-pocketbase-baas-starter/pkg/common"
 	"ims-pocketbase-baas-starter/pkg/logger"
 	"ims-pocketbase-baas-starter/pkg/metrics"
 )
@@ -44,7 +43,7 @@ func NewApp() *pocketbase.PocketBase {
 	logger := logger.GetLogger(app)
 	logger.Info("Metrics provider initialized", "provider", metricsProvider != nil)
 
-	// Initialize job manager and processors during app startup
+	// Initialize job manager during app startup
 	// This must be called after app creation but before OnServe setup
 	jobManager := jobs.GetJobManager()
 	if err := jobManager.Initialize(app); err != nil {
@@ -52,10 +51,23 @@ func NewApp() *pocketbase.PocketBase {
 		log.Fatalf("Failed to initialize job manager: %v", err)
 	}
 
+	// Register job handlers during app initialization phase
+	// This must be called after job manager initialization
+	logger.Info("Registering job handlers")
+	if err := jobs.RegisterJobs(app); err != nil {
+		logger.Error("Failed to register job handlers", "error", err)
+		log.Fatalf("Failed to register job handlers: %v", err)
+	}
+
 	// Register scheduled cron jobs during app initialization phase
 	// This must be called after job manager initialization
 	logger.Info("Registering scheduled cron jobs")
 	crons.RegisterCrons(app)
+
+	// Register custom console commands
+	// This must be called after app creation but before OnServe setup
+	logger.Info("Registering custom console commands")
+	commands.RegisterCommands(app)
 
 	// Register custom event hooks
 	// This should be called after job manager and crons initialization
@@ -74,19 +86,8 @@ func NewApp() *pocketbase.PocketBase {
 	})
 
 	app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-		middleware := middlewares.NewAuthMiddleware()
-		metricsMiddleware := middlewares.NewMetricsMiddleware(metricsProvider)
-
-		// Initialize Swagger generator using singleton pattern
-		generator := swagger.InitializeGenerator(app)
-
-		// Register metrics middleware first to capture all requests
-		se.Router.Bind(&hook.Handler[*core.RequestEvent]{
-			Id:   "metricsCollection",
-			Func: metricsMiddleware.RequireMetricsFunc(),
-		})
-
 		// Register Prometheus metrics endpoint if provider supports it
+		metricsProvider := metrics.GetInstance()
 		if handler := metricsProvider.GetHandler(); handler != nil {
 			se.Router.GET("/metrics", func(e *core.RequestEvent) error {
 				handler.ServeHTTP(e.Response, e.Request)
@@ -95,34 +96,12 @@ func NewApp() *pocketbase.PocketBase {
 			logger.Info("Metrics endpoint registered", "path", "/metrics")
 		}
 
-		// Apply auth to specific PocketBase API endpoints
-		se.Router.Bind(&hook.Handler[*core.RequestEvent]{
-			Id: "jwtAuth",
-			Func: func(e *core.RequestEvent) error {
-				path := e.Request.URL.Path
+		// Initialize API docs generator using singleton pattern
+		generator := apidoc.InitializeGenerator(app)
 
-				// Check if path should be excluded
-				for _, excludedPath := range common.ExcludedPaths {
-					if strings.HasPrefix(path, excludedPath) {
-						return e.Next() // Skip auth for excluded paths
-					}
-				}
-
-				// Check if it's a protected collection endpoint
-				for _, collection := range common.ProtectedCollections {
-					collectionPath := "/api/collections/" + collection
-					if strings.HasPrefix(path, collectionPath) {
-						authFunc := middleware.RequireAuthFunc()
-						if err := authFunc(e); err != nil {
-							return err
-						}
-						break
-					}
-				}
-
-				return e.Next()
-			},
-		})
+		// Register all application middlewares
+		logger.Info("Registering middlewares")
+		middlewares.RegisterMiddlewares(se)
 
 		// static files
 		se.Router.GET("/{path...}", apis.Static(os.DirFS("./pb_public"), false))
@@ -130,8 +109,8 @@ func NewApp() *pocketbase.PocketBase {
 		// custom business routes
 		routes.RegisterCustom(se)
 
-		// Register Swagger endpoints
-		swagger.RegisterEndpoints(se, generator)
+		// Register API docs endpoints
+		apidoc.RegisterEndpoints(se, generator)
 
 		return se.Next()
 	})

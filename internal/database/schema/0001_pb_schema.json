@@ -806,8 +806,8 @@
   },
   {
     "id": "pbc_3709660955",
-    "listRule": "",
-    "viewRule": "",
+    "listRule": "@request.auth.id != ''",
+    "viewRule": "@request.auth.id != ''",
     "createRule": null,
     "updateRule": null,
     "deleteRule": null,

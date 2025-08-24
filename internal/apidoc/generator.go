@@ -1,4 +1,4 @@
-package swagger
+package apidoc
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"ims-pocketbase-baas-starter/pkg/logger"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/pocketbase/pocketbase"
 	"golang.org/x/text/cases"
@@ -93,6 +94,44 @@ type Generator struct {
 	routeGen  RouteGen
 }
 
+// Singleton pattern variables
+var (
+	instance *Generator
+	once     sync.Once
+	mutex    sync.RWMutex
+)
+
+// GetInstance returns the singleton instance of the Generator
+func GetInstance() *Generator {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	return instance
+}
+
+// Initialize initializes the swagger generator (thread-safe, called only once)
+func Initialize(app *pocketbase.PocketBase) *Generator {
+	once.Do(func() {
+		config := DefaultConfig()
+		instance = NewGenerator(app, config)
+	})
+	return instance
+}
+
+// IsInitialized checks if the generator has been initialized
+func IsInitialized() bool {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	return instance != nil
+}
+
+// Reset resets the singleton (primarily for testing)
+func Reset() {
+	mutex.Lock()
+	defer mutex.Unlock()
+	instance = nil
+	once = sync.Once{}
+}
+
 // NewGenerator creates a new OpenAPI generator
 func NewGenerator(app *pocketbase.PocketBase, config Config) *Generator {
 	// Initialize discovery
@@ -108,8 +147,8 @@ func NewGenerator(app *pocketbase.PocketBase, config Config) *Generator {
 		config.IncludeSystem,
 	)
 
-	// Initialize route generator
-	routeGen := NewRouteGeneratorWithConfig(schemaGen, config.EnableDynamicContentTypes)
+	// Initialize route generator with full config
+	routeGen := NewRouteGeneratorWithFullConfig(app, schemaGen, config.EnableDynamicContentTypes, true) // Exclude superuser routes
 
 	// Register custom routes from config
 	for _, customRoute := range config.CustomRoutes {
@@ -175,12 +214,12 @@ func (g *Generator) GenerateSpec() (*CombinedOpenAPISpec, error) {
 
 // InitializeGenerator creates and stores a global generator instance using singleton pattern
 func InitializeGenerator(app *pocketbase.PocketBase) *Generator {
-	return GetInstance().Initialize(app)
+	return Initialize(app)
 }
 
 // GetGlobalGenerator returns the global generator instance using singleton pattern
 func GetGlobalGenerator() *Generator {
-	return GetInstance().GetGenerator()
+	return GetInstance()
 }
 
 // GenerateOpenAPI generates OpenAPI specification from PocketBase app using singleton
@@ -355,9 +394,7 @@ func (g *Generator) buildTags(collections []CollectionInfo, routes []GeneratedRo
 
 // RefreshCollections refreshes the collection cache
 func (g *Generator) RefreshCollections() error {
-	if g.discovery != nil {
-		g.discovery.RefreshCollectionCache()
-	}
+	// CollectionDiscovery doesn't currently implement caching
 	return nil
 }
 
@@ -416,7 +453,7 @@ func (g *Generator) UpdateConfiguration(config Config) error {
 		config.IncludeSystem,
 	)
 
-	g.routeGen = NewRouteGeneratorWithConfig(g.schemaGen, config.EnableDynamicContentTypes)
+	g.routeGen = NewRouteGeneratorWithFullConfig(g.app, g.schemaGen, config.EnableDynamicContentTypes, true) // Exclude superuser routes
 
 	// Re-register custom routes
 	for _, customRoute := range config.CustomRoutes {

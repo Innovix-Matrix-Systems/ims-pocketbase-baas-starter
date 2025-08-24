@@ -1,4 +1,4 @@
-package swagger
+package apidoc
 
 // GetSwaggerUIHTML returns the HTML for Swagger UI
 func GetSwaggerUIHTML() string {
@@ -81,6 +81,20 @@ func GetScalarHTML() string {
       Scalar.createApiReference('#app', {
         // The URL of the OpenAPI/Swagger document
         url: '/api-docs/openapi.json',
+        theme: "purple",
+        layout: "modern",
+        showSidebar: true,
+        hideDownloadButton: false,
+        searchHotKey: "k",
+        persistAuth: true,
+        authentication: {
+          preferredSecurityScheme: 'BearerAuth',
+          securitySchemes: {
+            BearerAuth: {
+              token: ''
+            }
+          }
+        }
       })
     </script>
   </body>

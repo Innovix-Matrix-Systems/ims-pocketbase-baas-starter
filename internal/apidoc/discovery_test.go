@@ -1,4 +1,4 @@
-package swagger
+package apidoc
 
 import (
 	"testing"
@@ -653,11 +653,4 @@ func TestIsCollectionAccessibleWithNilApp(t *testing.T) {
 	if accessible {
 		t.Error("Expected collection to not be accessible with nil app")
 	}
-}
-
-func TestRefreshCollectionCache(t *testing.T) {
-	discovery := NewCollectionDiscovery(nil, true)
-
-	// This should not panic or error
-	discovery.RefreshCollectionCache()
 }

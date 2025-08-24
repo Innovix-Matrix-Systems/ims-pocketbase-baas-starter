@@ -1,7 +1,8 @@
 package route
 
 import (
-	"ims-pocketbase-baas-starter/internal/swagger"
+	"ims-pocketbase-baas-starter/pkg/cache"
+	"ims-pocketbase-baas-starter/pkg/common"
 	"time"
 
 	"github.com/pocketbase/pocketbase/core"
@@ -9,19 +10,29 @@ import (
 
 // HandleCacheStatus returns the current status of the global cache store
 func HandleCacheStatus(e *core.RequestEvent) error {
-	// Get the global swagger generator instance
-	generator := swagger.GetGlobalGenerator()
-	if generator == nil {
-		return e.JSON(500, map[string]string{
-			"error": "Swagger generator not initialized",
-		})
-	}
+	// Get the cache service instance
+	cacheService := cache.GetInstance()
 
-	// Create cached generator with 5-minute TTL (same as endpoints.go)
-	cachedGenerator := swagger.NewCachedGenerator(generator, 5*time.Minute)
+	// Get cache statistics
+	stats := cacheService.GetStats()
 
-	// Get cache status
-	status := cachedGenerator.GetCacheStatus()
+	// Return cache status using common response helper
+	return common.Response.OK(e, "Cache status retrieved successfully", map[string]any{
+		"status": "ok",
+		"stats":  stats,
+	})
+}
 
-	return e.JSON(200, status)
+// HandleCacheClear clears all cache entries in the system
+func HandleCacheClear(e *core.RequestEvent) error {
+	// Get the cache service instance
+	cacheService := cache.GetInstance()
+
+	// Clear all cache entries
+	cacheService.Flush()
+
+	// Return success response using common response helper
+	return common.Response.OK(e, "Cache cleared successfully", map[string]any{
+		"timestamp": time.Now().Format(time.RFC3339),
+	})
 }

@@ -1,4 +1,4 @@
-package swagger
+package apidoc
 
 import (
 	"fmt"
@@ -403,7 +403,6 @@ func (fsm *FieldSchemaMapper) addRelationFieldExample(field FieldInfo, schema *F
 		// Multi-relation field
 		schema.Example = []any{"RELATION_RECORD_ID"}
 	default:
-		// Fallback to generic example for unexpected schema types
 		// If we can't access the app instance, we'll just comment out the log for now
 		// log.Printf("Warning: Unexpected schema type %s for relation field %s, using fallback", schema.Type, field.Name)
 		fsm.addGenericFieldExample(field, schema)

@@ -1,4 +1,4 @@
-package swagger
+package apidoc
 
 import (
 	"reflect"

@@ -1,6 +1,6 @@
 # Custom Routes Guide
 
-This document explains how to create custom API routes and endpoints in the IMS PocketBase BaaS Starter, including integration with Swagger documentation.
+This document explains how to create custom API routes and endpoints in the IMS PocketBase BaaS Starter, including integration with API documentation.
 
 ## Overview
 
@@ -79,7 +79,7 @@ func HandleHelloWithName(e *core.RequestEvent) error {
 
 ### Step 2: Register the Route
 
-Add your route to `internal/routes/routes.go`:
+Add your route to `internal/routes/routes.go` following the consistent pattern:
 
 ```go
 // internal/routes/routes.go
@@ -87,21 +87,86 @@ package routes
 
 import (
     "ims-pocketbase-baas-starter/internal/handlers/route"
+    "ims-pocketbase-baas-starter/internal/middlewares"
     "ims-pocketbase-baas-starter/pkg/logger"
 
     "github.com/pocketbase/pocketbase/core"
 )
 
-// RegisterCustomRoutes registers all custom API routes
-func RegisterCustomRoutes(e *core.ServeEvent) error {
+// Route represents a custom application route with its configuration
+type Route struct {
+    Method      string                           // HTTP method (GET, POST, PUT, DELETE, etc.)
+    Path        string                           // Route path
+    Handler     func(*core.RequestEvent) error   // Handler function to execute when route is called
+    Middlewares []func(*core.RequestEvent) error // Middlewares to apply to this route
+    Enabled     bool                             // Whether the route should be registered
+    Description string                           // Human-readable description of what the route does
+}
+
+// RegisterCustom registers all custom routes with the PocketBase application
+func RegisterCustom(e *core.ServeEvent) {
+    authMiddleware := middlewares.NewAuthMiddleware()
     logger := logger.GetLogger(e.App)
 
-    // Hello endpoints
-    e.Router.GET("/api/v1/hello", route.HandleHello)
-    e.Router.GET("/api/v1/hello/{name}", route.HandleHelloWithName)
+    g := e.Router.Group("/api/v1")
+
+    // Define all custom routes in a consistent array structure
+    routes := []Route{
+        {
+            Method:      "GET",
+            Path:        "/hello",
+            Handler:     route.HandleHello,
+            Middlewares: []func(*core.RequestEvent) error{},
+            Enabled:     true,
+            Description: "Public hello world route",
+        },
+        {
+            Method:  "GET",
+            Path:    "/hello/{name}",
+            Handler: route.HandleHelloWithName,
+            Middlewares: []func(*core.RequestEvent) error{
+                authMiddleware.RequireAuthFunc(), // Apply authentication middleware
+            },
+            Enabled:     true,
+            Description: "Personalized hello route (auth required)",
+        },
+    }
+
+    // Register enabled routes
+    for _, route := range routes {
+        if !route.Enabled {
+            continue
+        }
+
+        // Create the final handler with middlewares applied
+        finalHandler := route.Handler
+        for i := len(route.Middlewares) - 1; i >= 0; i-- {
+            middleware := route.Middlewares[i]
+            nextHandler := finalHandler
+            finalHandler = func(e *core.RequestEvent) error {
+                if err := middleware(e); err != nil {
+                    return err
+                }
+                return nextHandler(e)
+            }
+        }
+
+        // Register the route with the appropriate HTTP method
+        switch route.Method {
+        case "GET":
+            g.GET(route.Path, finalHandler)
+        case "POST":
+            g.POST(route.Path, finalHandler)
+        case "PUT":
+            g.PUT(route.Path, finalHandler)
+        case "DELETE":
+            g.DELETE(route.Path, finalHandler)
+        case "PATCH":
+            g.PATCH(route.Path, finalHandler)
+        }
+    }
 
     logger.Info("Custom routes registered successfully")
-    return nil
 }
 ```
 
@@ -118,9 +183,7 @@ func NewApp() *pocketbase.PocketBase {
 
     app.OnServe().BindFunc(func(se *core.ServeEvent) error {
         // Register custom routes
-        if err := routes.RegisterCustomRoutes(se); err != nil {
-            return fmt.Errorf("failed to register custom routes: %w", err)
-        }
+        routes.RegisterCustom(se)
 
         return se.Next()
     })
@@ -279,27 +342,27 @@ func HandleFileUpload(e *core.RequestEvent) error {
 }
 ```
 
-## Integration with Swagger Documentation
+## Integration with API Documentation
 
-### Step 1: Register Custom Routes in Swagger
+### Step 1: Register Custom Routes in API Docs
 
-Add your custom routes to the Swagger generator:
+Add your custom routes to the API Docs generator:
 
 ```go
 // internal/app/app.go (in the OnServe handler)
 app.OnServe().BindFunc(func(se *core.ServeEvent) error {
-    // Initialize swagger generator
-    generator := swagger.InitializeGenerator(se.App)
+    // Initialize API docs generator
+    generator := apidoc.InitializeGenerator(se.App)
 
     // Register custom routes for documentation
-    registerSwaggerRoutes(generator)
+    registerApiDocRoutes(generator)
 
     return se.Next()
 })
 
-func registerSwaggerRoutes(generator *swagger.Generator) {
+func registerApiDocRoutes(generator *apidoc.Generator) {
     // Hello endpoint
-    generator.AddCustomRoute(swagger.CustomRoute{
+    generator.AddCustomRoute(apidoc.CustomRoute{
         Method:      "GET",
         Path:        "/api/v1/hello",
         Summary:     "Hello World",
@@ -309,14 +372,14 @@ func registerSwaggerRoutes(generator *swagger.Generator) {
     })
 
     // Hello with name endpoint
-    generator.AddCustomRoute(swagger.CustomRoute{
+    generator.AddCustomRoute(apidoc.CustomRoute{
         Method:      "GET",
         Path:        "/api/v1/hello/{name}",
         Summary:     "Personalized Hello",
         Description: "Returns a personalized greeting message",
         Tags:        []string{"General"},
         Protected:   false,
-        Parameters: []swagger.Parameter{
+        Parameters: []apidoc.Parameter{
             {
                 Name:        "name",
                 In:          "path",
@@ -330,7 +393,7 @@ func registerSwaggerRoutes(generator *swagger.Generator) {
     })
 
     // Protected endpoint
-    generator.AddCustomRoute(swagger.CustomRoute{
+    generator.AddCustomRoute(apidoc.CustomRoute{
         Method:      "GET",
         Path:        "/api/v1/protected/profile",
         Summary:     "Get User Profile",
@@ -340,17 +403,17 @@ func registerSwaggerRoutes(generator *swagger.Generator) {
     })
 
     // Create user endpoint
-    generator.AddCustomRoute(swagger.CustomRoute{
+    generator.AddCustomRoute(apidoc.CustomRoute{
         Method:      "POST",
         Path:        "/api/v1/users",
         Summary:     "Create User",
         Description: "Creates a new user with validation",
         Tags:        []string{"User"},
         Protected:   false,
-        RequestBody: &swagger.RequestBody{
+        RequestBody: &apidoc.RequestBody{
             Required:    true,
             Description: "User creation data",
-            Content: map[string]swagger.MediaType{
+            Content: map[string]apidoc.MediaType{
                 "application/json": {
                     Schema: map[string]interface{}{
                         "type": "object",
@@ -378,17 +441,17 @@ func registerSwaggerRoutes(generator *swagger.Generator) {
     })
 
     // File upload endpoint
-    generator.AddCustomRoute(swagger.CustomRoute{
+    generator.AddCustomRoute(apidoc.CustomRoute{
         Method:      "POST",
         Path:        "/api/v1/upload",
         Summary:     "Upload File",
         Description: "Uploads a file to the server",
         Tags:        []string{"Files"},
         Protected:   true,
-        RequestBody: &swagger.RequestBody{
+        RequestBody: &apidoc.RequestBody{
             Required:    true,
             Description: "File to upload",
-            Content: map[string]swagger.MediaType{
+            Content: map[string]apidoc.MediaType{
                 "multipart/form-data": {
                     Schema: map[string]interface{}{
                         "type": "object",
@@ -410,7 +473,7 @@ func registerSwaggerRoutes(generator *swagger.Generator) {
 
 After registering your routes, they will appear in:
 
-- **Swagger UI**: http://localhost:8090/api-docs
+- **API Docs**: http://localhost:8090/api-docs
 - **ReDoc**: http://localhost:8090/api-docs/redoc
 - **OpenAPI JSON**: http://localhost:8090/api-docs/openapi.json
 

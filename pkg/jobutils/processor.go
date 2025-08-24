@@ -215,11 +215,16 @@ func (p *JobProcessor) validateJobRecord(record *core.Record) error {
 }
 
 // reserveJob updates the reserved_at timestamp to mark the job as being processed
+// Returns an error if the job is already reserved by another process
 func (p *JobProcessor) reserveJob(record *core.Record) error {
 	now := time.Now()
 	record.Set("reserved_at", now.Format(time.RFC3339))
 
 	if err := p.app.Save(record); err != nil {
+		// This can happen in race conditions where another worker reserved the job simultaneously
+		if p.isJobReserved(record) {
+			return fmt.Errorf("job %s is already reserved by another process", record.Id)
+		}
 		return fmt.Errorf("failed to reserve job %s: %w", record.Id, err)
 	}
 
@@ -292,13 +297,11 @@ func (p *JobProcessor) ProcessJob(record *core.Record) error {
 		return fmt.Errorf("job validation failed: %w", err)
 	}
 
-	// Step 2: Check if job is already reserved
-	if p.isJobReserved(record) {
-		return fmt.Errorf("job %s is already reserved by another process", record.Id)
-	}
-
-	// Step 3: Reserve the job
+	// Step 2: Attempt to reserve the job (atomic operation to prevent race conditions)
 	if err := p.reserveJob(record); err != nil {
+		if p.isJobReserved(record) {
+			return fmt.Errorf("job %s is already reserved by another process", record.Id)
+		}
 		return err
 	}
 

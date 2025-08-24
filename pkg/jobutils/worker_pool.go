@@ -216,13 +216,12 @@ func (w *Worker) processJob(record *core.Record) error {
 		return fmt.Errorf("job validation failed: %w", err)
 	}
 
-	// Check if job is already reserved by another process
-	if w.isJobReserved(record) {
-		return fmt.Errorf("job %s is already reserved", record.Id)
-	}
-
-	// Reserve the job
+	// Attempt to reserve the job (atomic operation to prevent race conditions)
 	if err := w.reserveJob(record); err != nil {
+		// Check if the job is already reserved by another process
+		if w.isJobReserved(record) {
+			return fmt.Errorf("job %s is already reserved", record.Id)
+		}
 		return err
 	}
 
@@ -300,7 +299,18 @@ func (w *Worker) isJobReserved(record *core.Record) bool {
 func (w *Worker) reserveJob(record *core.Record) error {
 	now := time.Now()
 	record.Set("reserved_at", now.Format(time.RFC3339))
-	return w.app.Save(record)
+
+	if err := w.app.Save(record); err != nil {
+		// This can happen in race conditions where another worker reserved the job simultaneously
+		if w.isJobReserved(record) {
+			return fmt.Errorf("job %s is already reserved by another process", record.Id)
+		}
+		return fmt.Errorf("failed to reserve job %s: %w", record.Id, err)
+	}
+
+	log := logger.GetLogger(w.app)
+	log.Debug("Job reserved", "job_id", record.Id, "reserved_at", now)
+	return nil
 }
 
 func (w *Worker) completeJob(record *core.Record) error {

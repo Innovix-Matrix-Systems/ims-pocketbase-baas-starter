@@ -2,6 +2,8 @@ package permission
 
 // Permission constants for RBAC system
 const (
+	//system
+	CacheClear = "cache.clear"
 	// User permissions
 	UserCreate           = "user.create"
 	UserView             = "user.view"
@@ -30,6 +32,7 @@ type PermissionDefinition struct {
 // GetAllPermissions returns all permission definitions
 func GetAllPermissions() []PermissionDefinition {
 	return []PermissionDefinition{
+		{Slug: CacheClear, Name: "Clear Cache", Description: "Can clear the system cache"},
 		{Slug: UserCreate, Name: "Create User", Description: "Can create new users"},
 		{Slug: UserView, Name: "View User", Description: "Can view user details"},
 		{Slug: UserViewAll, Name: "View All Users", Description: "Can view all users"},

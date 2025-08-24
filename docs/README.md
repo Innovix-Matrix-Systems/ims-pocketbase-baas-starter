@@ -37,6 +37,16 @@ Complete reference for all available development and production commands:
 - Common workflows and usage examples
 - Tips and troubleshooting
 
+### [CLI Commands Guide](cli-commands.md)
+
+Complete guide for using and extending the command-line interface:
+
+- Built-in commands (hello, version, health)
+- Running commands in development and production
+- Adding new custom commands
+- Advanced features and best practices
+- Testing and troubleshooting
+
 ### [Database Migrations Guide](migrations.md)
 
 Complete guide for managing database schema changes and migrations:
@@ -53,9 +63,9 @@ Complete guide for managing database schema changes and migrations:
 
 Comprehensive guide for creating custom API routes and endpoints:
 
-- Creating custom route handlers and registration
-- Route organization and file structure
-- Integration with Swagger documentation
+- Creating custom route handlers and registration following the new consistent pattern
+- Route organization and file structure with array-based configuration
+- Integration with API documentation
 - Authentication and middleware integration
 - Request/response handling and validation
 - Testing custom routes and error handling
@@ -77,8 +87,8 @@ Complete guide for implementing and managing PocketBase event hooks:
 
 Comprehensive guide for implementing and using authentication middleware:
 
-- Middleware architecture and structure
-- Protecting custom API routes
+- Middleware architecture and structure following the new consistent pattern
+- Protecting custom API routes with array-based middleware configuration
 - Applying middleware to default PocketBase routes
 - Collection-specific authentication
 - Testing and troubleshooting middleware
@@ -145,11 +155,11 @@ Complete guide for the unified logging system with singleton pattern:
 
 ## Documentation & Development
 
-### [Swagger API Documentation Guide](swagger.md)
+### [API Docs Guide](apidoc.md)
 
 Comprehensive guide for the automatic API documentation system:
 
-- Swagger UI, ReDoc, and OpenAPI JSON generation
+- Interactive API documentation, ReDoc, and OpenAPI JSON generation
 - Collection discovery and schema generation
 - Route generation for CRUD and authentication
 - Custom route integration and configuration

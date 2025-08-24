@@ -1,19 +1,23 @@
-package swagger
+package apidoc
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
+	"ims-pocketbase-baas-starter/pkg/logger"
+
+	"github.com/pocketbase/pocketbase"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
 // RouteGenerator handles automatic CRUD route generation for collections
 type RouteGenerator struct {
+	app                       *pocketbase.PocketBase
 	schemaGen                 SchemaGen
 	customRoutes              []CustomRoute
 	enableDynamicContentTypes bool
+	excludeSuperuserRoutes    bool // New field to control superuser route exclusion
 }
 
 // GeneratedRoute represents a complete OpenAPI route definition
@@ -81,22 +85,24 @@ type RouteGen interface {
 }
 
 // NewRouteGenerator creates a new route generator
-func NewRouteGenerator(schemaGen SchemaGen) *RouteGenerator {
-
+func NewRouteGenerator(app *pocketbase.PocketBase, schemaGen SchemaGen) *RouteGenerator {
 	return &RouteGenerator{
+		app:                       app,
 		schemaGen:                 schemaGen,
 		customRoutes:              []CustomRoute{},
 		enableDynamicContentTypes: true, // Default to enabled for backward compatibility
+		excludeSuperuserRoutes:    true, // Default to excluding superuser routes
 	}
 }
 
-// NewRouteGeneratorWithConfig creates a new route generator with configuration
-func NewRouteGeneratorWithConfig(schemaGen SchemaGen, enableDynamicContentTypes bool) *RouteGenerator {
-
+// NewRouteGeneratorWithFullConfig creates a new route generator with full configuration
+func NewRouteGeneratorWithFullConfig(app *pocketbase.PocketBase, schemaGen SchemaGen, enableDynamicContentTypes, excludeSuperuserRoutes bool) *RouteGenerator {
 	return &RouteGenerator{
+		app:                       app,
 		schemaGen:                 schemaGen,
 		customRoutes:              []CustomRoute{},
 		enableDynamicContentTypes: enableDynamicContentTypes,
+		excludeSuperuserRoutes:    excludeSuperuserRoutes,
 	}
 }
 
@@ -113,41 +119,91 @@ func (rg *RouteGenerator) GenerateCollectionRoutes(collection CollectionInfo) ([
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate list route: %w", err)
 	}
-	routes = append(routes, *listRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if listRoute != nil {
+		routes = append(routes, *listRoute)
+	}
 
 	// Generate create route
 	createRoute, err := rg.generateCreateRoute(collection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate create route: %w", err)
 	}
-	routes = append(routes, *createRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if createRoute != nil {
+		routes = append(routes, *createRoute)
+	}
 
 	// Generate view route
 	viewRoute, err := rg.generateViewRoute(collection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate view route: %w", err)
 	}
-	routes = append(routes, *viewRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if viewRoute != nil {
+		routes = append(routes, *viewRoute)
+	}
 
 	// Generate update route
 	updateRoute, err := rg.generateUpdateRoute(collection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate update route: %w", err)
 	}
-	routes = append(routes, *updateRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if updateRoute != nil {
+		routes = append(routes, *updateRoute)
+	}
 
 	// Generate delete route
 	deleteRoute, err := rg.generateDeleteRoute(collection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate delete route: %w", err)
 	}
-	routes = append(routes, *deleteRoute)
+	// Only add the route if it's not nil (not superuser-only)
+	if deleteRoute != nil {
+		routes = append(routes, *deleteRoute)
+	}
 
 	return routes, nil
 }
 
+// requiresAuthentication checks if a rule requires authentication
+// Returns true if the rule contains @request.auth.id != ” or is not public
+func (rg *RouteGenerator) requiresAuthentication(rule *string) bool {
+	// If rule is nil, it's locked and requires auth
+	if rule == nil {
+		return true
+	}
+
+	// If rule is empty string, it's public and doesn't require auth
+	if *rule == "" {
+		return false
+	}
+
+	// Check if the rule contains the auth pattern with single or double quotes
+	return strings.Contains(*rule, "@request.auth.id != ''") ||
+		strings.Contains(*rule, "@request.auth.id != \"\"")
+}
+
+// isSuperuserOnly checks if a rule is superuser-only (nil rule)
+// Returns true if the rule is nil, meaning only superusers can access
+func (rg *RouteGenerator) isSuperuserOnly(rule *string) bool {
+	// If excluding superuser routes is disabled, never consider a route superuser-only
+	if !rg.excludeSuperuserRoutes {
+		return false
+	}
+
+	// If rule is nil, it's superuser-only
+	return rule == nil
+}
+
 // generateListRoute generates a list/search route for a collection
 func (rg *RouteGenerator) generateListRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.ListRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	// Generate list response schema
 	listResponseSchema, err := rg.schemaGen.GenerateListResponseSchema(collection)
 	if err != nil {
@@ -180,8 +236,8 @@ func (rg *RouteGenerator) generateListRoute(collection CollectionInfo) (*Generat
 		},
 	}
 
-	// Add security if collection has list rule
-	if collection.ListRule != nil && *collection.ListRule != "" {
+	// Add security if collection requires authentication for list operations
+	if rg.requiresAuthentication(collection.ListRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}
@@ -192,6 +248,11 @@ func (rg *RouteGenerator) generateListRoute(collection CollectionInfo) (*Generat
 
 // generateCreateRoute generates a create route for a collection
 func (rg *RouteGenerator) generateCreateRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.CreateRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	// Generate create schema
 	createSchema, err := rg.schemaGen.GenerateCreateSchema(collection)
 	if err != nil {
@@ -237,8 +298,8 @@ func (rg *RouteGenerator) generateCreateRoute(collection CollectionInfo) (*Gener
 		},
 	}
 
-	// Add security if collection has create rule
-	if collection.CreateRule != nil && *collection.CreateRule != "" {
+	// Add security if collection requires authentication for create operations
+	if rg.requiresAuthentication(collection.CreateRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}
@@ -249,6 +310,11 @@ func (rg *RouteGenerator) generateCreateRoute(collection CollectionInfo) (*Gener
 
 // generateViewRoute generates a view route for a single record
 func (rg *RouteGenerator) generateViewRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.ViewRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	// Generate response schema
 	responseSchema, err := rg.schemaGen.GenerateCollectionSchema(collection)
 	if err != nil {
@@ -291,8 +357,8 @@ func (rg *RouteGenerator) generateViewRoute(collection CollectionInfo) (*Generat
 		},
 	}
 
-	// Add security if collection has view rule
-	if collection.ViewRule != nil && *collection.ViewRule != "" {
+	// Add security if collection requires authentication for view operations
+	if rg.requiresAuthentication(collection.ViewRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}
@@ -303,6 +369,11 @@ func (rg *RouteGenerator) generateViewRoute(collection CollectionInfo) (*Generat
 
 // generateUpdateRoute generates an update route for a record
 func (rg *RouteGenerator) generateUpdateRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.UpdateRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	// Generate update schema
 	updateSchema, err := rg.schemaGen.GenerateUpdateSchema(collection)
 	if err != nil {
@@ -359,8 +430,8 @@ func (rg *RouteGenerator) generateUpdateRoute(collection CollectionInfo) (*Gener
 		},
 	}
 
-	// Add security if collection has update rule
-	if collection.UpdateRule != nil && *collection.UpdateRule != "" {
+	// Add security if collection requires authentication for update operations
+	if rg.requiresAuthentication(collection.UpdateRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}
@@ -371,6 +442,11 @@ func (rg *RouteGenerator) generateUpdateRoute(collection CollectionInfo) (*Gener
 
 // generateDeleteRoute generates a delete route for a record
 func (rg *RouteGenerator) generateDeleteRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Skip superuser-only routes
+	if rg.isSuperuserOnly(collection.DeleteRule) {
+		return nil, nil // Return nil to indicate this route should be skipped
+	}
+
 	caser := cases.Title(language.English)
 	route := &GeneratedRoute{
 		Method:      "DELETE",
@@ -402,8 +478,8 @@ func (rg *RouteGenerator) generateDeleteRoute(collection CollectionInfo) (*Gener
 		},
 	}
 
-	// Add security if collection has delete rule
-	if collection.DeleteRule != nil && *collection.DeleteRule != "" {
+	// Add security if collection requires authentication for delete operations
+	if rg.requiresAuthentication(collection.DeleteRule) {
 		route.Security = []SecurityRequirement{
 			{"BearerAuth": []string{}},
 		}
@@ -475,25 +551,34 @@ func (rg *RouteGenerator) GenerateAuthRoutes(collection CollectionInfo) ([]Gener
 	var routes []GeneratedRoute
 
 	// Generate auth-with-password route
-	authRoute, err := rg.generateAuthWithPasswordRoute(collection)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate auth-with-password route: %w", err)
+	// Skip if ListRule is superuser-only (unusual for auth collections, but possible)
+	if !rg.isSuperuserOnly(collection.ListRule) {
+		authRoute, err := rg.generateAuthWithPasswordRoute(collection)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate auth-with-password route: %w", err)
+		}
+		routes = append(routes, *authRoute)
 	}
-	routes = append(routes, *authRoute)
 
 	// Generate auth-refresh route
-	refreshRoute, err := rg.generateAuthRefreshRoute(collection)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate auth-refresh route: %w", err)
+	// Skip if ViewRule is superuser-only (unusual for auth collections, but possible)
+	if !rg.isSuperuserOnly(collection.ViewRule) {
+		refreshRoute, err := rg.generateAuthRefreshRoute(collection)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate auth-refresh route: %w", err)
+		}
+		routes = append(routes, *refreshRoute)
 	}
-	routes = append(routes, *refreshRoute)
 
 	// Generate request-password-reset route
-	resetRoute, err := rg.generateRequestPasswordResetRoute(collection)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate request-password-reset route: %w", err)
+	// Skip if CreateRule is superuser-only (unusual for auth collections, but possible)
+	if !rg.isSuperuserOnly(collection.CreateRule) {
+		resetRoute, err := rg.generateRequestPasswordResetRoute(collection)
+		if err != nil {
+			return nil, fmt.Errorf("failed to generate request-password-reset route: %w", err)
+		}
+		routes = append(routes, *resetRoute)
 	}
-	routes = append(routes, *resetRoute)
 
 	return routes, nil
 }
@@ -784,6 +869,7 @@ func (rg *RouteGenerator) hasFileFields(collection CollectionInfo) bool {
 // getFileFields returns a list of file fields with their options
 func (rg *RouteGenerator) getFileFields(collection CollectionInfo) []FileFieldInfo {
 	var fileFields []FileFieldInfo
+	log := logger.FromApp(rg.app)
 
 	if len(collection.Fields) == 0 {
 		return fileFields
@@ -803,26 +889,19 @@ func (rg *RouteGenerator) getFileFields(collection CollectionInfo) []FileFieldIn
 		if field.Options != nil {
 			// Check for multiple file uploads
 			if maxSelect, ok := field.Options["maxSelect"]; ok {
-				log.Printf("Debug: Field %s in collection %s has maxSelect: %v (type: %T)", field.Name, collection.Name, maxSelect, maxSelect)
 				if ms, err := rg.parseIntOption(maxSelect); err == nil && ms > 1 {
 					fileField.IsMultiple = true
-					log.Printf("Debug: Field %s set as multiple (maxSelect: %d)", field.Name, ms)
 				} else if err != nil {
-					log.Printf("Warning: Failed to parse maxSelect for field %s in collection %s: %v", field.Name, collection.Name, err)
-				} else {
-					log.Printf("Debug: Field %s not multiple (maxSelect: %d <= 1)", field.Name, ms)
+					log.Warn("Failed to parse maxSelect for field", "field", field.Name, "collection", collection.Name, "error", err)
 				}
-			} else {
-				log.Printf("Debug: Field %s in collection %s has no maxSelect option", field.Name, collection.Name)
 			}
 
 			// Extract max file size
 			if maxSize, ok := field.Options["maxSize"]; ok {
 				if ms, err := rg.parseIntOption(maxSize); err == nil {
 					fileField.MaxSize = int64(ms)
-
 				} else {
-					log.Printf("Warning: Failed to parse maxSize for field %s in collection %s: %v", field.Name, collection.Name, err)
+					log.Warn("Failed to parse maxSize for field", "field", field.Name, "collection", collection.Name, "error", err)
 				}
 			}
 
@@ -833,12 +912,11 @@ func (rg *RouteGenerator) getFileFields(collection CollectionInfo) []FileFieldIn
 						if typeStr, ok := t.(string); ok {
 							fileField.AllowedTypes = append(fileField.AllowedTypes, typeStr)
 						} else {
-							log.Printf("Warning: Invalid MIME type in field %s of collection %s: %v", field.Name, collection.Name, t)
+							log.Warn("Invalid MIME type in field", "field", field.Name, "collection", collection.Name, "value", t)
 						}
 					}
-
 				} else {
-					log.Printf("Warning: Invalid mimeTypes format for field %s in collection %s", field.Name, collection.Name)
+					log.Warn("Invalid mimeTypes format for field", "field", field.Name, "collection", collection.Name)
 				}
 			}
 		}
@@ -904,6 +982,7 @@ func isRelationField(fieldSchema map[string]any) bool {
 // If collection has file fields, it adds multipart/form-data support for create and update operations
 func (rg *RouteGenerator) generateRequestContent(schema any, collection CollectionInfo, operation string) map[string]MediaType {
 	content := make(map[string]MediaType)
+	log := logger.FromApp(rg.app)
 
 	// Always include application/json
 	content["application/json"] = MediaType{
@@ -953,7 +1032,7 @@ func (rg *RouteGenerator) generateRequestContent(schema any, collection Collecti
 		if p, ok := s["properties"].(map[string]any); ok {
 			props = p
 		} else {
-			log.Printf("Warning: Cannot parse schema properties for collection %s (operation: %s), falling back to JSON-only", collection.Name, operation)
+			log.Warn("Cannot parse schema properties for collection, falling back to JSON-only", "collection", collection.Name, "operation", operation)
 			return content
 		}
 		if r, ok := s["required"].([]string); ok {
@@ -1011,7 +1090,7 @@ func (rg *RouteGenerator) generateRequestContent(schema any, collection Collecti
 		}
 		required = s.Required
 	default:
-		log.Printf("Warning: Cannot parse schema for collection %s (operation: %s), schema type: %T, falling back to JSON-only", collection.Name, operation, schema)
+		log.Warn("Cannot parse schema for collection, falling back to JSON-only", "collection", collection.Name, "operation", operation, "schemaType", fmt.Sprintf("%T", schema))
 		return content
 	}
 
@@ -1152,7 +1231,7 @@ func (rg *RouteGenerator) generateRequestContent(schema any, collection Collecti
 				formDataProps[propName] = formFieldSchema
 			} else {
 				// Fallback: use the original property as-is
-				log.Printf("Warning: Could not parse property %s for form-data, using original schema", propName)
+				log.Warn("Could not parse property for form-data, using original schema", "property", propName)
 				formDataProps[propName] = propValue
 			}
 			processedFields++
@@ -1209,7 +1288,7 @@ func (rg *RouteGenerator) generateRequestContent(schema any, collection Collecti
 
 	// Validate that we have properties in the form-data schema
 	if len(formDataProps) == 0 {
-		log.Printf("Warning: No properties generated for form-data schema in collection %s, falling back to JSON-only", collection.Name)
+		log.Warn("No properties generated for form-data schema in collection, falling back to JSON-only", "collection", collection.Name)
 		return content
 	}
 

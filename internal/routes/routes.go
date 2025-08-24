@@ -8,85 +8,113 @@ import (
 	"github.com/pocketbase/pocketbase/core"
 )
 
-func applyAuthAndPermissionCheck(e *core.RequestEvent, authMiddleware *middlewares.AuthMiddleware, permissionMiddleware *middlewares.PermissionMiddleware, permission string) error {
-	// Apply authentication middleware
-	authFunc := authMiddleware.RequireAuthFunc()
-	if err := authFunc(e); err != nil {
-		return err
-	}
-
-	// Apply permission middleware if permission is provided
-	if permission != "" {
-		permissionFunc := permissionMiddleware.RequirePermission(permission)
-		if err := permissionFunc(e); err != nil {
-			return err
-		}
-	}
-
-	return nil
+// Route represents a custom application route with its configuration
+type Route struct {
+	Method      string                           // HTTP method (GET, POST, PUT, DELETE, etc.)
+	Path        string                           // Route path
+	Handler     func(*core.RequestEvent) error   // Handler function to execute when route is called
+	Middlewares []func(*core.RequestEvent) error // Middlewares to apply to this route
+	Enabled     bool                             // Whether the route should be registered
+	Description string                           // Human-readable description of what the route does
 }
 
-// Register Custom made routes here
+// RegisterCustom registers all custom routes with the PocketBase application
+// This function follows the same pattern as RegisterCrons and RegisterJobs
 func RegisterCustom(e *core.ServeEvent) {
 	authMiddleware := middlewares.NewAuthMiddleware()
 	permissionMiddleware := middlewares.NewPermissionMiddleware()
 
 	g := e.Router.Group("/api/v1")
 
-	//public route
-	g.GET("/hello", func(request *core.RequestEvent) error {
-		return request.JSON(200, map[string]string{"msg": "Hello from custom route"})
-	})
+	// Define all custom routes
+	routes := []Route{
+		{
+			Method:      "GET",
+			Path:        "/cache-status",
+			Handler:     route.HandleCacheStatus,
+			Middlewares: []func(*core.RequestEvent) error{},
+			Enabled:     true,
+			Description: "Cache status route (public for monitoring)",
+		},
+		{
+			Method:  "DELETE",
+			Path:    "/cache",
+			Handler: route.HandleCacheClear,
+			Middlewares: []func(*core.RequestEvent) error{
+				authMiddleware.RequireAuthFunc(),
+				permissionMiddleware.RequirePermission(permission.CacheClear),
+			},
+			Enabled:     true,
+			Description: "Clear all system cache (requires auth and cache.clear permission)",
+		},
+		{
+			Method:  "POST",
+			Path:    "/users/export",
+			Handler: route.HandleUserExport,
+			Middlewares: []func(*core.RequestEvent) error{
+				authMiddleware.RequireAuthFunc(),
+				permissionMiddleware.RequirePermission(permission.UserExport),
+			},
+			Enabled:     true,
+			Description: "User export route",
+		},
+		{
+			Method:  "GET",
+			Path:    "/jobs/{id}/status",
+			Handler: route.HandleGetJobStatus,
+			Middlewares: []func(*core.RequestEvent) error{
+				authMiddleware.RequireAuthFunc(),
+			},
+			Enabled:     true,
+			Description: "Get job status route",
+		},
+		{
+			Method:  "POST",
+			Path:    "/jobs/{id}/download",
+			Handler: route.HandleDownloadJobFile,
+			Middlewares: []func(*core.RequestEvent) error{
+				authMiddleware.RequireAuthFunc(),
+			},
+			Enabled:     true,
+			Description: "Download job file route",
+		},
+		// Add more routes here as needed:
+	}
 
-	// Cache status route (public for monitoring)
-	g.GET("/cache-status", func(request *core.RequestEvent) error {
-		return route.HandleCacheStatus(request)
-	})
-
-	//auth protected route
-	g.GET("/protected", func(request *core.RequestEvent) error {
-		// Apply authentication middleware
-		authFunc := authMiddleware.RequireAuthFunc()
-		if err := authFunc(request); err != nil {
-			return err
+	// Register enabled routes
+	for _, route := range routes {
+		if !route.Enabled {
+			continue
 		}
-		// Your protected handler logic
-		return request.JSON(200, map[string]string{"msg": "You are authenticated!"})
-	})
 
-	//Permission protected route
-	g.GET("/permission-test", func(request *core.RequestEvent) error {
-		if err := applyAuthAndPermissionCheck(request, authMiddleware, permissionMiddleware, permission.UserCreate); err != nil {
-			return err
-		}
-		// Your protected handler logic
-		return request.JSON(200, map[string]string{"msg": "You have the User create permission!"})
-	})
-
-	//user export
-	g.POST("/users/export", func(request *core.RequestEvent) error {
-		if err := applyAuthAndPermissionCheck(request, authMiddleware, permissionMiddleware, permission.UserExport); err != nil {
-			return err
+		// Create the final handler with middlewares applied
+		finalHandler := route.Handler
+		for i := len(route.Middlewares) - 1; i >= 0; i-- {
+			middleware := route.Middlewares[i]
+			nextHandler := finalHandler
+			finalHandler = func(e *core.RequestEvent) error {
+				if err := middleware(e); err != nil {
+					return err
+				}
+				return nextHandler(e)
+			}
 		}
 
-		return route.HandleUserExport(request)
-	})
-
-	g.GET("/jobs/{id}/status", func(request *core.RequestEvent) error {
-		authFunc := authMiddleware.RequireAuthFunc()
-		if err := authFunc(request); err != nil {
-			return err
+		// Register the route with the appropriate HTTP method
+		switch route.Method {
+		case "GET":
+			g.GET(route.Path, finalHandler)
+		case "POST":
+			g.POST(route.Path, finalHandler)
+		case "PUT":
+			g.PUT(route.Path, finalHandler)
+		case "DELETE":
+			g.DELETE(route.Path, finalHandler)
+		case "PATCH":
+			g.PATCH(route.Path, finalHandler)
+		default:
+			// For unsupported methods, skip registration
+			continue
 		}
-
-		return route.HandleGetJobStatus(request)
-	})
-
-	g.POST("/jobs/{id}/download", func(request *core.RequestEvent) error {
-		authFunc := authMiddleware.RequireAuthFunc()
-		if err := authFunc(request); err != nil {
-			return err
-		}
-
-		return route.HandleDownloadJobFile(request)
-	})
+	}
 }

@@ -366,93 +366,50 @@ flowchart TD
     style START fill:#fff3e0
 ```
 
-### 4. Function Injection Pattern
+### 4. Middleware Registration Pattern
 
-**Used for:** Event-driven architecture and callback-style dependencies.
+**Used for:** HTTP middleware processing with consistent registration.
 
-**Examples:**
+**Implementation:** `internal/middlewares/middlewares.go`
 
-#### Hook Registration (`internal/hooks/hooks.go`)
 ```go
-// Mailer hooks with metrics instrumentation
-func registerMailerHooks(app *pocketbase.PocketBase) {
-    app.OnMailerSend().BindFunc(func(e *core.MailerEvent) error {
-        // Get the metrics provider instance
-        metricsProvider := metrics.GetInstance()
-
-        // Instrument the email operation with metrics collection
-        return metrics.InstrumentEmailOperation(metricsProvider, func() error {
-            return hook.HandleMailerSend(e)
-        })
-    })
-}
-
-// Record hooks with instrumentation
-func registerRecordHooks(app *pocketbase.PocketBase) {
-    // User creation with settings initialization
-    app.OnRecordCreate("users").BindFunc(func(e *core.RecordEvent) error {
-        metricsProvider := metrics.GetInstance()
-        
-        return metrics.InstrumentHook(metricsProvider, "user_create_settings", func() error {
-            return hook.HandleUserCreateSettings(e)
-        })
-    })
-}
-```
-
-#### Job Handler Registration (`internal/handlers/jobs/registry.go`)
-```go
-func InitializeJobHandlers(app *pocketbase.PocketBase, processor *jobutils.JobProcessor) error {
-    // Get the registry from the processor (dependency)
-    registry := processor.GetRegistry()
-
-    // Register email job handler with dependency injection
-    emailHandler := NewEmailJobHandler(app)  // Constructor injection
-    if err := registry.Register(emailHandler); err != nil {
-        return err
+// Middleware registration follows the same pattern as cron jobs and routes
+func RegisterMiddlewares(e *core.ServeEvent) {
+    // Define all middlewares
+    middlewares := []Middleware{
+        {
+            ID:          "metricsCollection",
+            Handler:     getMetricsMiddlewareHandler(),
+            Enabled:     true,
+            Description: "Collect HTTP request metrics",
+            Order:       1,
+        },
+        {
+            ID:          "jwtAuth",
+            Handler:     getAuthMiddlewareHandler(e),
+            Enabled:     true,
+            Description: "JWT authentication with exclusions",
+            Order:       2,
+        },
     }
 
-    // Register data processing job handler
-    dataHandler := NewDataProcessingJobHandler(app)  // Constructor injection
-    if err := registry.Register(dataHandler); err != nil {
-        return err
+    // Register enabled middlewares
+    for _, middleware := range middlewares {
+        if middleware.Enabled {
+            e.Router.Bind(&hook.Handler[*core.RequestEvent]{
+                Id:   middleware.ID,
+                Func: middleware.Handler,
+            })
+        }
     }
-
-    return nil
 }
 ```
 
-**Benefits:**
-- ✅ Event-driven architecture support
-- ✅ Flexible callback registration
-- ✅ Framework integration (PocketBase hooks)
-- ✅ Composable behavior
-
-#### Function Injection in Hook System
-
-```mermaid
-sequenceDiagram
-    participant App as PocketBase App
-    participant Hook as Hook Registry
-    participant Metrics as Metrics Provider
-    participant Handler as Hook Handler
-    
-    App->>Hook: OnMailerSend().BindFunc()
-    Hook->>Metrics: GetInstance()
-    Metrics-->>Hook: MetricsProvider
-    Hook->>Handler: InstrumentEmailOperation()
-    Handler->>Handler: Execute business logic
-    Handler-->>Hook: Result
-    Hook-->>App: Hook registered
-    
-    Note over App,Handler: When event occurs
-    App->>Hook: Trigger OnMailerSend
-    Hook->>Metrics: StartTimer()
-    Hook->>Handler: HandleMailerSend()
-    Handler-->>Hook: Success/Error
-    Hook->>Metrics: RecordMetrics()
-    Hook-->>App: Event processed
-```
+**Key features of this pattern:**
+- Registration happens at application startup
+- Middlewares are defined in a consistent array structure
+- Each middleware has an ID, Handler, Enabled flag, Description, and Order
+- Follows the same pattern as cron job and route registration
 
 ### 5. Interface-Based Dependency Injection
 
@@ -635,8 +592,8 @@ func NewApp() *pocketbase.PocketBase {
         middleware := middlewares.NewAuthMiddleware()
         metricsMiddleware := middlewares.NewMetricsMiddleware(metricsProvider)
 
-        // 6. Initialize swagger generator (singleton)
-        generator := swagger.InitializeGenerator(app)
+        // 6. Initialize API docs generator (singleton)
+        generator := apidoc.InitializeGenerator(app)
 
         // 7. Register middleware with dependency injection
         se.Router.Bind(&hook.Handler[*core.RequestEvent]{
@@ -671,11 +628,11 @@ flowchart TD
     
     SERVE --> MW_AUTH[Create Auth Middleware]
     SERVE --> MW_METRICS[Create Metrics Middleware]
-    SERVE --> SWAGGER[Initialize Swagger Generator]
+    SERVE --> APIDOC[Initialize API Docs Generator]
     
     MW_METRICS --> BIND_MW[Bind Middlewares to Router]
     MW_AUTH --> BIND_MW
-    SWAGGER --> BIND_MW
+    APIDOC --> BIND_MW
     
     BIND_MW --> ENDPOINT[Register Metrics Endpoint]
     ENDPOINT --> READY[Application Ready]
@@ -695,12 +652,12 @@ flowchart TD
     subgraph "Constructor Injected"
         MW_AUTH_INST[Auth Middleware]
         MW_METRICS_INST[Metrics Middleware]
-        SWAGGER_INST[Swagger Generator]
+        APIDOC_INST[API Docs Generator]
     end
     
     MW_AUTH --> MW_AUTH_INST
     MW_METRICS --> MW_METRICS_INST
-    SWAGGER --> SWAGGER_INST
+    APIDOC --> APIDOC_INST
     
     style START fill:#e1f5fe
     style READY fill:#e8f5e8
@@ -753,55 +710,6 @@ func TestMetricsProvider(t *testing.T) {
 }
 ```
 
-#### Testing Strategy Diagram
-
-```mermaid
-graph TB
-    subgraph "Testing Strategies"
-        MOCK[Mock Dependencies] --> UNIT[Unit Tests]
-        RESET[Singleton Reset] --> UNIT
-        INTERFACE[Interface Mocking] --> UNIT
-        
-        subgraph "Mock Examples"
-            MOCK_APP[Mock PocketBase App]
-            MOCK_METRICS[Mock Metrics Provider]
-            MOCK_CACHE[Mock Cache Service]
-        end
-        
-        subgraph "Reset Examples"
-            RESET_METRICS[metrics.Reset()]
-            RESET_CACHE[cache.Reset()]
-            RESET_LOGGER[logger.Reset()]
-        end
-        
-        MOCK --> MOCK_APP
-        MOCK --> MOCK_METRICS
-        MOCK --> MOCK_CACHE
-        
-        RESET --> RESET_METRICS
-        RESET --> RESET_CACHE
-        RESET --> RESET_LOGGER
-    end
-    
-    subgraph "Test Benefits"
-        ISOLATED[Isolated Testing]
-        CONTROLLED[Controlled Dependencies]
-        FAST[Fast Execution]
-        RELIABLE[Reliable Results]
-    end
-    
-    UNIT --> ISOLATED
-    UNIT --> CONTROLLED
-    UNIT --> FAST
-    UNIT --> RELIABLE
-    
-    style UNIT fill:#e8f5e8
-    style ISOLATED fill:#f3e5f5
-    style CONTROLLED fill:#f3e5f5
-    style FAST fill:#f3e5f5
-    style RELIABLE fill:#f3e5f5
-```
-
 ## Environment-Driven Configuration
 
 ### Configuration Loading (`pkg/common/env.go`)
@@ -830,60 +738,6 @@ JOB_MAX_RETRIES=3                   # Retry configuration
 OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 OTEL_EXPORTER_OTLP_HEADERS=api-key=secret
 OTEL_EXPORTER_OTLP_INSECURE=true
-```
-
-#### Environment Configuration Flow
-
-```mermaid
-flowchart LR
-    subgraph "Environment Variables"
-        ENV_METRICS[METRICS_PROVIDER]
-        ENV_ENABLED[METRICS_ENABLED]
-        ENV_WORKERS[JOB_MAX_WORKERS]
-        ENV_OTEL[OTEL_EXPORTER_OTLP_ENDPOINT]
-    end
-    
-    subgraph "Configuration Loading"
-        LOAD_CONFIG[LoadConfig()]
-        PARSE_ENV[Parse Environment]
-        VALIDATE[Validate Config]
-    end
-    
-    subgraph "Factory Decisions"
-        FACTORY[NewProvider()]
-        PROM_FACTORY[NewPrometheusProvider()]
-        OTEL_FACTORY[NewOpenTelemetryProvider()]
-        NOOP_FACTORY[NewNoOpProvider()]
-    end
-    
-    subgraph "Runtime Instances"
-        PROM_INST[Prometheus Instance]
-        OTEL_INST[OpenTelemetry Instance]
-        NOOP_INST[NoOp Instance]
-    end
-    
-    ENV_METRICS --> LOAD_CONFIG
-    ENV_ENABLED --> LOAD_CONFIG
-    ENV_WORKERS --> LOAD_CONFIG
-    ENV_OTEL --> LOAD_CONFIG
-    
-    LOAD_CONFIG --> PARSE_ENV
-    PARSE_ENV --> VALIDATE
-    VALIDATE --> FACTORY
-    
-    FACTORY --> PROM_FACTORY
-    FACTORY --> OTEL_FACTORY
-    FACTORY --> NOOP_FACTORY
-    
-    PROM_FACTORY --> PROM_INST
-    OTEL_FACTORY --> OTEL_INST
-    NOOP_FACTORY --> NOOP_INST
-    
-    style LOAD_CONFIG fill:#fff3e0
-    style FACTORY fill:#e8f5e8
-    style PROM_INST fill:#e8f5e8
-    style OTEL_INST fill:#e3f2fd
-    style NOOP_INST fill:#ffebee
 ```
 
 ## Best Practices Demonstrated
@@ -917,67 +771,6 @@ Business Logic Layer (internal/handlers/)
 Package Layer (pkg/)
 ```
 
-#### Dependency Hierarchy Visualization
-
-```mermaid
-graph TD
-    subgraph "Layer 1: Application"
-        APP_LAYER[internal/app/app.go]
-    end
-    
-    subgraph "Layer 2: Middleware & Routes"
-        MW_AUTH[Auth Middleware]
-        MW_METRICS[Metrics Middleware]
-        MW_PERM[Permission Middleware]
-        ROUTES[Custom Routes]
-    end
-    
-    subgraph "Layer 3: Business Logic"
-        HOOKS[Hook Handlers]
-        JOBS[Job Handlers]
-        HANDLERS[Route Handlers]
-    end
-    
-    subgraph "Layer 4: Services"
-        METRICS_SVC[Metrics Service]
-        LOGGER_SVC[Logger Service]
-        CACHE_SVC[Cache Service]
-        JOB_SVC[Job Service]
-    end
-    
-    subgraph "Layer 5: Utilities"
-        COMMON[Common Utils]
-        ENV[Environment Utils]
-        CRONUTILS[Cron Utils]
-    end
-    
-    APP_LAYER --> MW_AUTH
-    APP_LAYER --> MW_METRICS
-    APP_LAYER --> MW_PERM
-    APP_LAYER --> ROUTES
-    
-    MW_METRICS --> METRICS_SVC
-    MW_PERM --> CACHE_SVC
-    ROUTES --> HANDLERS
-    
-    HOOKS --> METRICS_SVC
-    HOOKS --> LOGGER_SVC
-    JOBS --> LOGGER_SVC
-    JOBS --> JOB_SVC
-    HANDLERS --> CACHE_SVC
-    
-    METRICS_SVC --> COMMON
-    LOGGER_SVC --> ENV
-    CACHE_SVC --> COMMON
-    JOB_SVC --> CRONUTILS
-    
-    style APP_LAYER fill:#e1f5fe
-    style METRICS_SVC fill:#f3e5f5
-    style LOGGER_SVC fill:#f3e5f5
-    style CACHE_SVC fill:#f3e5f5
-    style JOB_SVC fill:#f3e5f5
-```
-
 ### 3. Interface Segregation
 
 ```go
@@ -1000,61 +793,6 @@ func NewProvider(config Config) MetricsProvider {
 ```
 
 ## Advantages of This Multi-Strategy Approach
-
-```mermaid
-mindmap
-  root((Multi-Strategy DI))
-    Right Tool for Job
-      Singletons
-        Expensive Resources
-        Shared State
-        Global Access
-      Constructor Injection
-        Business Logic
-        Clear Dependencies
-        Easy Testing
-      Factory Pattern
-        Runtime Configuration
-        Multiple Implementations
-        Environment Driven
-      Function Injection
-        Event Handling
-        Callback Registration
-        Framework Integration
-    
-    Excellent Testability
-      Mock Dependencies
-        Constructor Injection
-        Interface Based
-      Singleton Reset
-        Test Isolation
-        Clean State
-      Test Doubles
-        Interface Segregation
-        Controlled Behavior
-    
-    Performance Optimized
-      Single Instance Creation
-        Expensive Resources
-        Memory Efficient
-      No Reflection
-        Compile Time Safety
-        Fast Execution
-      Lazy Initialization
-        On Demand Loading
-        Resource Conservation
-    
-    Production Ready
-      Thread Safe
-        sync.Once
-        Concurrent Access
-      Error Handling
-        Graceful Degradation
-        Fallback Providers
-      Configuration
-        Environment Variables
-        Runtime Flexibility
-```
 
 ### 1. **Right Tool for Right Job**
 - Singletons for expensive, shared resources
