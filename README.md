@@ -123,11 +123,12 @@ For a complete list of commands and usage examples, see the [Makefile Commands G
 ## Key Features
 
 - **Database** - Migrations, seeders, and RBAC collections. See [Database Guide](docs/migrations.md)
-- **API Documentation** - Auto-generated API Documentation, ReDoc, and OpenAPI JSON. See [API Docs Guide](docs/apidocs.md)
+- **API Documentation** - Auto-generated API Documentation, ReDoc, and OpenAPI JSON. See [API Docs Guide](docs/apidoc.md)
 - **Background Jobs** - Cron jobs and job queue system. See [Jobs Guide](docs/cron-jobs.md)
 - **Event Hooks** - Comprehensive hook system for extending functionality. See [Hooks Guide](docs/hooks.md)
 - **Caching** - High-performance TTL cache system. See [Caching Guide](docs/caching.md)
 - **Metrics & Observability** - Prometheus metrics and OpenTelemetry support. See [Metrics Guide](docs/metrics.md)
+- **CLI Commands** - Command-line interface for administrative tasks. See [CLI Commands Guide](docs/cli-commands.md)
 - **Migration CLI** - Generate migrations with `make migrate-gen name=your_migration`
 
 ## Project Structure

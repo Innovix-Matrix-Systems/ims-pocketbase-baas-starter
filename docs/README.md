@@ -37,6 +37,16 @@ Complete reference for all available development and production commands:
 - Common workflows and usage examples
 - Tips and troubleshooting
 
+### [CLI Commands Guide](cli-commands.md)
+
+Complete guide for using and extending the command-line interface:
+
+- Built-in commands (hello, version, health)
+- Running commands in development and production
+- Adding new custom commands
+- Advanced features and best practices
+- Testing and troubleshooting
+
 ### [Database Migrations Guide](migrations.md)
 
 Complete guide for managing database schema changes and migrations:

@@ -12,6 +12,7 @@ import (
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
 
 	"ims-pocketbase-baas-starter/internal/apidoc"
+	"ims-pocketbase-baas-starter/internal/commands"
 	"ims-pocketbase-baas-starter/internal/crons"
 	_ "ims-pocketbase-baas-starter/internal/database/migrations" //side effect migration load(from pocketbase)
 	"ims-pocketbase-baas-starter/internal/hooks"
@@ -62,6 +63,11 @@ func NewApp() *pocketbase.PocketBase {
 	// This must be called after job manager initialization
 	logger.Info("Registering scheduled cron jobs")
 	crons.RegisterCrons(app)
+
+	// Register custom console commands
+	// This must be called after app creation but before OnServe setup
+	logger.Info("Registering custom console commands")
+	commands.RegisterCommands(app)
 
 	// Register custom event hooks
 	// This should be called after job manager and crons initialization
