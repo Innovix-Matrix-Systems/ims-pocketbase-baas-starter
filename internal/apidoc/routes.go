@@ -2,15 +2,18 @@ package apidoc
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
+	"ims-pocketbase-baas-starter/pkg/logger"
+
+	"github.com/pocketbase/pocketbase"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
 // RouteGenerator handles automatic CRUD route generation for collections
 type RouteGenerator struct {
+	app                       *pocketbase.PocketBase
 	schemaGen                 SchemaGen
 	customRoutes              []CustomRoute
 	enableDynamicContentTypes bool
@@ -82,9 +85,9 @@ type RouteGen interface {
 }
 
 // NewRouteGenerator creates a new route generator
-func NewRouteGenerator(schemaGen SchemaGen) *RouteGenerator {
-
+func NewRouteGenerator(app *pocketbase.PocketBase, schemaGen SchemaGen) *RouteGenerator {
 	return &RouteGenerator{
+		app:                       app,
 		schemaGen:                 schemaGen,
 		customRoutes:              []CustomRoute{},
 		enableDynamicContentTypes: true, // Default to enabled for backward compatibility
@@ -93,9 +96,9 @@ func NewRouteGenerator(schemaGen SchemaGen) *RouteGenerator {
 }
 
 // NewRouteGeneratorWithFullConfig creates a new route generator with full configuration
-func NewRouteGeneratorWithFullConfig(schemaGen SchemaGen, enableDynamicContentTypes, excludeSuperuserRoutes bool) *RouteGenerator {
-
+func NewRouteGeneratorWithFullConfig(app *pocketbase.PocketBase, schemaGen SchemaGen, enableDynamicContentTypes, excludeSuperuserRoutes bool) *RouteGenerator {
 	return &RouteGenerator{
+		app:                       app,
 		schemaGen:                 schemaGen,
 		customRoutes:              []CustomRoute{},
 		enableDynamicContentTypes: enableDynamicContentTypes,
@@ -866,6 +869,7 @@ func (rg *RouteGenerator) hasFileFields(collection CollectionInfo) bool {
 // getFileFields returns a list of file fields with their options
 func (rg *RouteGenerator) getFileFields(collection CollectionInfo) []FileFieldInfo {
 	var fileFields []FileFieldInfo
+	log := logger.FromApp(rg.app)
 
 	if len(collection.Fields) == 0 {
 		return fileFields
@@ -885,26 +889,19 @@ func (rg *RouteGenerator) getFileFields(collection CollectionInfo) []FileFieldIn
 		if field.Options != nil {
 			// Check for multiple file uploads
 			if maxSelect, ok := field.Options["maxSelect"]; ok {
-				log.Printf("Debug: Field %s in collection %s has maxSelect: %v (type: %T)", field.Name, collection.Name, maxSelect, maxSelect)
 				if ms, err := rg.parseIntOption(maxSelect); err == nil && ms > 1 {
 					fileField.IsMultiple = true
-					log.Printf("Debug: Field %s set as multiple (maxSelect: %d)", field.Name, ms)
 				} else if err != nil {
-					log.Printf("Warning: Failed to parse maxSelect for field %s in collection %s: %v", field.Name, collection.Name, err)
-				} else {
-					log.Printf("Debug: Field %s not multiple (maxSelect: %d <= 1)", field.Name, ms)
+					log.Warn("Failed to parse maxSelect for field", "field", field.Name, "collection", collection.Name, "error", err)
 				}
-			} else {
-				log.Printf("Debug: Field %s in collection %s has no maxSelect option", field.Name, collection.Name)
 			}
 
 			// Extract max file size
 			if maxSize, ok := field.Options["maxSize"]; ok {
 				if ms, err := rg.parseIntOption(maxSize); err == nil {
 					fileField.MaxSize = int64(ms)
-
 				} else {
-					log.Printf("Warning: Failed to parse maxSize for field %s in collection %s: %v", field.Name, collection.Name, err)
+					log.Warn("Failed to parse maxSize for field", "field", field.Name, "collection", collection.Name, "error", err)
 				}
 			}
 
@@ -915,12 +912,11 @@ func (rg *RouteGenerator) getFileFields(collection CollectionInfo) []FileFieldIn
 						if typeStr, ok := t.(string); ok {
 							fileField.AllowedTypes = append(fileField.AllowedTypes, typeStr)
 						} else {
-							log.Printf("Warning: Invalid MIME type in field %s of collection %s: %v", field.Name, collection.Name, t)
+							log.Warn("Invalid MIME type in field", "field", field.Name, "collection", collection.Name, "value", t)
 						}
 					}
-
 				} else {
-					log.Printf("Warning: Invalid mimeTypes format for field %s in collection %s", field.Name, collection.Name)
+					log.Warn("Invalid mimeTypes format for field", "field", field.Name, "collection", collection.Name)
 				}
 			}
 		}
@@ -986,6 +982,7 @@ func isRelationField(fieldSchema map[string]any) bool {
 // If collection has file fields, it adds multipart/form-data support for create and update operations
 func (rg *RouteGenerator) generateRequestContent(schema any, collection CollectionInfo, operation string) map[string]MediaType {
 	content := make(map[string]MediaType)
+	log := logger.FromApp(rg.app)
 
 	// Always include application/json
 	content["application/json"] = MediaType{
@@ -1035,7 +1032,7 @@ func (rg *RouteGenerator) generateRequestContent(schema any, collection Collecti
 		if p, ok := s["properties"].(map[string]any); ok {
 			props = p
 		} else {
-			log.Printf("Warning: Cannot parse schema properties for collection %s (operation: %s), falling back to JSON-only", collection.Name, operation)
+			log.Warn("Cannot parse schema properties for collection, falling back to JSON-only", "collection", collection.Name, "operation", operation)
 			return content
 		}
 		if r, ok := s["required"].([]string); ok {
@@ -1093,7 +1090,7 @@ func (rg *RouteGenerator) generateRequestContent(schema any, collection Collecti
 		}
 		required = s.Required
 	default:
-		log.Printf("Warning: Cannot parse schema for collection %s (operation: %s), schema type: %T, falling back to JSON-only", collection.Name, operation, schema)
+		log.Warn("Cannot parse schema for collection, falling back to JSON-only", "collection", collection.Name, "operation", operation, "schemaType", fmt.Sprintf("%T", schema))
 		return content
 	}
 
@@ -1234,7 +1231,7 @@ func (rg *RouteGenerator) generateRequestContent(schema any, collection Collecti
 				formDataProps[propName] = formFieldSchema
 			} else {
 				// Fallback: use the original property as-is
-				log.Printf("Warning: Could not parse property %s for form-data, using original schema", propName)
+				log.Warn("Could not parse property for form-data, using original schema", "property", propName)
 				formDataProps[propName] = propValue
 			}
 			processedFields++
@@ -1291,7 +1288,7 @@ func (rg *RouteGenerator) generateRequestContent(schema any, collection Collecti
 
 	// Validate that we have properties in the form-data schema
 	if len(formDataProps) == 0 {
-		log.Printf("Warning: No properties generated for form-data schema in collection %s, falling back to JSON-only", collection.Name)
+		log.Warn("No properties generated for form-data schema in collection, falling back to JSON-only", "collection", collection.Name)
 		return content
 	}
 

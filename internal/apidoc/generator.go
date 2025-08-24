@@ -148,7 +148,7 @@ func NewGenerator(app *pocketbase.PocketBase, config Config) *Generator {
 	)
 
 	// Initialize route generator with full config
-	routeGen := NewRouteGeneratorWithFullConfig(schemaGen, config.EnableDynamicContentTypes, true) // Exclude superuser routes
+	routeGen := NewRouteGeneratorWithFullConfig(app, schemaGen, config.EnableDynamicContentTypes, true) // Exclude superuser routes
 
 	// Register custom routes from config
 	for _, customRoute := range config.CustomRoutes {
@@ -394,9 +394,7 @@ func (g *Generator) buildTags(collections []CollectionInfo, routes []GeneratedRo
 
 // RefreshCollections refreshes the collection cache
 func (g *Generator) RefreshCollections() error {
-	if g.discovery != nil {
-		g.discovery.RefreshCollectionCache()
-	}
+	// CollectionDiscovery doesn't currently implement caching
 	return nil
 }
 
@@ -455,7 +453,7 @@ func (g *Generator) UpdateConfiguration(config Config) error {
 		config.IncludeSystem,
 	)
 
-	g.routeGen = NewRouteGeneratorWithFullConfig(g.schemaGen, config.EnableDynamicContentTypes, true) // Exclude superuser routes
+	g.routeGen = NewRouteGeneratorWithFullConfig(g.app, g.schemaGen, config.EnableDynamicContentTypes, true) // Exclude superuser routes
 
 	// Re-register custom routes
 	for _, customRoute := range config.CustomRoutes {

@@ -14,7 +14,7 @@ A production-ready Backend-as-a-Service (BaaS) starter kit that extends PocketBa
 - 💻 **CLI Command Support** - Command-line interface support for custom scripts and tasks
 - 📈 **Metrics & Observability** - Comprehensive monitoring with Prometheus metrics and OpenTelemetry support for performance tracking and system insights
 - 📧 **Email Integration** - SMTP configuration with MailHog for development
-- 📚 **Auto API Documentation** - Interactive API Docs, Scalar, ReDoc, OpenAPI JSON with Postman compatibility
+- 📚 **Auto API Documentation** - Interactive auto generated API Docs: Scalar, Swagger UI, ReDoc, OpenAPI JSON with Postman compatibility
 - 🐳 **Docker Support** - Production and development environments
 - 🔄 **Hot Reload** - Development environment with automatic code reloading
 - ⚙️ **Environment Configuration** - Flexible configuration via environment variables

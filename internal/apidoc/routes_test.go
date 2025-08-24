@@ -2,6 +2,8 @@ package apidoc
 
 import (
 	"testing"
+
+	"github.com/pocketbase/pocketbase"
 )
 
 // Mock schema generator for testing
@@ -89,8 +91,9 @@ func (m *mockSchemaGen) GetListResponseSchemaName(collection CollectionInfo) str
 }
 
 func TestNewRouteGenerator(t *testing.T) {
+	app := pocketbase.New()
 	schemaGen := &mockSchemaGen{}
-	generator := NewRouteGeneratorWithFullConfig(schemaGen, true, false) // Disable superuser route exclusion for tests
+	generator := NewRouteGeneratorWithFullConfig(app, schemaGen, true, false) // Disable superuser route exclusion for tests
 
 	if generator == nil {
 		t.Fatal("Expected generator to be created, got nil")
@@ -106,8 +109,9 @@ func TestNewRouteGenerator(t *testing.T) {
 }
 
 func TestGenerateCollectionRoutes(t *testing.T) {
+	app := pocketbase.New()
 	schemaGen := &mockSchemaGen{}
-	generator := NewRouteGeneratorWithFullConfig(schemaGen, true, false) // Disable superuser route exclusion for tests
+	generator := NewRouteGeneratorWithFullConfig(app, schemaGen, true, false) // Disable superuser route exclusion for tests
 
 	collection := CollectionInfo{
 		Name: "users",
@@ -151,8 +155,9 @@ func TestGenerateCollectionRoutes(t *testing.T) {
 }
 
 func TestGenerateAuthRoutes(t *testing.T) {
+	app := pocketbase.New()
 	schemaGen := &mockSchemaGen{}
-	generator := NewRouteGeneratorWithFullConfig(schemaGen, true, false) // Disable superuser route exclusion for tests
+	generator := NewRouteGeneratorWithFullConfig(app, schemaGen, true, false) // Disable superuser route exclusion for tests
 
 	// Test with auth collection
 	authCollection := CollectionInfo{
@@ -186,8 +191,9 @@ func TestGenerateAuthRoutes(t *testing.T) {
 }
 
 func TestRegisterCustomRoute(t *testing.T) {
+	app := pocketbase.New()
 	schemaGen := &mockSchemaGen{}
-	generator := NewRouteGeneratorWithFullConfig(schemaGen, true, false) // Disable superuser route exclusion for tests
+	generator := NewRouteGeneratorWithFullConfig(app, schemaGen, true, false) // Disable superuser route exclusion for tests
 
 	customRoute := CustomRoute{
 		Method:      "GET",
@@ -206,8 +212,9 @@ func TestRegisterCustomRoute(t *testing.T) {
 }
 
 func TestGetAllRoutes(t *testing.T) {
+	app := pocketbase.New()
 	schemaGen := &mockSchemaGen{}
-	generator := NewRouteGeneratorWithFullConfig(schemaGen, true, false) // Disable superuser route exclusion for tests
+	generator := NewRouteGeneratorWithFullConfig(app, schemaGen, true, false) // Disable superuser route exclusion for tests
 
 	// Add a custom route
 	customRoute := CustomRoute{

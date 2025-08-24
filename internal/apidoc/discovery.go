@@ -53,7 +53,6 @@ type Discovery interface {
 	ShouldIncludeCollection(name string, collectionType string, system bool) bool
 	GetCollectionStats() (map[string]int, error)
 	ValidateCollectionAccess() error
-	RefreshCollectionCache()
 }
 
 // NewCollectionDiscovery creates a new collection discovery service
@@ -423,13 +422,6 @@ func (cd *CollectionDiscovery) GetCollectionStats() (map[string]int, error) {
 	}
 
 	return filteredStats, nil
-}
-
-// RefreshCollectionCache refreshes any cached collection data
-func (cd *CollectionDiscovery) RefreshCollectionCache() {
-	// Currently, we don't maintain a cache, but this method is here for future use
-	// In the future, we could implement caching to improve performance
-	logger.FromAppOrDefault(cd.app).Debug("Collection cache refresh requested (no-op - caching not implemented)")
 }
 
 // GetSystemFields returns the standard system fields that are present in all collections
