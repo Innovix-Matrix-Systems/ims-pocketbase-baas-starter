@@ -550,6 +550,15 @@ func (rg *RouteGenerator) GenerateAuthRoutes(collection CollectionInfo) ([]Gener
 
 	var routes []GeneratedRoute
 
+	// 1. Auth Methods (Discovery)
+	// Generate auth-methods route
+	authMethodsRoute, err := rg.generateAuthMethodsRoute(collection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate auth-methods route: %w", err)
+	}
+	routes = append(routes, *authMethodsRoute)
+
+	// 2. Authentication
 	// Generate auth-with-password route
 	// Skip if ListRule is superuser-only (unusual for auth collections, but possible)
 	if !rg.isSuperuserOnly(collection.ListRule) {
@@ -559,6 +568,20 @@ func (rg *RouteGenerator) GenerateAuthRoutes(collection CollectionInfo) ([]Gener
 		}
 		routes = append(routes, *authRoute)
 	}
+
+	// Generate request-otp route
+	requestOtpRoute, err := rg.generateRequestOtpRoute(collection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate request-otp route: %w", err)
+	}
+	routes = append(routes, *requestOtpRoute)
+
+	// Generate auth-with-otp route
+	authWithOtpRoute, err := rg.generateAuthWithOtpRoute(collection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate auth-with-otp route: %w", err)
+	}
+	routes = append(routes, *authWithOtpRoute)
 
 	// Generate auth-refresh route
 	// Skip if ViewRule is superuser-only (unusual for auth collections, but possible)
@@ -570,6 +593,7 @@ func (rg *RouteGenerator) GenerateAuthRoutes(collection CollectionInfo) ([]Gener
 		routes = append(routes, *refreshRoute)
 	}
 
+	// 3. Password Management
 	// Generate request-password-reset route
 	// Skip if CreateRule is superuser-only (unusual for auth collections, but possible)
 	if !rg.isSuperuserOnly(collection.CreateRule) {
@@ -579,6 +603,43 @@ func (rg *RouteGenerator) GenerateAuthRoutes(collection CollectionInfo) ([]Gener
 		}
 		routes = append(routes, *resetRoute)
 	}
+
+	// Generate confirm-password-reset route
+	confirmResetRoute, err := rg.generateConfirmPasswordResetRoute(collection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate confirm-password-reset route: %w", err)
+	}
+	routes = append(routes, *confirmResetRoute)
+
+	// 4. Email Management
+	// Generate request-email-change route
+	requestEmailChangeRoute, err := rg.generateRequestEmailChangeRoute(collection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate request-email-change route: %w", err)
+	}
+	routes = append(routes, *requestEmailChangeRoute)
+
+	// Generate confirm-email-change route
+	confirmEmailChangeRoute, err := rg.generateConfirmEmailChangeRoute(collection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate confirm-email-change route: %w", err)
+	}
+	routes = append(routes, *confirmEmailChangeRoute)
+
+	// 5. Verification
+	// Generate request-verification route
+	requestVerificationRoute, err := rg.generateRequestVerificationRoute(collection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate request-verification route: %w", err)
+	}
+	routes = append(routes, *requestVerificationRoute)
+
+	// Generate confirm-verification route
+	confirmVerificationRoute, err := rg.generateConfirmVerificationRoute(collection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate confirm-verification route: %w", err)
+	}
+	routes = append(routes, *confirmVerificationRoute)
 
 	return routes, nil
 }
@@ -759,6 +820,423 @@ func (rg *RouteGenerator) generateRequestPasswordResetRoute(collection Collectio
 		},
 	}
 
+	return route, nil
+}
+
+// generateConfirmPasswordResetRoute generates the confirm-password-reset route
+func (rg *RouteGenerator) generateConfirmPasswordResetRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	caser := cases.Title(language.English)
+	route := &GeneratedRoute{
+		Method:      "POST",
+		Path:        fmt.Sprintf("/api/collections/%s/confirm-password-reset", collection.Name),
+		Summary:     fmt.Sprintf("Confirm password reset for %s", collection.Name),
+		Description: fmt.Sprintf("Confirm %s password reset", collection.Name),
+		Tags:        []string{"Authentication"},
+		OperationID: fmt.Sprintf("confirm%sPasswordReset", caser.String(collection.Name)),
+		RequestBody: &RequestBody{
+			Description: "Password reset details",
+			Required:    true,
+			Content: map[string]MediaType{
+				"application/json": {
+					Schema: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"token": map[string]any{
+								"type":        "string",
+								"description": "The token from the password reset request email",
+							},
+							"password": map[string]any{
+								"type":        "string",
+								"description": "The new password",
+							},
+							"passwordConfirm": map[string]any{
+								"type":        "string",
+								"description": "The new password confirmation",
+							},
+						},
+						"required": []string{"token", "password", "passwordConfirm"},
+					},
+				},
+			},
+		},
+		Responses: map[string]Response{
+			"204": {
+				Description: "Password reset successfully",
+			},
+			"400": {
+				Description: "Bad request",
+			},
+		},
+	}
+	return route, nil
+}
+
+// generateRequestVerificationRoute generates the request-verification route
+func (rg *RouteGenerator) generateRequestVerificationRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	caser := cases.Title(language.English)
+	route := &GeneratedRoute{
+		Method:      "POST",
+		Path:        fmt.Sprintf("/api/collections/%s/request-verification", collection.Name),
+		Summary:     fmt.Sprintf("Request verification for %s", collection.Name),
+		Description: fmt.Sprintf("Send a verification email to %s", collection.Name),
+		Tags:        []string{"Authentication"},
+		OperationID: fmt.Sprintf("request%sVerification", caser.String(collection.Name)),
+		RequestBody: &RequestBody{
+			Description: "Email for verification",
+			Required:    true,
+			Content: map[string]MediaType{
+				"application/json": {
+					Schema: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"email": map[string]any{
+								"type":        "string",
+								"format":      "email",
+								"description": "The auth record email address",
+							},
+						},
+						"required": []string{"email"},
+					},
+				},
+			},
+		},
+		Responses: map[string]Response{
+			"204": {
+				Description: "Verification email sent",
+			},
+			"400": {
+				Description: "Bad request",
+			},
+		},
+	}
+	return route, nil
+}
+
+// generateConfirmVerificationRoute generates the confirm-verification route
+func (rg *RouteGenerator) generateConfirmVerificationRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	caser := cases.Title(language.English)
+	route := &GeneratedRoute{
+		Method:      "POST",
+		Path:        fmt.Sprintf("/api/collections/%s/confirm-verification", collection.Name),
+		Summary:     fmt.Sprintf("Confirm verification for %s", collection.Name),
+		Description: fmt.Sprintf("Confirm %s email verification", collection.Name),
+		Tags:        []string{"Authentication"},
+		OperationID: fmt.Sprintf("confirm%sVerification", caser.String(collection.Name)),
+		RequestBody: &RequestBody{
+			Description: "Verification token",
+			Required:    true,
+			Content: map[string]MediaType{
+				"application/json": {
+					Schema: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"token": map[string]any{
+								"type":        "string",
+								"description": "The token from the verification request email",
+							},
+						},
+						"required": []string{"token"},
+					},
+				},
+			},
+		},
+		Responses: map[string]Response{
+			"204": {
+				Description: "Email verified successfully",
+			},
+			"400": {
+				Description: "Bad request",
+			},
+		},
+	}
+	return route, nil
+}
+
+// generateRequestEmailChangeRoute generates the request-email-change route
+func (rg *RouteGenerator) generateRequestEmailChangeRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	caser := cases.Title(language.English)
+	route := &GeneratedRoute{
+		Method:      "POST",
+		Path:        fmt.Sprintf("/api/collections/%s/request-email-change", collection.Name),
+		Summary:     fmt.Sprintf("Request email change for %s", collection.Name),
+		Description: fmt.Sprintf("Request email change for %s", collection.Name),
+		Tags:        []string{"Authentication"},
+		OperationID: fmt.Sprintf("request%sEmailChange", caser.String(collection.Name)),
+		Security: []SecurityRequirement{
+			{"BearerAuth": []string{}},
+		},
+		RequestBody: &RequestBody{
+			Description: "New email address",
+			Required:    true,
+			Content: map[string]MediaType{
+				"application/json": {
+					Schema: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"newEmail": map[string]any{
+								"type":        "string",
+								"format":      "email",
+								"description": "The new email address",
+							},
+						},
+						"required": []string{"newEmail"},
+					},
+				},
+			},
+		},
+		Responses: map[string]Response{
+			"204": {
+				Description: "Email change requested",
+			},
+			"400": {
+				Description: "Bad request",
+			},
+			"401": {
+				Description: "Unauthorized",
+			},
+		},
+	}
+	return route, nil
+}
+
+// generateConfirmEmailChangeRoute generates the confirm-email-change route
+func (rg *RouteGenerator) generateConfirmEmailChangeRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	caser := cases.Title(language.English)
+	route := &GeneratedRoute{
+		Method:      "POST",
+		Path:        fmt.Sprintf("/api/collections/%s/confirm-email-change", collection.Name),
+		Summary:     fmt.Sprintf("Confirm email change for %s", collection.Name),
+		Description: fmt.Sprintf("Confirm %s email change", collection.Name),
+		Tags:        []string{"Authentication"},
+		OperationID: fmt.Sprintf("confirm%sEmailChange", caser.String(collection.Name)),
+		RequestBody: &RequestBody{
+			Description: "Email change confirmation",
+			Required:    true,
+			Content: map[string]MediaType{
+				"application/json": {
+					Schema: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"token": map[string]any{
+								"type":        "string",
+								"description": "The token from the change email request email",
+							},
+							"password": map[string]any{
+								"type":        "string",
+								"description": "The account password",
+							},
+						},
+						"required": []string{"token", "password"},
+					},
+				},
+			},
+		},
+		Responses: map[string]Response{
+			"204": {
+				Description: "Email changed successfully",
+			},
+			"400": {
+				Description: "Bad request",
+			},
+		},
+	}
+	return route, nil
+}
+
+// generateAuthMethodsRoute generates the auth-methods route
+func (rg *RouteGenerator) generateAuthMethodsRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	caser := cases.Title(language.English)
+	route := &GeneratedRoute{
+		Method:      "GET",
+		Path:        fmt.Sprintf("/api/collections/%s/auth-methods", collection.Name),
+		Summary:     fmt.Sprintf("Get %s auth methods", collection.Name),
+		Description: fmt.Sprintf("Returns all available auth methods for %s", collection.Name),
+		Tags:        []string{"Authentication"},
+		OperationID: fmt.Sprintf("get%sAuthMethods", caser.String(collection.Name)),
+		Parameters: []Parameter{
+			{
+				Name:        "fields",
+				In:          "query",
+				Description: "Comma separated string of the fields to return in the JSON response",
+				Required:    false,
+				Schema: map[string]any{
+					"type": "string",
+				},
+			},
+		},
+		Responses: map[string]Response{
+			"200": {
+				Description: "Auth methods configuration",
+				Content: map[string]MediaType{
+					"application/json": {
+						Schema: map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"mfa": map[string]any{
+									"type": "object",
+									"properties": map[string]any{
+										"duration": map[string]any{"type": "integer"},
+										"enabled":  map[string]any{"type": "boolean"},
+									},
+								},
+								"oauth2": map[string]any{
+									"type": "object",
+									"properties": map[string]any{
+										"enabled":   map[string]any{"type": "boolean"},
+										"providers": map[string]any{"type": "array", "items": map[string]any{"type": "object"}},
+									},
+								},
+								"otp": map[string]any{
+									"type": "object",
+									"properties": map[string]any{
+										"duration": map[string]any{"type": "integer"},
+										"enabled":  map[string]any{"type": "boolean"},
+									},
+								},
+								"password": map[string]any{
+									"type": "object",
+									"properties": map[string]any{
+										"enabled":        map[string]any{"type": "boolean"},
+										"identityFields": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	return route, nil
+}
+
+// generateRequestOtpRoute generates the request-otp route
+func (rg *RouteGenerator) generateRequestOtpRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	caser := cases.Title(language.English)
+	route := &GeneratedRoute{
+		Method:      "POST",
+		Path:        fmt.Sprintf("/api/collections/%s/request-otp", collection.Name),
+		Summary:     fmt.Sprintf("Request OTP for %s", collection.Name),
+		Description: fmt.Sprintf("Send an OTP request to %s email", collection.Name),
+		Tags:        []string{"Authentication"},
+		OperationID: fmt.Sprintf("request%sOtp", caser.String(collection.Name)),
+		RequestBody: &RequestBody{
+			Description: "Email for OTP request",
+			Required:    true,
+			Content: map[string]MediaType{
+				"application/json": {
+					Schema: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"email": map[string]any{
+								"type":        "string",
+								"format":      "email",
+								"description": "The auth record email address",
+								"example":     "user@example.com",
+							},
+						},
+						"required": []string{"email"},
+					},
+				},
+			},
+		},
+		Responses: map[string]Response{
+			"200": {
+				Description: "OTP request successful",
+				Content: map[string]MediaType{
+					"application/json": {
+						Schema: map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"otpId": map[string]any{"type": "string"},
+							},
+						},
+					},
+				},
+			},
+			"400": {
+				Description: "Bad request",
+			},
+		},
+	}
+	return route, nil
+}
+
+// generateAuthWithOtpRoute generates the auth-with-otp route
+func (rg *RouteGenerator) generateAuthWithOtpRoute(collection CollectionInfo) (*GeneratedRoute, error) {
+	// Generate response schema (includes token and record)
+	recordSchema, err := rg.schemaGen.GenerateCollectionSchema(collection)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate record schema: %w", err)
+	}
+
+	authResponseSchema := map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			"token": map[string]any{
+				"type":        "string",
+				"description": "JWT authentication token",
+			},
+			"record": recordSchema,
+		},
+		"required": []string{"token", "record"},
+	}
+
+	caser := cases.Title(language.English)
+	route := &GeneratedRoute{
+		Method:      "POST",
+		Path:        fmt.Sprintf("/api/collections/%s/auth-with-otp", collection.Name),
+		Summary:     fmt.Sprintf("Authenticate %s with OTP", collection.Name),
+		Description: fmt.Sprintf("Authenticate a %s using OTP", collection.Name),
+		Tags:        []string{"Authentication"},
+		OperationID: fmt.Sprintf("auth%sWithOtp", caser.String(collection.Name)),
+		Parameters: []Parameter{
+			{
+				Name:        "expand",
+				In:          "query",
+				Description: "Auto expand record relations",
+				Required:    false,
+				Schema: map[string]any{
+					"type": "string",
+				},
+			},
+		},
+		RequestBody: &RequestBody{
+			Description: "OTP credentials",
+			Required:    true,
+			Content: map[string]MediaType{
+				"application/json": {
+					Schema: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"otpId": map[string]any{
+								"type":        "string",
+								"description": "The id of the OTP request",
+							},
+							"password": map[string]any{
+								"type":        "string",
+								"description": "The one-time password",
+							},
+						},
+						"required": []string{"otpId", "password"},
+					},
+				},
+			},
+		},
+		Responses: map[string]Response{
+			"200": {
+				Description: "Authentication successful",
+				Content: map[string]MediaType{
+					"application/json": {
+						Schema: authResponseSchema,
+					},
+				},
+			},
+			"400": {
+				Description: "Bad request",
+			},
+		},
+	}
 	return route, nil
 }
 

@@ -26,7 +26,8 @@ A production-ready Backend-as-a-Service (BaaS) starter kit that extends PocketBa
 ### Prerequisites
 
 - Docker and Docker Compose
-- Go 1.24+ (for local development)
+- Go 1.26+ (for local development)
+- golangci-lint (for linting before push)
 
 ### Development Setup
 
