@@ -31,6 +31,7 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         with:
           version: latest
+          cache: false
 
       - name: Build application
         run: CGO_ENABLED=1 go build -v ./cmd/server
