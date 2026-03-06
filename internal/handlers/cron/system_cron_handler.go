@@ -30,16 +30,19 @@ func HandleSystemQueue(app *pocketbase.PocketBase) {
 	batchSize := common.GetEnvInt("JOB_BATCH_SIZE", 50)                  // Process up to 50 jobs per run
 	reservationTimeout := common.GetEnvInt("JOB_RESERVATION_TIMEOUT", 5) // Default 5 minutes reservation timeout
 
-	// Fetch pending jobs (not reserved or reservation expired)
+	// Fetch pending jobs: either not reserved or reservation has expired
 	expiredTime := time.Now().Add(-time.Duration(reservationTimeout) * time.Minute)
+
+	// Format for PocketBase: RFC3339 with 'T' replaced by space (e.g., "2025-11-04 19:39:00Z")
+	pbExpiredTime := expiredTime.Format("2006-01-02 15:04:05Z")
 
 	queues, err := app.FindRecordsByFilter(
 		"queues",
 		"reserved_at = '' || reserved_at < {:expired}",
-		"-created", // Order by created descending (FIFO)
+		"-created", // FIFO: oldest first
 		batchSize,
 		0,
-		dbx.Params{"expired": expiredTime.Format(time.RFC3339)},
+		dbx.Params{"expired": pbExpiredTime},
 	)
 
 	if err != nil {
